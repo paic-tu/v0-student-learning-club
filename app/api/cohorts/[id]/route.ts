@@ -1,0 +1,19 @@
+import { type NextRequest, NextResponse } from "next/server"
+import { getCohortById } from "@/lib/db/queries"
+import { parseId } from "@/lib/utils"
+
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const id = parseId(params.id)
+    const cohort = await getCohortById(id)
+
+    if (!cohort) {
+      return NextResponse.json({ error: "Cohort not found" }, { status: 404 })
+    }
+
+    return NextResponse.json({ cohort })
+  } catch (error) {
+    console.error("[v0] Error in cohort API:", error)
+    return NextResponse.json({ error: "Failed to fetch cohort" }, { status: 500 })
+  }
+}
