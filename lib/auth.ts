@@ -32,6 +32,7 @@ async function getUsersColumns(): Promise<Set<string>> {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   trustHost: true,
   providers: [
     Credentials({
@@ -129,7 +130,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   pages: {
     signIn: "/auth/login",
-    error: "/auth/error",
+    error: "/auth/login",
   },
 })
 

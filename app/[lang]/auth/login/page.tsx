@@ -1,8 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,7 +22,22 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const { language } = useLanguage()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
+
+  useEffect(() => {
+    const err = searchParams.get("error")
+    if (!err) return
+    const msg =
+      err === "Configuration"
+        ? language === "ar"
+          ? "يوجد خطأ في إعدادات تسجيل الدخول. تأكد من متغيرات البيئة."
+          : "There is a configuration issue. Please check environment variables."
+        : language === "ar"
+        ? "فشل تسجيل الدخول"
+        : "Login failed"
+    setError(msg)
+  }, [language, searchParams])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
