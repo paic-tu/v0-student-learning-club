@@ -68,13 +68,20 @@ export default auth((req) => {
   const isAuthRoute = pathWithoutLocale.startsWith("/auth")
   const isRoot = pathWithoutLocale === "/" || pathWithoutLocale === ""
 
+  // Allow next-auth session and providers to pass through
+  if (pathWithoutLocale.startsWith("/api/auth")) {
+    return
+  }
+
   if (isPublic || isAuthRoute || isRoot) {
     return
   }
 
   // If not public, require auth
   if (!req.auth) {
-    return NextResponse.redirect(new URL(`/${locale}/auth/login`, req.url))
+    const signInUrl = new URL(`/${locale}/auth/login`, req.url)
+    signInUrl.searchParams.set("callbackUrl", pathname)
+    return NextResponse.redirect(signInUrl)
   }
 
   const userRole = req.auth.user?.role as string
