@@ -12,8 +12,7 @@ import { useLanguage } from "@/lib/language-context"
 import { t } from "@/lib/i18n"
 import { useToast } from "@/hooks/use-toast"
 import { NavBar } from "@/components/nav-bar"
-import { registerAction } from "@/lib/actions/auth"
-import { signIn } from "next-auth/react"
+import { registerAction, loginAction } from "@/lib/actions/auth"
 
 export default function RegisterPage() {
   const [name, setName] = useState("")
@@ -38,11 +37,11 @@ export default function RegisterPage() {
 
       if (result.success) {
         // Auto login after registration
-        const loginResult = await signIn("credentials", {
-          email,
-          password,
-          redirect: false,
-        })
+        const loginFormData = new FormData()
+        loginFormData.append("email", email)
+        loginFormData.append("password", password)
+        
+        const loginResult = await loginAction(undefined, loginFormData)
 
         if (loginResult?.error) {
            toast({
