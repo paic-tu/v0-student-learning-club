@@ -115,13 +115,16 @@ export function CartClient({ initialCart }: CartClientProps) {
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-4">
           {items.map((item) => {
+            // Safety check for missing product/course data
+            if (!item.course && !item.product) return null
+
             const title = item.course 
               ? (language === "ar" ? item.course.titleAr : item.course.titleEn)
-              : (language === "ar" ? item.product?.nameAr : item.product?.nameEn)
+              : (language === "ar" ? item.product?.nameAr : item.product?.nameEn) || "Unknown Item"
             
             const price = item.course 
               ? item.course.price 
-              : item.product?.price
+              : item.product?.price || "0"
               
             const image = item.course?.thumbnailUrl || item.product?.imageUrl
 

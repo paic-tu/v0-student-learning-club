@@ -57,6 +57,10 @@ export async function registerAction(formData: FormData) {
   const email = formData.get("email")
   const password = formData.get("password")
 
+  if (!name || !email || !password) {
+    return { error: "Missing required fields" }
+  }
+
   const validatedFields = registerSchema.safeParse({ name, email, password })
 
   if (!validatedFields.success) {
