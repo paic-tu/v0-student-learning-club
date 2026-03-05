@@ -8,6 +8,14 @@ if (!process.env.AUTH_SECRET && process.env.NEXTAUTH_SECRET) {
   process.env.AUTH_SECRET = process.env.NEXTAUTH_SECRET
 }
 
+// Fallback for development to prevent crash if secret is missing
+if (!process.env.AUTH_SECRET) {
+  console.warn("AUTH_SECRET or NEXTAUTH_SECRET is not set. Auth will fail.")
+  if (process.env.NODE_ENV !== "production") {
+    process.env.AUTH_SECRET = "dev-secret-key-change-me"
+  }
+}
+
 if (!process.env.AUTH_URL && process.env.NEXTAUTH_URL) {
   process.env.AUTH_URL = process.env.NEXTAUTH_URL
 }

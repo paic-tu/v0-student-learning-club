@@ -5,8 +5,8 @@ import * as schema from "./schema"
 const databaseUrl = process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL
 
 if (!databaseUrl) {
-  throw new Error("DATABASE_URL_POOLED or DATABASE_URL environment variable is not set")
+  console.warn("DATABASE_URL_POOLED or DATABASE_URL environment variable is not set. Database calls will fail.")
 }
 
-const sql = neon(databaseUrl)
+const sql = neon(databaseUrl || "postgres://user:pass@host/db")
 export const db = drizzle(sql, { schema })
