@@ -145,15 +145,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        console.log("[Auth] JWT callback - user logged in:", user.id, "role:", user.role)
         token.id = user.id
-        token.role = user.role
+        token.role = user.role || "student" // Ensure role is set
       }
       return token
     },
     async session({ session, token }) {
       if (token && session.user) {
+        console.log("[Auth] Session callback - token:", token.sub, "role:", token.role)
         session.user.id = token.id as string
-        session.user.role = token.role as string
+        session.user.role = (token.role as string) || "student"
       }
       return session
     },

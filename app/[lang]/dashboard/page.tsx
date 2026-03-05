@@ -6,10 +6,12 @@ export default async function DashboardPage({ params }: { params: Promise<{ lang
   const session = await auth()
   
   if (!session?.user) {
+    console.log("[Dashboard] No user in session, redirecting to login")
     redirect(`/${lang}/auth/login`)
   }
 
-  const role = session.user.role
+  const role = session.user.role || "student" // Fallback to student if role is missing
+  console.log("[Dashboard] User role:", role)
 
   if (role === "admin") {
     redirect(`/${lang}/admin`)
@@ -18,6 +20,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ lang
   } else if (role === "student") {
     redirect(`/${lang}/student/dashboard`)
   } else {
+    console.log("[Dashboard] Unknown role, redirecting to home")
     redirect(`/${lang}`)
   }
 }
