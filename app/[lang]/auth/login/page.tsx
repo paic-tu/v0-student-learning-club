@@ -37,7 +37,15 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
-        setError(language === "ar" ? "فشل تسجيل الدخول" : "Login failed")
+        const msg =
+          result.error === "CredentialsSignin"
+            ? language === "ar"
+              ? "البريد الإلكتروني أو كلمة المرور غير صحيحة"
+              : "Invalid email or password"
+            : language === "ar"
+            ? "فشل تسجيل الدخول"
+            : "Login failed"
+        setError(msg)
         console.error("Login failed:", result.error)
       } else {
         toast({
@@ -110,23 +118,7 @@ export default function LoginPage() {
                   {t("register", language)}
                 </Link>
               </p>
-
-              <div className="pt-4 border-t text-sm text-muted-foreground">
-                <p className="text-center font-medium mb-2">
-                  {language === "ar" ? "حسابات تجريبية:" : "Demo accounts:"}
-                </p>
-                <div className="space-y-1 text-xs">
-                  <p>
-                    <strong>{language === "ar" ? "طالب:" : "Student:"}</strong> student@neon.edu / password
-                  </p>
-                  <p>
-                    <strong>{language === "ar" ? "مدرس:" : "Instructor:"}</strong> instructor@neon.edu / password
-                  </p>
-                  <p>
-                    <strong>{language === "ar" ? "مدير:" : "Admin:"}</strong> admin@neon.edu / password
-                  </p>
-                </div>
-              </div>
+ 
             </form>
           </CardContent>
         </Card>
