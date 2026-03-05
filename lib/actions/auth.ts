@@ -11,22 +11,38 @@ import { AuthError } from "next-auth"
 
 export async function loginAction(prevState: any, formData: FormData) {
   try {
+    const email = formData.get("email")
+    const password = formData.get("password")
+
+    if (!email || !password) {
+      return { error: "Email and password are required" }
+    }
+
+    console.log("[Auth Action] Attempting login for:", email)
+
     await signIn("credentials", {
-      email: formData.get("email"),
-      password: formData.get("password"),
+      email,
+      password,
       redirect: false,
     })
+    
+    console.log("[Auth Action] Login successful")
     return { success: true }
   } catch (error) {
+    console.error("[Auth Action] Detailed Error:", error)
+    
     if (error instanceof AuthError) {
       switch (error.type) {
         case "CredentialsSignin":
           return { error: "Invalid credentials." }
         default:
-          return { error: "Something went wrong." }
+          return { error: "Authentication failed." }
       }
     }
-    throw error
+
+    // In NextAuth v5, redirect:false might still throw if configured incorrectly or due to bug.
+    // If it's not an AuthError, it might be a standard Error.
+    return { error: error instanceof Error ? error.message : "An unexpected error occurred." }
   }
 }
 
