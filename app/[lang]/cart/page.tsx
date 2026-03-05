@@ -11,7 +11,18 @@ export default async function CartPage({ params }: { params: Promise<{ lang: str
     redirect(`/${lang}/auth/login`)
   }
 
-  const { cart } = await getCartAction()
+  try {
+    const { cart, error } = await getCartAction()
 
-  return <CartClient initialCart={cart || null} />
+    if (error) {
+      console.error("Error fetching cart:", error)
+      // Return empty cart state or error UI instead of crashing
+      return <CartClient initialCart={null} />
+    }
+
+    return <CartClient initialCart={cart || null} />
+  } catch (e) {
+    console.error("Unexpected error in CartPage:", e)
+    return <CartClient initialCart={null} />
+  }
 }

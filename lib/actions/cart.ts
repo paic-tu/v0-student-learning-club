@@ -23,6 +23,8 @@ export async function getCartAction() {
 
     const userId = session.user.id
 
+    // Use a simpler query first to debug
+    // Ensure carts table exists and userId is valid
     let cart = await db.query.carts.findFirst({
       where: eq(carts.userId, userId),
       with: {
@@ -36,14 +38,18 @@ export async function getCartAction() {
     })
 
     if (!cart) {
+      console.log("[Action] Cart not found, creating new one for user:", userId)
       const [newCart] = await db.insert(carts).values({ userId }).returning()
-      // Return the new cart structure, ensuring items is an empty array
+      if (!newCart) {
+         throw new Error("Failed to create new cart")
+      }
       return { cart: { ...newCart, items: [] } }
     }
 
     return { cart }
   } catch (error) {
     console.error("[Action] getCartAction error:", error)
+    // Don't expose internal errors to client, but log them
     return { error: "Failed to get cart" }
   }
 }
