@@ -12,7 +12,7 @@ import { useLanguage } from "@/lib/language-context"
 import { t } from "@/lib/i18n"
 import { useToast } from "@/hooks/use-toast"
 import { NavBar } from "@/components/nav-bar"
-import { signIn } from "next-auth/react"
+import { loginAction } from "@/lib/actions/auth"
 import { AlertCircle } from "lucide-react"
 
 export default function LoginPage() {
@@ -45,15 +45,15 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      })
+      const formData = new FormData()
+      formData.append("email", email)
+      formData.append("password", password)
+      
+      const result = await loginAction(undefined, formData)
 
       if (result?.error) {
         const msg =
-          result.error === "CredentialsSignin"
+          result.error === "Invalid credentials."
             ? language === "ar"
               ? "البريد الإلكتروني أو كلمة المرور غير صحيحة"
               : "Invalid email or password"
@@ -62,7 +62,7 @@ export default function LoginPage() {
             : "Login failed"
         setError(msg)
         console.error("Login failed:", result.error)
-      } else {
+      } else if (result?.success) {
         toast({
           title: language === "ar" ? "تم تسجيل الدخول" : "Logged in successfully",
           description: language === "ar" ? "مرحباً بك في نيون" : "Welcome to Neon",
