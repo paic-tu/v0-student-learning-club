@@ -3,14 +3,15 @@ import { joinCohort } from "@/lib/db/queries"
 import { getCurrentUser } from "@/lib/auth"
 import { parseId } from "@/lib/utils"
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params
   try {
     const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const cohortId = parseId(params.id)
+    const cohortId = params.id
     const result = await joinCohort(user.id, cohortId)
 
     if (!result.success) {

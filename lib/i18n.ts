@@ -15,6 +15,12 @@ export const translations = {
   certificates: { ar: "الشهادات", en: "Certificates" },
   verifyCertificate: { ar: "تحقق من الشهادة", en: "Verify Certificate" },
   adminPanel: { ar: "لوحة التحكم", en: "Admin Panel" },
+  dashboard: { ar: "لوحة التحكم", en: "Dashboard" },
+  browse: { ar: "تصفح الدورات", en: "Browse Courses" },
+  myCourses: { ar: "دوراتي", en: "My Courses" },
+  bookmarks: { ar: "المحفوظات", en: "Bookmarks" },
+  notes: { ar: "ملاحظاتي", en: "My Notes" },
+  settings: { ar: "الإعدادات", en: "Settings" },
 
   // Auth
   login: { ar: "تسجيل الدخول", en: "Login" },
@@ -97,6 +103,12 @@ export const translations = {
   locked: { ar: "مقفل", en: "Locked" },
   lessonDetails: { ar: "تفاصيل الدرس", en: "Lesson Details" },
 
+  points: { ar: "نقطة", en: "Points" },
+  enrollFree: { ar: "سجّل مجاناً", en: "Enroll for Free" },
+  courseDetails: { ar: "تفاصيل الدورة", en: "Course Details" },
+  description: { ar: "الوصف", en: "Description" },
+  loading: { ar: "جاري التحميل", en: "Loading" },
+  difficulty: { ar: "الصعوبة", en: "Difficulty" },
   // Enhanced course details page
   share: { ar: "مشاركة", en: "Share" },
   enrollNow: { ar: "سجّل الآن", en: "Enroll Now" },

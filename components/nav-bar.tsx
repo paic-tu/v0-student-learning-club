@@ -16,35 +16,45 @@ import { useLanguage } from "@/lib/language-context"
 import { useTheme } from "@/lib/theme-context"
 import { useAuth } from "@/lib/auth-context"
 import { t } from "@/lib/i18n"
-import { getCart } from "@/lib/mockDb"
+import { getCartAction } from "@/lib/actions"
 import { useEffect, useState } from "react"
 
 export function NavBar() {
   const pathname = usePathname()
   const { language, setLanguage } = useLanguage()
   const { theme, toggleTheme } = useTheme()
-  const { user, logout, isAdmin } = useAuth()
+  const { user, logout } = useAuth()
   const [cartCount, setCartCount] = useState(0)
+  
+  const dashboardLink = user?.role === "admin" 
+    ? `/${language}/admin`
+    : user?.role === "instructor" 
+      ? `/${language}/instructor/dashboard`
+      : `/${language}/student/dashboard`
 
   useEffect(() => {
     if (user) {
-      const cart = getCart(user.id)
-      setCartCount(cart.reduce((sum, item) => sum + item.qty, 0))
+      getCartAction().then((result) => {
+        if (result.cart) {
+          setCartCount(result.cart.items.length)
+        }
+      })
     }
   }, [user, pathname])
 
   const navItems = [
-    { href: "/courses", label: t("courses", language) },
-    { href: "/store", label: t("store", language) },
-    ...(user ? [{ href: "/library", label: t("myLibrary", language) }] : []),
-    { href: "/verify", label: t("verify", language) },
+    { href: `/${language}/courses`, label: t("courses", language) },
+    { href: `/${language}/challenges`, label: language === "ar" ? "التحديات" : "Challenges" },
+    { href: `/${language}/store`, label: t("store", language) },
+    ...(user && user.role === "student" ? [{ href: `/${language}/student/my-courses`, label: t("myLibrary", language) }] : []),
+    { href: `/${language}/verify`, label: t("verify", language) },
   ]
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href={`/${language}`} className="flex items-center gap-2">
             <div className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               {language === "ar" ? "نيون" : "Neon"}
             </div>
@@ -62,7 +72,7 @@ export function NavBar() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link href="/cart">
+          <Link href={`/${language}/cart`}>
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-5 w-5" />
               {cartCount > 0 && (
@@ -98,21 +108,15 @@ export function NavBar() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link href="/profile">{t("profile", language)}</Link>
+                  <Link href={dashboardLink}>{language === "ar" ? "لوحة التحكم" : "Dashboard"}</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/library">{t("myLibrary", language)}</Link>
+                  <Link href={user.role === "student" ? `/${language}/student/profile` : `/${language}/instructor/profile`}>{t("profile", language)}</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/orders">{t("orders", language)}</Link>
-                </DropdownMenuItem>
-                {isAdmin && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href="/admin">{t("adminPanel", language)}</Link>
-                    </DropdownMenuItem>
-                  </>
+                {user.role === "student" && (
+                   <DropdownMenuItem asChild>
+                    <Link href={`/${language}/student/my-courses`}>{t("myLibrary", language)}</Link>
+                  </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout}>{t("logout", language)}</DropdownMenuItem>

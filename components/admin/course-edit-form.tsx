@@ -11,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { Plus, X } from "lucide-react"
+import { StringListInput } from "@/components/ui/string-list-input"
 
 export function CourseEditForm({
   course,
@@ -20,6 +22,11 @@ export function CourseEditForm({
   const router = useRouter()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  
+  // JSON array fields
+  const [requirements, setRequirements] = useState<string[]>(Array.isArray(course.requirements) ? course.requirements : [])
+  const [learningOutcomes, setLearningOutcomes] = useState<string[]>(Array.isArray(course.learning_outcomes) ? course.learning_outcomes : [])
+  const [tags, setTags] = useState<string[]>(Array.isArray(course.tags) ? course.tags : [])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -27,16 +34,29 @@ export function CourseEditForm({
 
     try {
       const formData = new FormData(e.currentTarget)
+      const durationStr = (formData.get("duration") as string) || ""
+      const priceStr = (formData.get("price") as string) || ""
+      const duration =
+        durationStr.trim() === "" ? undefined : Number.parseInt(durationStr, 10)
+      const price =
+        priceStr.trim() === "" ? undefined : Number.parseFloat(priceStr)
+
       const data = {
         title_en: formData.get("title_en"),
         title_ar: formData.get("title_ar"),
+        subtitle_en: formData.get("subtitle_en"),
+        subtitle_ar: formData.get("subtitle_ar"),
         description_en: formData.get("description_en"),
         description_ar: formData.get("description_ar"),
-        instructor_id: Number.parseInt(formData.get("instructor_id") as string),
-        category_id: formData.get("category_id") ? Number.parseInt(formData.get("category_id") as string) : null,
+        language: formData.get("language"),
+        requirements: requirements,
+        learning_outcomes: learningOutcomes,
+        tags: tags,
+        instructor_id: formData.get("instructor_id") as string,
+        category_id: formData.get("category_id") as string || null,
         difficulty: formData.get("difficulty"),
-        duration: Number.parseInt(formData.get("duration") as string),
-        price: formData.get("price"),
+        duration,
+        price,
         is_free: formData.get("is_free") === "on",
         is_published: formData.get("is_published") === "on",
         thumbnail_url: formData.get("thumbnail_url") || null,
@@ -79,6 +99,16 @@ export function CourseEditForm({
         <div className="space-y-2">
           <Label htmlFor="title_ar">Title (Arabic)</Label>
           <Input id="title_ar" name="title_ar" defaultValue={course.title_ar} required />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="subtitle_en">Subtitle (English)</Label>
+          <Input id="subtitle_en" name="subtitle_en" defaultValue={course.subtitle_en || ""} />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="subtitle_ar">Subtitle (Arabic)</Label>
+          <Input id="subtitle_ar" name="subtitle_ar" defaultValue={course.subtitle_ar || ""} />
         </div>
 
         <div className="space-y-2">
@@ -128,6 +158,19 @@ export function CourseEditForm({
         </div>
 
         <div className="space-y-2">
+          <Label htmlFor="language">Language</Label>
+          <Select name="language" defaultValue={course.language || "ar"}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ar">Arabic</SelectItem>
+              <SelectItem value="en">English</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
           <Label htmlFor="duration">Duration (minutes)</Label>
           <Input id="duration" name="duration" type="number" defaultValue={course.duration} />
         </div>
@@ -146,6 +189,38 @@ export function CourseEditForm({
       <div className="space-y-2">
         <Label htmlFor="description_ar">Description (Arabic)</Label>
         <Textarea id="description_ar" name="description_ar" defaultValue={course.description_ar} rows={4} required />
+      </div>
+
+      <div className="space-y-4 pt-4 border-t">
+        <h3 className="text-lg font-semibold">Course Details</h3>
+        <div className="grid gap-6">
+          <div className="space-y-2">
+            <Label>Requirements</Label>
+            <StringListInput 
+              value={requirements} 
+              onChange={setRequirements} 
+              placeholder="Add requirement..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Learning Outcomes</Label>
+            <StringListInput 
+              value={learningOutcomes} 
+              onChange={setLearningOutcomes} 
+              placeholder="Add learning outcome..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Tags</Label>
+            <StringListInput 
+              value={tags} 
+              onChange={setTags} 
+              placeholder="Add tag..."
+            />
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4 pt-4 border-t">

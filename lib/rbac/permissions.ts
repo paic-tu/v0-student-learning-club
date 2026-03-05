@@ -165,7 +165,8 @@ export function isAdmin(role: Role): boolean {
  * Check if user can access admin panel
  */
 export function canAccessAdmin(role: Role): boolean {
-  return ["admin", "manager", "instructor", "support"].includes(role)
+  // Strict separation: Instructors use /instructor portal
+  return ["admin", "manager", "support"].includes(role)
 }
 
 /**

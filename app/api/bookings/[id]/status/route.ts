@@ -9,14 +9,15 @@ const statusSchema = z.object({
   meetingUrl: z.string().url().optional(),
 })
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params
   try {
     const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const bookingId = parseId(params.id)
+    const bookingId = params.id
     const body = await request.json()
     const validated = statusSchema.parse(body)
 

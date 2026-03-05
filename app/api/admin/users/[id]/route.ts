@@ -92,7 +92,7 @@ export async function PATCH(request: NextRequest, props: { params: Promise<{ id:
     await logAudit({
       action: "update",
       resource: "user",
-      resourceId: userId,
+      resourceId: userId.toString(),
       changes: {
         before: beforeState[0],
         after: result[0],
@@ -126,7 +126,7 @@ export async function DELETE(request: NextRequest, props: { params: Promise<{ id
     await logAudit({
       action: "delete",
       resource: "user",
-      resourceId: userId,
+      resourceId: userId.toString(),
       changes: {
         before: beforeState[0],
       },

@@ -13,20 +13,26 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useLanguage } from "@/lib/language-context"
 import { useAuth } from "@/lib/auth-context"
 import { t } from "@/lib/i18n"
-import { Clock, BookOpen, Share2, PlayCircle, Lock, Star, ChevronRight } from "lucide-react"
+import { Clock, BookOpen, Share2, PlayCircle, Lock, Star, ChevronRight, ShoppingCart } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
-export function CourseDetailClient({ course }: { course: any }) {
+import { enrollAction, addToCartAction } from "@/lib/actions"
+
+import { BookmarkButton } from "@/components/bookmark-button"
+
+export function CourseDetailClient({ course, initialBookmarked, initialEnrolled = false }: { course: any, initialBookmarked: boolean, initialEnrolled?: boolean }) {
   const router = useRouter()
   const { language } = useLanguage()
   const { user } = useAuth()
   const { toast } = useToast()
-  const [isEnrolled, setIsEnrolled] = useState(false)
+  const [isEnrolled, setIsEnrolled] = useState(initialEnrolled)
+  const [loading, setLoading] = useState(false)
+  const [addingToCart, setAddingToCart] = useState(false)
   const [showVideoModal, setShowVideoModal] = useState(false)
 
   const handleShare = () => {
@@ -38,16 +44,74 @@ export function CourseDetailClient({ course }: { course: any }) {
     })
   }
 
-  const handleEnroll = () => {
+  const handleAddToCart = async () => {
     if (!user) {
-      router.push("/auth/login")
+      router.push(`/${language}/auth/login`)
       return
     }
-    setIsEnrolled(true)
-    toast({
-      title: t("enrolled", language),
-      description: language === "ar" ? "يمكنك الآن البدء بالدراسة" : "You can now start learning",
-    })
+
+    setAddingToCart(true)
+    try {
+      const result = await addToCartAction(course.id)
+      
+      if (result.success) {
+        toast({
+          title: language === "ar" ? "تمت الإضافة" : "Added",
+          description: language === "ar" ? "تمت إضافة الدورة للسلة" : "Course added to cart",
+        })
+        router.refresh()
+      } else {
+        toast({
+          title: language === "ar" ? "ملاحظة" : "Note",
+          description: result.message || "Already in cart",
+        })
+      }
+    } catch (error) {
+      console.error(error)
+      toast({
+        variant: "destructive",
+        title: language === "ar" ? "خطأ" : "Error",
+        description: language === "ar" ? "حدث خطأ غير متوقع" : "An unexpected error occurred",
+      })
+    } finally {
+      setAddingToCart(false)
+    }
+  }
+
+  const handleEnroll = async () => {
+    if (!user) {
+      router.push(`/${language}/auth/login`)
+      return
+    }
+
+    setLoading(true)
+    try {
+      const result = await enrollAction(course.id)
+      
+      if (result.error) {
+        toast({
+          variant: "destructive",
+          title: language === "ar" ? "خطأ" : "Error",
+          description: language === "ar" ? "فشل التسجيل في الدورة" : "Failed to enroll",
+        })
+      } else {
+        setIsEnrolled(true)
+        toast({
+          title: t("enrolled", language),
+          description: language === "ar" ? "يمكنك الآن البدء بالدراسة" : "You can now start learning",
+        })
+        router.refresh()
+      }
+    } catch (error) {
+      console.error(error)
+      toast({
+        variant: "destructive",
+        title: language === "ar" ? "خطأ" : "Error",
+        description: language === "ar" ? "حدث خطأ غير متوقع" : "An unexpected error occurred",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Format duration from minutes to hours and minutes
@@ -96,7 +160,7 @@ export function CourseDetailClient({ course }: { course: any }) {
               <div className="flex flex-wrap items-center gap-3 text-sm">
                 <Badge variant="secondary" className="gap-1">
                   <BookOpen className="h-3.5 w-3.5" />
-                  {course.lessons_count || 0} {t("lessons", language)}
+                  {(Array.isArray(course.lessons) ? course.lessons.length : course.lessons_count) || 0} {t("lessons", language)}
                 </Badge>
                 <Badge variant="secondary" className="gap-1">
                   <Clock className="h-3.5 w-3.5" />
@@ -116,10 +180,19 @@ export function CourseDetailClient({ course }: { course: any }) {
                 {t("share", language)}
               </Button>
               {!isEnrolled && (
-                <Button size="lg" onClick={handleEnroll} className="gap-2">
-                  <Lock className="h-4 w-4" />
-                  {course.is_free ? t("enrollFree", language) : t("enrollNow", language)}
-                </Button>
+                <>
+                  {course.is_free ? (
+                    <Button size="lg" onClick={handleEnroll} className="gap-2" disabled={loading}>
+                      <Lock className="h-4 w-4" />
+                      {loading ? (language === "ar" ? "جاري التسجيل..." : "Enrolling...") : t("enrollFree", language)}
+                    </Button>
+                  ) : (
+                    <Button size="lg" onClick={handleAddToCart} className="gap-2" disabled={addingToCart}>
+                      <ShoppingCart className="h-4 w-4" />
+                      {addingToCart ? (language === "ar" ? "جاري الإضافة..." : "Adding...") : (language === "ar" ? "إضافة للسلة" : "Add to Cart")}
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -152,6 +225,38 @@ export function CourseDetailClient({ course }: { course: any }) {
                 </div>
               </div>
             </Card>
+            {Array.isArray(course.lessons) && course.lessons.length > 0 && (
+              <Card className="mt-6">
+                <CardHeader>
+                  <h3 className="font-semibold text-lg">{language === "ar" ? "المنهج" : "Curriculum"}</h3>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="divide-y border rounded-md overflow-hidden">
+                    {course.lessons.map((lesson: any) => (
+                      <div key={lesson.id} className="flex items-center justify-between p-4">
+                        <div>
+                          <div className="font-medium">
+                            {language === "ar" ? lesson.title_ar : lesson.title_en}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+                            <span>#{lesson.order_index}</span>
+                            {lesson.duration_minutes ? <span>• {lesson.duration_minutes}m</span> : null}
+                            {lesson.free_preview ? <Badge variant="secondary">{language === "ar" ? "معاينة" : "Preview"}</Badge> : null}
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(`/${language}/student/learn/${course.id}/${lesson.id}`)}
+                        >
+                          {language === "ar" ? "افتح" : "Open"}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Course Info Sidebar */}
@@ -192,14 +297,24 @@ export function CourseDetailClient({ course }: { course: any }) {
       {/* Video Modal */}
       <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
         <DialogContent className="max-w-4xl">
+          <DialogTitle className="sr-only">Course Preview Video</DialogTitle>
           <div className="aspect-video bg-black">
             {course.video_url ? (
-              <iframe
-                src={course.video_url}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
+              course.video_url.startsWith("/") || course.video_url.startsWith("http") && !course.video_url.includes("youtube") && !course.video_url.includes("vimeo") ? (
+                <video
+                  src={course.video_url}
+                  className="w-full h-full"
+                  controls
+                  autoPlay
+                />
+              ) : (
+                <iframe
+                  src={course.video_url}
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              )
             ) : (
               <div className="w-full h-full flex items-center justify-center text-white">No video available</div>
             )}

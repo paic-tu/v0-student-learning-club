@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { z } from "zod"
 
 const bookingSchema = z.object({
-  mentorId: z.number(),
+  mentorId: z.string(),
   startAt: z.string(),
   endAt: z.string(),
   topic: z.string().min(1).max(255),

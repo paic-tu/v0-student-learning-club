@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { logout } from "@/lib/auth"
+import { signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 
 interface AdminHeaderProps {
@@ -24,8 +24,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
   const router = useRouter()
 
   const handleLogout = async () => {
-    await logout()
-    router.push("/auth/login")
+    await signOut({ callbackUrl: "/auth/login" })
   }
 
   return (

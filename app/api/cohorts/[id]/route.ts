@@ -2,9 +2,10 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getCohortById } from "@/lib/db/queries"
 import { parseId } from "@/lib/utils"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params
   try {
-    const id = parseId(params.id)
+    const id = params.id
     const cohort = await getCohortById(id)
 
     if (!cohort) {

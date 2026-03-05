@@ -1,15 +1,17 @@
 "use server"
 
+import { NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params
   try {
     const courseId = Number.parseInt(params.id)
 
     if (isNaN(courseId)) {
-      return Response.json({ error: "Invalid course ID" }, { status: 400 })
+      return NextResponse.json({ error: "Invalid course ID" }, { status: 400 })
     }
 
     const courses = await sql`
@@ -27,7 +29,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     `
 
     if (courses.length === 0) {
-      return Response.json({ error: "Course not found" }, { status: 404 })
+      return NextResponse.json({ error: "Course not found" }, { status: 404 })
     }
 
     const lessons = await sql`
@@ -36,9 +38,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
       ORDER BY order_index ASC
     `
 
-    return Response.json({ ...courses[0], lessons })
+    return NextResponse.json({ ...courses[0], lessons })
   } catch (error) {
     console.error("[v0] Error fetching course:", error)
-    return Response.json({ error: "Failed to fetch course" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to fetch course" }, { status: 500 })
   }
 }

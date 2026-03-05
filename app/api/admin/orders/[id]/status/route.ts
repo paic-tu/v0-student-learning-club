@@ -35,7 +35,7 @@ export async function PATCH(request: NextRequest, props: { params: Promise<{ id:
     await logAudit({
       action: "update",
       resource: "order",
-      resourceId: orderId,
+      resourceId: orderId.toString(),
       changes: {
         before: beforeState[0],
         after: result[0],

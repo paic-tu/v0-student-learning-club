@@ -11,11 +11,17 @@ const updateCourseSchema = z.object({
   title_ar: z.string().min(1).optional(),
   description_en: z.string().optional(),
   description_ar: z.string().optional(),
-  instructor_id: z.number().optional(),
-  category_id: z.number().nullable().optional(),
+  subtitle_en: z.string().optional(),
+  subtitle_ar: z.string().optional(),
+  language: z.string().optional(),
+  requirements: z.array(z.string()).optional(),
+  learning_outcomes: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
+  instructor_id: z.string().uuid().optional(),
+  category_id: z.string().uuid().nullable().optional(),
   difficulty: z.enum(["beginner", "intermediate", "advanced"]).optional(),
-  duration: z.number().optional(),
-  price: z.string().optional(),
+  duration: z.number().finite().nonnegative().optional(),
+  price: z.coerce.number().min(0).optional(),
   is_free: z.boolean().optional(),
   is_published: z.boolean().optional(),
   thumbnail_url: z
@@ -39,7 +45,7 @@ export async function PATCH(request: NextRequest, props: { params: Promise<{ id:
   try {
     await requirePermission("courses:write")
 
-    const courseId = Number.parseInt(params.id)
+    const courseId = params.id
     const body = await request.json()
     const data = updateCourseSchema.parse(body)
 
@@ -64,6 +70,30 @@ export async function PATCH(request: NextRequest, props: { params: Promise<{ id:
     if (data.description_ar !== undefined) {
       setClauses.push(`description_ar = $${values.length + 1}`)
       values.push(data.description_ar)
+    }
+    if (data.subtitle_en !== undefined) {
+      setClauses.push(`subtitle_en = $${values.length + 1}`)
+      values.push(data.subtitle_en)
+    }
+    if (data.subtitle_ar !== undefined) {
+      setClauses.push(`subtitle_ar = $${values.length + 1}`)
+      values.push(data.subtitle_ar)
+    }
+    if (data.language !== undefined) {
+      setClauses.push(`language = $${values.length + 1}`)
+      values.push(data.language)
+    }
+    if (data.requirements !== undefined) {
+      setClauses.push(`requirements = $${values.length + 1}`)
+      values.push(JSON.stringify(data.requirements))
+    }
+    if (data.learning_outcomes !== undefined) {
+      setClauses.push(`learning_outcomes = $${values.length + 1}`)
+      values.push(JSON.stringify(data.learning_outcomes))
+    }
+    if (data.tags !== undefined) {
+      setClauses.push(`tags = $${values.length + 1}`)
+      values.push(JSON.stringify(data.tags))
     }
     if (data.instructor_id !== undefined) {
       setClauses.push(`instructor_id = $${values.length + 1}`)
@@ -98,7 +128,7 @@ export async function PATCH(request: NextRequest, props: { params: Promise<{ id:
       values.push(data.thumbnail_url)
     }
     if (data.video_url !== undefined) {
-      setClauses.push(`video_url = $${values.length + 1}`)
+      setClauses.push(`preview_video_url = $${values.length + 1}`)
       values.push(data.video_url)
     }
 
@@ -127,6 +157,7 @@ export async function PATCH(request: NextRequest, props: { params: Promise<{ id:
 
     return NextResponse.json(result[0])
   } catch (error: any) {
+    console.error("[v0] Failed to update course:", error)
     if (error.name === "ZodError") {
       return NextResponse.json({ error: "Invalid data", details: error.errors }, { status: 400 })
     }
@@ -139,7 +170,7 @@ export async function DELETE(request: NextRequest, props: { params: Promise<{ id
   try {
     await requirePermission("courses:delete")
 
-    const courseId = Number.parseInt(await params)
+    const courseId = (await params).id
 
     const beforeState = await sql`SELECT * FROM courses WHERE id = ${courseId} LIMIT 1`
 

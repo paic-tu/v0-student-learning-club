@@ -6,18 +6,32 @@ import { logAudit } from "@/lib/audit/audit-logger"
 import { z } from "zod"
 
 const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
+let cachedLessonColumns: Set<string> | null = null
+
+async function getLessonColumns() {
+  if (cachedLessonColumns) return cachedLessonColumns
+  const rows = await sql`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'lessons'
+  `
+  cachedLessonColumns = new Set(rows.map((r: any) => r.column_name))
+  return cachedLessonColumns
+}
 
 const updateLessonSchema = z.object({
   titleEn: z.string().min(1).optional(),
   titleAr: z.string().min(1).optional(),
   slug: z.string().min(1).optional(),
-  courseId: z.coerce.number().int().positive().optional(),
+  courseId: z.string().min(1).optional(),
+  moduleId: z.string().uuid().optional().nullable(),
   contentType: z.enum(["video", "article", "quiz", "assignment"]).optional(),
   status: z.enum(["draft", "published"]).optional(),
   orderIndex: z.coerce.number().int().min(0).optional(),
   durationMinutes: z.coerce.number().int().min(0).optional().nullable(),
-  videoUrl: z.string().url().optional().or(z.literal("")),
-  contentMarkdown: z.string().optional(),
+  videoUrl: z.string().url().optional().or(z.literal("")).nullable(),
+  thumbnailUrl: z.string().url().optional().or(z.literal("")).nullable(),
+  contentMarkdown: z.string().optional().nullable(),
   freePreview: z.boolean().optional(),
 })
 
@@ -29,11 +43,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     const { id } = await params
-    const lessonId = Number.parseInt(id)
-
-    if (isNaN(lessonId) || lessonId <= 0) {
-      return NextResponse.json({ error: "Invalid lesson ID" }, { status: 400 })
-    }
+    const lessonId = id
 
     const result = await sql`
       SELECT 
@@ -64,11 +74,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     const { id } = await params
-    const lessonId = Number.parseInt(id)
-
-    if (isNaN(lessonId) || lessonId <= 0) {
-      return NextResponse.json({ error: "Invalid lesson ID" }, { status: 400 })
-    }
+    const lessonId = id
 
     const body = await req.json()
     const parseResult = updateLessonSchema.safeParse(body)
@@ -85,26 +91,53 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const before = currentResult[0]
 
     const data = parseResult.data
+    const columns = await getLessonColumns()
+    const values: any[] = []
+    const setClauses: string[] = []
 
-    const result = await sql`
-      UPDATE lessons SET
-        title_en = COALESCE(${data.titleEn}, title_en),
-        title_ar = COALESCE(${data.titleAr}, title_ar),
-        slug = COALESCE(${data.slug}, slug),
-        course_id = COALESCE(${data.courseId}, course_id),
-        content_type = COALESCE(${data.contentType}, content_type),
-        status = COALESCE(${data.status}, status),
-        order_index = COALESCE(${data.orderIndex}, order_index),
-        duration_minutes = COALESCE(${data.durationMinutes}, duration_minutes),
-        duration = COALESCE(${data.durationMinutes}, duration),
-        video_url = COALESCE(${data.videoUrl}, video_url),
-        content_markdown = COALESCE(${data.contentMarkdown}, content_markdown),
-        free_preview = COALESCE(${data.freePreview}, free_preview),
-        is_preview = COALESCE(${data.freePreview}, is_preview),
-        updated_at = NOW()
-      WHERE id = ${lessonId}
-      RETURNING *
-    `
+    const addSet = (column: string, value: any) => {
+      if (!columns.has(column)) return
+      values.push(value)
+      setClauses.push(`${column} = $${values.length}`)
+    }
+
+    if (data.titleEn !== undefined) addSet("title_en", data.titleEn)
+    if (data.titleAr !== undefined) addSet("title_ar", data.titleAr)
+    if (data.slug !== undefined) addSet("slug", data.slug)
+    if (data.courseId !== undefined) addSet("course_id", data.courseId)
+    if (data.moduleId !== undefined) addSet("module_id", data.moduleId)
+    if (data.contentType !== undefined) {
+      addSet("content_type", data.contentType)
+      addSet("type", data.contentType)
+    }
+    if (data.status !== undefined) addSet("status", data.status)
+    if (data.orderIndex !== undefined) addSet("order_index", data.orderIndex)
+
+    if (data.durationMinutes !== undefined) {
+      addSet("duration", data.durationMinutes)
+      addSet("duration_minutes", data.durationMinutes)
+    }
+
+    if (data.videoUrl !== undefined) addSet("video_url", data.videoUrl)
+    if (data.thumbnailUrl !== undefined) addSet("thumbnail_url", data.thumbnailUrl)
+    if (data.contentMarkdown !== undefined) addSet("content_markdown", data.contentMarkdown)
+
+    if (data.freePreview !== undefined) {
+      addSet("is_preview", data.freePreview)
+      addSet("free_preview", data.freePreview)
+    }
+
+    if (columns.has("updated_at")) {
+      setClauses.push(`updated_at = NOW()`)
+    }
+
+    if (setClauses.length === 0) {
+      return NextResponse.json({ error: "No fields to update" }, { status: 400 })
+    }
+
+    values.push(lessonId)
+    const query = `UPDATE lessons SET ${setClauses.join(", ")} WHERE id = $${values.length} RETURNING *`
+    const result = await sql.query(query, values)
 
     const after = result[0]
 
@@ -130,19 +163,23 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     }
 
     const { id } = await params
-    const lessonId = Number.parseInt(id)
+    const lessonId = id
 
-    if (isNaN(lessonId) || lessonId <= 0) {
-      return NextResponse.json({ error: "Invalid lesson ID" }, { status: 400 })
+    const columns = await getLessonColumns()
+    const hasDeletedAt = columns.has("deleted_at")
+    const hasUpdatedAt = columns.has("updated_at")
+
+    let result: any[]
+    if (hasDeletedAt) {
+      const setClauses = [`deleted_at = NOW()`]
+      if (hasUpdatedAt) setClauses.push(`updated_at = NOW()`)
+      result = await sql.query(
+        `UPDATE lessons SET ${setClauses.join(", ")} WHERE id = $1 RETURNING *`,
+        [lessonId],
+      )
+    } else {
+      result = await sql.query(`DELETE FROM lessons WHERE id = $1 RETURNING *`, [lessonId])
     }
-
-    // Soft delete
-    const result = await sql`
-      UPDATE lessons 
-      SET deleted_at = NOW(), updated_at = NOW()
-      WHERE id = ${lessonId}
-      RETURNING *
-    `
 
     if (result.length === 0) {
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 })

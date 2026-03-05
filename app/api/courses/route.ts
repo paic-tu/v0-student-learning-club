@@ -1,5 +1,6 @@
 "use server"
 
+import { NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -19,9 +20,9 @@ export async function GET() {
       ORDER BY c.created_at DESC
     `
 
-    return Response.json(courses)
+    return NextResponse.json(courses)
   } catch (error) {
     console.error("[v0] Error fetching courses:", error)
-    return Response.json({ error: "Failed to fetch courses" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to fetch courses" }, { status: 500 })
   }
 }

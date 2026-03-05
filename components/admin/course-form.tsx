@@ -2,13 +2,13 @@
 
 import type React from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { FileText, DollarSign, Cog, ImageIcon } from "lucide-react"
+import { FileText, DollarSign, Cog, ImageIcon, List, Plus } from "lucide-react"
 import { z } from "zod"
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { usePathname, useRouter } from "next/navigation"
+import { useEffect, useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
@@ -17,14 +17,23 @@ import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import type { CourseFormProps } from "@/types/course-form-props"
+import { StringListInput } from "@/components/ui/string-list-input"
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 const courseSchema = z.object({
   titleEn: z.string().min(1, "English title is required"),
   titleAr: z.string().min(1, "Arabic title is required"),
+  subtitleEn: z.string().optional().or(z.literal("")),
+  subtitleAr: z.string().optional().or(z.literal("")),
   descriptionEn: z.string().min(10, "English description must be at least 10 characters"),
   descriptionAr: z.string().min(10, "Arabic description must be at least 10 characters"),
-  instructorId: z.number({ required_error: "Instructor is required" }).int().positive(),
-  categoryId: z.number().int().positive().optional().nullable(),
+  language: z.string().default("ar"),
+  requirements: z.array(z.string()).default([]),
+  learningOutcomes: z.array(z.string()).default([]),
+  tags: z.array(z.string()).default([]),
+  instructorId: z.string().min(1, "Instructor is required"),
+  categoryId: z.string().optional().nullable(),
   difficulty: z.enum(["beginner", "intermediate", "advanced"]),
   duration: z.number().int().min(0),
   price: z.number().min(0),
@@ -34,20 +43,75 @@ const courseSchema = z.object({
   videoUrl: z.string().url("Invalid video URL").optional().or(z.literal("")),
 })
 
-export function CourseForm({ categories, instructors }: CourseFormProps) {
+export function CourseForm({ categories: initialCategories, instructors, redirectBase }: CourseFormProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
+  const [categories, setCategories] = useState<any[]>(initialCategories)
   const [previewThumbnail, setPreviewThumbnail] = useState<string | null>(null)
+  
+  // New Category State
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false)
+  const [newCategoryNameEn, setNewCategoryNameEn] = useState("")
+  const [newCategoryNameAr, setNewCategoryNameAr] = useState("")
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false)
 
-  const form = useForm<z.infer<typeof courseSchema>>({
-    resolver: zodResolver(courseSchema),
-    defaultValues: {
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryNameEn || !newCategoryNameAr) {
+      toast({
+        title: "Validation Error",
+        description: "Both English and Arabic names are required",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsCreatingCategory(true)
+    try {
+      const res = await fetch("/api/admin/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nameEn: newCategoryNameEn,
+          nameAr: newCategoryNameAr,
+        }),
+      })
+
+      if (!res.ok) throw new Error("Failed to create category")
+
+      const newCategory = await res.json()
+      setCategories([...categories, newCategory])
+      form.setValue("categoryId", newCategory.id)
+      setIsCategoryDialogOpen(false)
+      setNewCategoryNameEn("")
+      setNewCategoryNameAr("")
+      toast({ title: "Success", description: "Category created successfully" })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create category",
+        variant: "destructive",
+      })
+    } finally {
+      setIsCreatingCategory(false)
+    }
+  }
+
+  const defaultValues = useMemo<z.infer<typeof courseSchema>>(
+    () => ({
       titleEn: "",
       titleAr: "",
+      subtitleEn: "",
+      subtitleAr: "",
       descriptionEn: "",
       descriptionAr: "",
-      instructorId: 0,
+      language: "ar",
+      requirements: [],
+      learningOutcomes: [],
+      tags: [],
+      instructorId: instructors.length === 1 ? String(instructors[0]?.id) : "",
       categoryId: null,
       difficulty: "beginner",
       duration: 0,
@@ -56,8 +120,21 @@ export function CourseForm({ categories, instructors }: CourseFormProps) {
       isPublished: false,
       thumbnailUrl: "",
       videoUrl: "",
-    },
+    }),
+    [instructors],
+  )
+
+  const form = useForm<z.infer<typeof courseSchema>>({
+    resolver: zodResolver(courseSchema),
+    defaultValues,
   })
+
+  useEffect(() => {
+    if (pathname.includes("/admin/courses/new") || pathname.includes("/instructor/courses/new")) {
+      form.reset(defaultValues)
+      setPreviewThumbnail(null)
+    }
+  }, [pathname, form, defaultValues])
 
   const onSubmit = async (data: z.infer<typeof courseSchema>) => {
     setIsLoading(true)
@@ -82,7 +159,16 @@ export function CourseForm({ categories, instructors }: CourseFormProps) {
       })
 
       // Redirect to the course edit page with the new ID
-      router.push(`/admin/courses/${result.id}`)
+      if (redirectBase) {
+        // If redirectBase contains :id, replace it
+        if (redirectBase.includes(":id")) {
+          router.push(redirectBase.replace(":id", result.id))
+        } else {
+          router.push(`${redirectBase}/${result.id}`)
+        }
+      } else {
+        router.push(`/admin/courses/${result.id}`)
+      }
     } catch (error) {
       console.error("[v0] Error creating course:", error)
       toast({
@@ -113,7 +199,7 @@ export function CourseForm({ categories, instructors }: CourseFormProps) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="basic">
               <FileText className="w-4 h-4 mr-2" />
               Basic
@@ -121,6 +207,10 @@ export function CourseForm({ categories, instructors }: CourseFormProps) {
             <TabsTrigger value="description">
               <FileText className="w-4 h-4 mr-2" />
               Description
+            </TabsTrigger>
+            <TabsTrigger value="details">
+              <List className="w-4 h-4 mr-2" />
+              Details
             </TabsTrigger>
             <TabsTrigger value="media">
               <ImageIcon className="w-4 h-4 mr-2" />
@@ -143,7 +233,16 @@ export function CourseForm({ categories, instructors }: CourseFormProps) {
                     <FormItem>
                       <FormLabel>Title (English) *</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="e.g., Python for Beginners" />
+                        <Input 
+                          {...field} 
+                          placeholder="e.g., Python for Beginners" 
+                          dir="ltr" 
+                          lang="en" 
+                          autoComplete="off" 
+                          autoCorrect="off" 
+                          autoCapitalize="none" 
+                          spellCheck={false}
+                        />
                       </FormControl>
                       <p className="text-xs text-muted-foreground">The course title displayed to students</p>
                       <FormMessage />
@@ -168,13 +267,41 @@ export function CourseForm({ categories, instructors }: CourseFormProps) {
 
                 <FormField
                   control={form.control}
+                  name="subtitleEn"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Subtitle (English)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Short subtitle in English" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="subtitleAr"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Subtitle (Arabic)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Short subtitle in Arabic" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="instructorId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Instructor *</FormLabel>
                       <Select
-                        onValueChange={(value) => field.onChange(Number.parseInt(value))}
-                        value={field.value?.toString() || "0"}
+                        onValueChange={(value) => field.onChange(value)}
+                        value={field.value || ""}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -201,24 +328,62 @@ export function CourseForm({ categories, instructors }: CourseFormProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Category (Optional)</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(value ? Number.parseInt(value) : null)}
-                        value={field.value?.toString() || "null"}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="null">None</SelectItem>
-                          {categories.map((category) => (
-                            <SelectItem key={category.id} value={category.id.toString()}>
-                              {category.nameEn}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex gap-2">
+                        <Select
+                          onValueChange={(value) => field.onChange(value === "null" ? null : value)}
+                          value={field.value || "null"}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="null">None</SelectItem>
+                            {categories.map((category) => (
+                              <SelectItem key={category.id} value={category.id.toString()}>
+                                {category.nameEn || category.name_en}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="icon" type="button" title="Add new category">
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Create New Category</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">English Name</label>
+                                <Input 
+                                  value={newCategoryNameEn} 
+                                  onChange={(e) => setNewCategoryNameEn(e.target.value)}
+                                  placeholder="e.g. Web Development"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">Arabic Name</label>
+                                <Input 
+                                  value={newCategoryNameAr} 
+                                  onChange={(e) => setNewCategoryNameAr(e.target.value)}
+                                  placeholder="مثال: تطوير الويب"
+                                  dir="rtl"
+                                />
+                              </div>
+                              <Button onClick={handleCreateCategory} disabled={isCreatingCategory} className="w-full" type="button">
+                                {isCreatingCategory && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Create
+                              </Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -285,6 +450,12 @@ export function CourseForm({ categories, instructors }: CourseFormProps) {
                         {...field}
                         rows={8}
                         placeholder="Provide a comprehensive description of your course..."
+                        dir="ltr"
+                        lang="en"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="none"
+                        spellCheck={false}
                         className="font-mono text-sm"
                       />
                     </FormControl>
@@ -312,8 +483,100 @@ export function CourseForm({ categories, instructors }: CourseFormProps) {
                     <p className="text-xs text-muted-foreground">{field.value?.length || 0} أحرف</p>
                     <FormMessage />
                   </FormItem>
-                )}
-              />
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="language"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Course Language</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select language" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="ar">Arabic</SelectItem>
+                      <SelectItem value="en">English</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </FormLayout>
+        </TabsContent>
+
+          {/* Details Tab */}
+          <TabsContent value="details" className="space-y-6 mt-6">
+            <FormLayout title="Course Details" description="Manage requirements, learning outcomes, and tags">
+              <div className="grid gap-6">
+                <FormField
+                  control={form.control}
+                  name="requirements"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Requirements</FormLabel>
+                      <FormControl>
+                        <StringListInput 
+                          value={field.value} 
+                          onChange={field.onChange} 
+                          placeholder="Add a requirement..."
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        What students should know before taking this course.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="learningOutcomes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Learning Outcomes</FormLabel>
+                      <FormControl>
+                        <StringListInput 
+                          value={field.value} 
+                          onChange={field.onChange} 
+                          placeholder="Add a learning outcome..."
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        What students will learn from this course.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="tags"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tags</FormLabel>
+                      <FormControl>
+                        <StringListInput 
+                          value={field.value} 
+                          onChange={field.onChange} 
+                          placeholder="Add a tag..."
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Keywords to help students find your course.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </FormLayout>
           </TabsContent>
 

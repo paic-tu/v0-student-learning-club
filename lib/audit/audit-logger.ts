@@ -40,7 +40,7 @@ export type AuditResource =
 interface AuditLogData {
   action: AuditAction
   resource: AuditResource
-  resourceId?: number
+  resourceId?: string
   changes?: {
     before?: any
     after?: any
@@ -90,7 +90,7 @@ export async function logAudit(data: AuditLogData): Promise<void> {
  * Fixed SQL syntax to use template literals instead of function call
  */
 export async function getAuditLogs(options: {
-  userId?: number
+  userId?: string
   resource?: AuditResource
   action?: AuditAction
   limit?: number

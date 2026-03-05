@@ -7,13 +7,28 @@ import { z } from "zod"
 
 const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
 
+function slugify(input: string) {
+  return input
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\u0600-\u06FF]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-+/g, "-")
+}
+
 const createCourseSchema = z.object({
   titleEn: z.string().min(1, "English title is required"),
   titleAr: z.string().min(1, "Arabic title is required"),
   descriptionEn: z.string().min(10, "English description required"),
   descriptionAr: z.string().min(10, "Arabic description required"),
-  instructorId: z.coerce.number().int().positive("Valid instructor required"),
-  categoryId: z.coerce.number().int().positive().optional().nullable(),
+  subtitleEn: z.string().optional().or(z.literal("")),
+  subtitleAr: z.string().optional().or(z.literal("")),
+  language: z.string().default("ar"),
+  requirements: z.array(z.string()).default([]),
+  learningOutcomes: z.array(z.string()).default([]),
+  tags: z.array(z.string()).default([]),
+  instructorId: z.string().uuid("Valid instructor required"),
+  categoryId: z.string().uuid().optional().nullable(),
   difficulty: z.enum(["beginner", "intermediate", "advanced"]).default("beginner"),
   duration: z.coerce.number().int().min(0).default(0),
   price: z.coerce.number().min(0).default(0),
@@ -39,12 +54,28 @@ export async function POST(req: NextRequest) {
 
     const data = parseResult.data
 
+    // Generate unique slug
+    let baseSlug = slugify(data.titleEn) || slugify(data.titleAr)
+    if (!baseSlug) baseSlug = `course-${Date.now()}`
+    let finalSlug = baseSlug
+    const existing = await sql`SELECT 1 FROM courses WHERE slug = ${finalSlug} LIMIT 1`
+    if (existing.length > 0) {
+      finalSlug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`
+    }
+
     const result = await sql`
       INSERT INTO courses (
         title_en,
         title_ar,
+        subtitle_en,
+        subtitle_ar,
         description_en,
         description_ar,
+        language,
+        requirements,
+        learning_outcomes,
+        tags,
+        slug,
         instructor_id,
         category_id,
         difficulty,
@@ -53,15 +84,22 @@ export async function POST(req: NextRequest) {
         is_free,
         is_published,
         thumbnail_url,
-        video_url,
+        preview_video_url,
         created_at,
         updated_at
       )
       VALUES (
         ${data.titleEn},
         ${data.titleAr},
+        ${data.subtitleEn || null},
+        ${data.subtitleAr || null},
         ${data.descriptionEn},
         ${data.descriptionAr},
+        ${data.language},
+        ${JSON.stringify(data.requirements)},
+        ${JSON.stringify(data.learningOutcomes)},
+        ${JSON.stringify(data.tags)},
+        ${finalSlug},
         ${data.instructorId},
         ${data.categoryId || null},
         ${data.difficulty},

@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import { usePathname, useRouter } from "next/navigation"
 import type { Language } from "./i18n"
 
 interface LanguageContextType {
@@ -11,31 +12,38 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>("ar")
-  const [mounted, setMounted] = useState(false)
+export function LanguageProvider({ 
+  children, 
+  defaultLang = "ar" 
+}: { 
+  children: ReactNode
+  defaultLang?: Language 
+}) {
+  const [language, setLanguageState] = useState<Language>(defaultLang)
+  const pathname = usePathname()
+  const router = useRouter()
 
   useEffect(() => {
-    const saved = localStorage.getItem("language") as Language
-    if (saved === "ar" || saved === "en") {
-      setLanguageState(saved)
-    }
-    setMounted(true)
-  }, [])
+    setLanguageState(defaultLang)
+  }, [defaultLang])
 
   const setLanguage = (lang: Language) => {
-    setLanguageState(lang)
-    localStorage.setItem("language", lang)
-    document.documentElement.setAttribute("lang", lang)
-    document.documentElement.setAttribute("dir", lang === "ar" ? "rtl" : "ltr")
-  }
-
-  useEffect(() => {
-    if (mounted) {
-      document.documentElement.setAttribute("lang", language)
-      document.documentElement.setAttribute("dir", language === "ar" ? "rtl" : "ltr")
+    if (lang === language) return
+    
+    // Replace locale in path
+    // Path is like /ar/some/path or /ar
+    const segments = pathname.split('/')
+    // segments[0] is empty string
+    // segments[1] is locale
+    if (segments.length > 1) {
+      segments[1] = lang
+      const newPath = segments.join('/')
+      router.push(newPath)
+    } else {
+      // Should not happen in [lang] route but fallback
+      router.push(`/${lang}`)
     }
-  }, [language, mounted])
+  }
 
   const dir = language === "ar" ? "rtl" : "ltr"
 

@@ -10,7 +10,8 @@ const CompleteSchema = z.object({
   complete: z.boolean(),
 })
 
-export async function POST(request: Request, { params }: { params: { lessonId: string } }) {
+export async function POST(request: Request, props: { params: Promise<{ lessonId: string }> }) {
+  const params = await props.params
   try {
     const user = await getCurrentUser()
     if (!user) {

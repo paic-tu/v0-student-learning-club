@@ -13,7 +13,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Checkbox } from "@/components/ui/checkbox"
 import { FormLayout } from "@/components/admin/form-layout"
 import { toast } from "sonner"
-import { Loader2 } from "lucide-react"
+import { Loader2, Upload } from "lucide-react"
 
 const lessonSchema = z.object({
   titleEn: z.string().min(1, "English title is required"),
@@ -26,6 +26,7 @@ const lessonSchema = z.object({
   orderIndex: z.number().int().min(0),
   durationMinutes: z.number().int().min(0).optional().nullable(),
   videoUrl: z.string().url().optional().or(z.literal("")).nullable(),
+  thumbnailUrl: z.string().url().optional().or(z.literal("")).nullable(),
   contentMarkdown: z.string().optional().nullable(),
   freePreview: z.boolean().default(false),
   prerequisites: z.array(z.number()).default([]),
@@ -35,28 +36,30 @@ type LessonFormData = z.infer<typeof lessonSchema>
 
 interface LessonFormProps {
   courses: Array<{ id: number; titleEn: string }>
-  initialData?: Partial<LessonFormData>
+  initialData?: any
 }
 
 export function LessonForm({ courses, initialData }: LessonFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [uploadingThumb, setUploadingThumb] = useState(false)
 
   const form = useForm<LessonFormData>({
     resolver: zodResolver(lessonSchema),
     defaultValues: {
-      titleEn: initialData?.titleEn || "",
-      titleAr: initialData?.titleAr || "",
+      titleEn: initialData?.title_en || "",
+      titleAr: initialData?.title_ar || "",
       slug: initialData?.slug || "",
-      courseId: initialData?.courseId,
-      contentType: initialData?.contentType || "video",
-      status: initialData?.status || "draft",
-      orderIndex: initialData?.orderIndex ?? 0,
-      durationMinutes: initialData?.durationMinutes ?? null,
-      videoUrl: initialData?.videoUrl || "",
-      contentMarkdown: initialData?.contentMarkdown || "",
-      freePreview: initialData?.freePreview || false,
-      prerequisites: initialData?.prerequisites || [],
+      courseId: initialData?.course_id || undefined,
+      contentType: (initialData?.content_type as any) || "video",
+      status: (initialData?.status as any) || "draft",
+      orderIndex: initialData?.order_index || 0,
+      durationMinutes: initialData?.duration_minutes || undefined,
+      videoUrl: initialData?.video_url || "",
+      thumbnailUrl: initialData?.thumbnail_url || "",
+      contentMarkdown: initialData?.content_markdown || "",
+      freePreview: initialData?.free_preview || false,
     },
   })
 
@@ -103,6 +106,40 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
   const safeParseInt = (value: string): number | null => {
     const parsed = Number.parseInt(value, 10)
     return isNaN(parsed) ? null : parsed
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: "videoUrl" | "thumbnailUrl") => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const isThumb = fieldName === "thumbnailUrl"
+    if (isThumb) setUploadingThumb(true)
+    else setUploading(true)
+
+    const formData = new FormData()
+    formData.append("file", file)
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!res.ok) {
+         const errorText = await res.text()
+         throw new Error(errorText || "Upload failed")
+      }
+
+      const data = await res.json()
+      form.setValue(fieldName, data.url)
+      toast.success("File uploaded successfully")
+    } catch (error) {
+      toast.error("Failed to upload file")
+      console.error(error)
+    } finally {
+      if (isThumb) setUploadingThumb(false)
+      else setUploading(false)
+    }
   }
 
   return (
@@ -310,10 +347,66 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
             name="videoUrl"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Video URL</FormLabel>
+                <FormLabel>Video URL or Upload</FormLabel>
                 <FormControl>
-                  <div>
-                    <Input {...field} value={field.value || ""} placeholder="https://youtube.com/..." />
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Input {...field} value={field.value || ""} placeholder="https://youtube.com/... or upload file" />
+                      <div className="relative">
+                        <Input
+                          type="file"
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                          onChange={(e) => handleFileUpload(e, "videoUrl")}
+                          accept="video/*"
+                          disabled={uploading}
+                        />
+                        <Button type="button" variant="outline" disabled={uploading}>
+                          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                    {field.value && field.value.startsWith("/uploads/") && (
+                      <p className="text-xs text-muted-foreground">Local file uploaded: {field.value}</p>
+                    )}
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="thumbnailUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Thumbnail URL or Upload (Cover Pic)</FormLabel>
+                <FormControl>
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Input {...field} value={field.value || ""} placeholder="https://... or upload image" />
+                      <div className="relative">
+                        <Input
+                          type="file"
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                          onChange={(e) => handleFileUpload(e, "thumbnailUrl")}
+                          accept="image/*"
+                          disabled={uploadingThumb}
+                        />
+                        <Button type="button" variant="outline" disabled={uploadingThumb}>
+                          {uploadingThumb ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                    {field.value && field.value.startsWith("/uploads/") && (
+                      <p className="text-xs text-muted-foreground">Local image uploaded: {field.value}</p>
+                    )}
+                    {field.value && (
+                      <div className="mt-2 aspect-video w-40 relative rounded-md overflow-hidden border">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={field.value} alt="Preview" className="object-cover w-full h-full" />
+                      </div>
+                    )}
                   </div>
                 </FormControl>
                 <FormMessage />
