@@ -54,6 +54,31 @@ export async function getCartAction() {
   }
 }
 
+export async function getCartCountAction() {
+  console.log("[Action] getCartCountAction started")
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return { count: 0 }
+    }
+
+    const userId = session.user.id
+
+    const cart = await db.query.carts.findFirst({
+      where: eq(carts.userId, userId),
+      columns: { id: true },
+      with: {
+        items: { columns: { id: true } },
+      },
+    })
+
+    return { count: cart?.items?.length ?? 0 }
+  } catch (error) {
+    console.error("[Action] getCartCountAction error:", error)
+    return { count: 0 }
+  }
+}
+
 export async function addToCartAction(courseId: string) {
   console.log("[Action] addToCartAction started", { courseId })
   try {

@@ -16,7 +16,7 @@ import { useLanguage } from "@/lib/language-context"
 import { useTheme } from "@/lib/theme-context"
 import { useAuth } from "@/lib/auth-context"
 import { t } from "@/lib/i18n"
-import { getCartAction } from "@/lib/actions"
+import { getCartCountAction } from "@/lib/actions"
 import { useEffect, useState } from "react"
 
 export function NavBar() {
@@ -33,14 +33,27 @@ export function NavBar() {
       : `/${language}/student/dashboard`
 
   useEffect(() => {
-    if (user) {
-      getCartAction().then((result) => {
-        if (result.cart) {
-          setCartCount(result.cart.items.length)
-        }
-      })
+    let cancelled = false
+
+    if (!user?.id) {
+      setCartCount(0)
+      return
     }
-  }, [user, pathname])
+
+    getCartCountAction()
+      .then((result) => {
+        if (cancelled) return
+        setCartCount(result.count ?? 0)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setCartCount(0)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id, pathname])
 
   const navItems = [
     { href: `/${language}/courses`, label: t("courses", language) },

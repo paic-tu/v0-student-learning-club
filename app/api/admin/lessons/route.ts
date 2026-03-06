@@ -55,6 +55,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Validation failed", details: { fieldErrors: { slug: ["Slug is required"] } } }, { status: 400 })
     }
 
+    // Calculate next order index if not provided or 0
+    let orderIndex = data.orderIndex
+    if (orderIndex === 0) {
+      const maxRow = await sql`
+        SELECT COALESCE(MAX(order_index), -1) as max
+        FROM lessons
+        WHERE course_id = ${data.courseId}
+          AND (module_id = ${data.moduleId || null} OR (${data.moduleId || null} IS NULL AND module_id IS NULL))
+      `
+      orderIndex = Number(maxRow[0]?.max ?? -1) + 1
+    }
+
     const columns = await getLessonColumns()
 
     const insertColumns: string[] = []
@@ -74,7 +86,7 @@ export async function POST(req: NextRequest) {
     add("content_ar", null)
     add("video_url", data.videoUrl || null)
     add("duration", data.durationMinutes ?? null)
-    add("order_index", data.orderIndex)
+    add("order_index", orderIndex)
     add("is_preview", data.freePreview)
     add("slug", data.slug)
     add("content_type", data.contentType)

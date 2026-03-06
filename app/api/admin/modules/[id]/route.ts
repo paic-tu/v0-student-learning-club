@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { z } from "zod"
 import { requirePermission } from "@/lib/rbac/require-permission"
-import { logAudit } from "@/lib/audit/audit-logger"
+import { logAudit, type AuditResource } from "@/lib/audit/audit-logger"
 
 const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
 
@@ -74,7 +74,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
 
     await logAudit({
       action: "update",
-      resource: "module",
+      resource: "module" as AuditResource,
       resourceId: moduleId,
       changes: { before: existing[0], after: updated },
     })
@@ -110,7 +110,7 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: s
 
     await logAudit({
       action: "delete",
-      resource: "module",
+      resource: "module" as AuditResource,
       resourceId: moduleId,
       changes: { before: existing[0] },
     })
@@ -120,4 +120,3 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: s
     return NextResponse.json({ error: error.message }, { status: error.name === "ForbiddenError" ? 403 : 500 })
   }
 }
-

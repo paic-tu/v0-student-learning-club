@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { z } from "zod"
 import { requirePermission } from "@/lib/rbac/require-permission"
-import { logAudit } from "@/lib/audit/audit-logger"
+import { logAudit, type AuditResource } from "@/lib/audit/audit-logger"
 
 const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
 
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
     await logAudit({
       action: "create",
-      resource: "module",
+      resource: "module" as AuditResource,
       resourceId: moduleRow.id,
       changes: { after: moduleRow },
     })
@@ -83,4 +83,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: error.name === "ForbiddenError" ? 403 : 500 })
   }
 }
-

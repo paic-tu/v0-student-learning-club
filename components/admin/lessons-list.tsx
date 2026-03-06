@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -13,13 +13,21 @@ import { useToast } from "@/hooks/use-toast"
 export function LessonsList({ lessons, courseId }: { lessons: any[]; courseId: string }) {
   const router = useRouter()
   const { toast } = useToast()
+
+  const sortedLessons = useMemo(() => {
+    return [...lessons].sort((a, b) => {
+      const ao = a.order_index ?? a.orderIndex ?? 0
+      const bo = b.order_index ?? b.orderIndex ?? 0
+      return ao - bo
+    })
+  }, [lessons])
   
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [reordering, setReordering] = useState(false)
 
-  if (lessons.length === 0) {
+  if (sortedLessons.length === 0) {
     return (
       <p className="text-center text-muted-foreground py-8">No lessons yet. Create your first lesson to get started.</p>
     )
@@ -51,10 +59,10 @@ export function LessonsList({ lessons, courseId }: { lessons: any[]; courseId: s
   async function handleReorder(index: number, direction: "up" | "down") {
     if (reordering) return
     if (direction === "up" && index === 0) return
-    if (direction === "down" && index === lessons.length - 1) return
+    if (direction === "down" && index === sortedLessons.length - 1) return
 
     setReordering(true)
-    const newLessons = [...lessons]
+    const newLessons = [...sortedLessons]
     const targetIndex = direction === "up" ? index - 1 : index + 1
     
     // Swap order indices
@@ -101,7 +109,7 @@ export function LessonsList({ lessons, courseId }: { lessons: any[]; courseId: s
           </TableRow>
         </TableHeader>
         <TableBody>
-          {lessons.map((lesson: any, index: number) => (
+          {sortedLessons.map((lesson: any, index: number) => (
             <TableRow key={lesson.id}>
               <TableCell>
                 <div className="flex flex-col gap-1">
@@ -118,15 +126,15 @@ export function LessonsList({ lessons, courseId }: { lessons: any[]; courseId: s
                     variant="ghost" 
                     size="icon" 
                     className="h-6 w-6"
-                    disabled={index === lessons.length - 1 || reordering}
+                    disabled={index === sortedLessons.length - 1 || reordering}
                     onClick={() => handleReorder(index, "down")}
                   >
                     <ArrowDown className="h-3 w-3" />
                   </Button>
                 </div>
               </TableCell>
-              <TableCell className="font-medium">{lesson.order_index}</TableCell>
-              <TableCell>{lesson.title_en}</TableCell>
+              <TableCell className="font-medium">{lesson.order_index ?? lesson.orderIndex ?? 0}</TableCell>
+              <TableCell>{lesson.title_en ?? lesson.titleEn ?? ""}</TableCell>
               <TableCell>{lesson.duration_minutes ?? lesson.duration ?? 0} min</TableCell>
               <TableCell>{(lesson.free_preview || lesson.is_preview) && <Badge variant="secondary">Preview</Badge>}</TableCell>
               <TableCell>

@@ -1,10 +1,22 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { requirePermission } from "@/lib/rbac/require-permission"
+import { neon } from "@neondatabase/serverless"
 import { z } from "zod"
 import { logAudit } from "@/lib/audit/audit-logger"
-import { db } from "@/lib/db"
-import { lessons } from "@/lib/db/schema"
-import { eq } from "drizzle-orm"
+
+const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
+let cachedLessonColumns: Set<string> | null = null
+
+async function getLessonColumns() {
+  if (cachedLessonColumns) return cachedLessonColumns
+  const rows = await sql`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'lessons'
+  `
+  cachedLessonColumns = new Set(rows.map((r: any) => r.column_name))
+  return cachedLessonColumns
+}
 
 const updateLessonSchema = z.object({
   titleEn: z.string().min(1).optional(),
@@ -28,20 +40,18 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     await requirePermission("lessons:read")
 
     const lessonId = params.id
-    const result = await db.query.lessons.findFirst({
-      where: eq(lessons.id, lessonId),
-      with: {
-        // We can't easily join courses here without defining relation in schema.ts properly
-        // Assuming relations are defined or we fetch separately.
-        // For now, just return lesson.
-      },
-    })
+    const idParse = z.string().uuid().safeParse(lessonId)
+    if (!idParse.success) {
+      return NextResponse.json({ error: "Invalid lesson id" }, { status: 400 })
+    }
 
-    if (!result) {
+    const result = await sql`SELECT * FROM lessons WHERE id = ${lessonId} LIMIT 1`
+
+    if (result.length === 0) {
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 })
     }
 
-    return NextResponse.json(result)
+    return NextResponse.json(result[0])
   } catch (error: any) {
     console.error("[v0] Failed to fetch lesson:", error)
     return NextResponse.json({ error: error.message }, { status: error.name === "ForbiddenError" ? 403 : 500 })
@@ -54,41 +64,65 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     await requirePermission("lessons:write")
 
     const lessonId = params.id
+    const idParse = z.string().uuid().safeParse(lessonId)
+    if (!idParse.success) {
+      return NextResponse.json({ error: "Invalid lesson id" }, { status: 400 })
+    }
+
     const body = await req.json()
     const data = updateLessonSchema.parse(body)
 
-    const existing = await db.query.lessons.findFirst({
-      where: eq(lessons.id, lessonId),
-    })
-
+    const existingRows = await sql`SELECT * FROM lessons WHERE id = ${lessonId} LIMIT 1`
+    const existing = existingRows[0]
     if (!existing) {
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 })
     }
 
-    const updateData: any = {
-      updatedAt: new Date(),
+    const columns = await getLessonColumns()
+    const setFragments: string[] = []
+    const values: any[] = [lessonId]
+    const add = (column: string, value: any) => {
+      if (!columns.has(column)) return
+      setFragments.push(`${column} = $${values.length + 1}`)
+      values.push(value)
     }
 
-    if (data.titleEn !== undefined) updateData.titleEn = data.titleEn
-    if (data.titleAr !== undefined) updateData.titleAr = data.titleAr
-    if (data.slug !== undefined) updateData.slug = data.slug
-    if (data.courseId !== undefined) updateData.courseId = data.courseId
-    if (data.moduleId !== undefined) updateData.moduleId = data.moduleId
-    if (data.contentType !== undefined) updateData.type = data.contentType
-    if (data.status !== undefined) updateData.status = data.status
-    if (data.orderIndex !== undefined) updateData.orderIndex = data.orderIndex
-    if (data.durationMinutes !== undefined) updateData.durationMinutes = data.durationMinutes
-    if (data.videoUrl !== undefined) updateData.videoUrl = data.videoUrl
-    if (data.contentMarkdown !== undefined) updateData.contentEn = data.contentMarkdown
-    if (data.freePreview !== undefined) updateData.isPreview = data.freePreview
+    if (data.titleEn !== undefined) add("title_en", data.titleEn)
+    if (data.titleAr !== undefined) add("title_ar", data.titleAr)
+    if (data.slug !== undefined) add("slug", data.slug)
+    if (data.courseId !== undefined) add("course_id", data.courseId)
+    if (data.moduleId !== undefined) add("module_id", data.moduleId)
+    if (data.contentType !== undefined) {
+      add("content_type", data.contentType)
+      add("type", data.contentType)
+    }
+    if (data.status !== undefined) add("status", data.status)
+    if (data.orderIndex !== undefined) add("order_index", data.orderIndex)
+    if (data.durationMinutes !== undefined) {
+      add("duration_minutes", data.durationMinutes)
+      add("duration", data.durationMinutes)
+    }
+    if (data.videoUrl !== undefined) add("video_url", data.videoUrl || null)
+    if (data.thumbnailUrl !== undefined) add("thumbnail_url", data.thumbnailUrl || null)
+    if (data.contentMarkdown !== undefined) {
+      add("content_en", data.contentMarkdown || null)
+      add("content_markdown", data.contentMarkdown || null)
+    }
+    if (data.freePreview !== undefined) {
+      add("free_preview", data.freePreview)
+      add("is_preview", data.freePreview)
+    }
 
-    const result = await db
-      .update(lessons)
-      .set(updateData)
-      .where(eq(lessons.id, lessonId))
-      .returning()
+    if (setFragments.length === 0) {
+      return NextResponse.json({ error: "No fields to update" }, { status: 400 })
+    }
 
-    if (!result || result.length === 0) {
+    add("updated_at", new Date())
+
+    const query = `UPDATE lessons SET ${setFragments.join(", ")} WHERE id = $1 RETURNING *`
+    const updatedRows = await sql.query(query, values)
+    const updated = updatedRows[0]
+    if (!updated) {
       return NextResponse.json({ error: "Failed to update lesson" }, { status: 500 })
     }
 
@@ -98,11 +132,11 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       resourceId: lessonId,
       changes: {
         before: existing,
-        after: result[0],
+        after: updated,
       },
     })
 
-    return NextResponse.json(result[0])
+    return NextResponse.json(updated)
   } catch (error: any) {
     console.error("[v0] Failed to update lesson:", error)
     if (error instanceof z.ZodError) {
@@ -118,16 +152,18 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
     await requirePermission("lessons:delete")
 
     const lessonId = params.id
+    const idParse = z.string().uuid().safeParse(lessonId)
+    if (!idParse.success) {
+      return NextResponse.json({ error: "Invalid lesson id" }, { status: 400 })
+    }
 
-    const existing = await db.query.lessons.findFirst({
-      where: eq(lessons.id, lessonId),
-    })
-
+    const existingRows = await sql`SELECT * FROM lessons WHERE id = ${lessonId} LIMIT 1`
+    const existing = existingRows[0]
     if (!existing) {
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 })
     }
 
-    await db.delete(lessons).where(eq(lessons.id, lessonId))
+    await sql`DELETE FROM lessons WHERE id = ${lessonId}`
 
     await logAudit({
       action: "delete",
