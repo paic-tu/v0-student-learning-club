@@ -44,6 +44,19 @@ export default async function LearningPage({
 
   const lessonNotes = await getUserLessonNotes(user.id, currentLessonAny.id)
 
+  const currentLessonMapped = {
+    ...currentLessonAny,
+    titleEn: currentLessonAny.title_en ?? currentLessonAny.titleEn,
+    titleAr: currentLessonAny.title_ar ?? currentLessonAny.titleAr,
+    descriptionEn: currentLessonAny.description_en ?? currentLessonAny.descriptionEn,
+    descriptionAr: currentLessonAny.description_ar ?? currentLessonAny.descriptionAr,
+    contentEn: currentLessonAny.content_en ?? currentLessonAny.contentEn,
+    contentAr: currentLessonAny.content_ar ?? currentLessonAny.contentAr,
+    videoUrl: currentLessonAny.video_url ?? currentLessonAny.videoUrl,
+    thumbnailUrl: currentLessonAny.thumbnail_url ?? currentLessonAny.thumbnailUrl,
+    durationMinutes: currentLessonAny.duration_minutes ?? currentLessonAny.durationMinutes,
+  }
+
   // Transform data for CurriculumSidebar
   const sidebarCourse = {
     ...courseAny,
@@ -163,7 +176,7 @@ export default async function LearningPage({
         <div className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-4xl mx-auto">
             <LessonContent 
-              lesson={currentLessonAny} 
+              lesson={currentLessonMapped} 
               lang={lang} 
               userId={user.id}
               initialNotes={lessonNotes}

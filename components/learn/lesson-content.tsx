@@ -10,6 +10,7 @@ import { useState, useRef, useEffect } from "react"
 import { createNote, deleteNote } from "@/lib/db/queries"
 import { formatDistanceToNow } from "date-fns"
 import { arSA, enUS } from "date-fns/locale"
+import ReactMarkdown from "react-markdown"
 
 interface LessonContentProps {
   lesson: any
@@ -173,9 +174,14 @@ export function LessonContent({ lesson, lang, userId, initialNotes = [] }: Lesso
           
           <TabsContent value="overview" className="mt-6">
             <h1 className="text-2xl font-bold mb-2">{isAr ? lesson.titleAr : lesson.titleEn}</h1>
-            <div className="prose dark:prose-invert max-w-none">
+            <div className="prose dark:prose-invert max-w-none mb-6">
               <p>{isAr ? lesson.descriptionAr : lesson.descriptionEn}</p>
             </div>
+            {(isAr ? lesson.contentAr : lesson.contentEn) && (
+              <div className="prose dark:prose-invert max-w-none border-t pt-6">
+                <ReactMarkdown>{isAr ? lesson.contentAr : lesson.contentEn || ""}</ReactMarkdown>
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="notes">
@@ -206,10 +212,9 @@ export function LessonContent({ lesson, lang, userId, initialNotes = [] }: Lesso
           </TabsList>
           
           <TabsContent value="content">
-            <div 
-              className="prose dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{ __html: isAr ? lesson.contentAr : lesson.contentEn || "" }}
-            />
+            <div className="prose dark:prose-invert max-w-none">
+              <ReactMarkdown>{isAr ? lesson.contentAr : lesson.contentEn || ""}</ReactMarkdown>
+            </div>
           </TabsContent>
           
           <TabsContent value="notes">

@@ -61,7 +61,7 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
       durationMinutes: initialData?.duration_minutes || undefined,
       videoUrl: initialData?.video_url || "",
       thumbnailUrl: initialData?.thumbnail_url || "",
-      contentMarkdown: initialData?.content_markdown || "",
+      contentMarkdown: initialData?.content_en || initialData?.contentEn || "",
       freePreview: initialData?.free_preview || false,
     },
   })
