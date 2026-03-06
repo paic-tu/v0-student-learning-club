@@ -1,6 +1,8 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
-import { neon } from "@neondatabase/serverless"
+import { db } from "@/lib/db"
+import { users } from "@/lib/db/schema"
+import { eq } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
 
@@ -33,29 +35,6 @@ export interface User {
   image?: string | null
 }
 
-let sql: ReturnType<typeof neon> | null = null
-function getSql() {
-  if (sql) return sql
-  const databaseUrl = process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL_POOLED or DATABASE_URL is not set")
-  }
-  sql = neon(databaseUrl)
-  return sql
-}
-
-let usersColumnsCache: Set<string> | null = null
-async function getUsersColumns(): Promise<Set<string>> {
-  if (usersColumnsCache) return usersColumnsCache
-  const cols = await getSql()`
-    SELECT column_name
-    FROM information_schema.columns
-    WHERE table_schema = 'public' AND table_name = 'users'
-  `
-  usersColumnsCache = new Set((cols as any[]).map((r: any) => r.column_name))
-  return usersColumnsCache
-}
-
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   trustHost: true,
@@ -77,56 +56,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           const { email, password } = validatedFields.data
 
-          // Select minimal guaranteed columns, add optional columns if they exist
-          const cols = await getUsersColumns()
-          const selectRole = cols.has("role")
-          const selectName = cols.has("name")
-          let rows: any
-          if (selectRole && selectName) {
-            rows = (await getSql()`
-              SELECT id, email, name, role, password_hash
-              FROM users
-              WHERE email = ${email}
-              LIMIT 1
-            `) as any
-          } else if (selectRole && !selectName) {
-            rows = (await getSql()`
-              SELECT id, email, role, password_hash
-              FROM users
-              WHERE email = ${email}
-              LIMIT 1
-            `) as any
-          } else if (!selectRole && selectName) {
-            rows = (await getSql()`
-              SELECT id, email, name, password_hash
-              FROM users
-              WHERE email = ${email}
-              LIMIT 1
-            `) as any
-          } else {
-            rows = (await getSql()`
-              SELECT id, email, password_hash
-              FROM users
-              WHERE email = ${email}
-              LIMIT 1
-            `) as any
-          }
-          const user = (rows as any[])?.[0] as any | undefined
+          // Use Drizzle to fetch user
+          const user = await db.query.users.findFirst({
+            where: eq(users.email, email),
+          })
 
-          if (!user || !user.password_hash) {
+          if (!user || !user.passwordHash) {
             console.log("[Auth] User not found or no password hash")
             return null
           }
 
-          const passwordsMatch = await bcrypt.compare(password, user.password_hash)
+          const passwordsMatch = await bcrypt.compare(password, user.passwordHash)
 
           if (passwordsMatch) {
             console.log("[Auth] Password match, returning user:", user.id)
             return {
               id: user.id,
               email: user.email,
-              name: user.name || null,
+              name: user.name || "",
               role: user.role || "student",
+              image: user.avatarUrl || null,
             }
           }
 
