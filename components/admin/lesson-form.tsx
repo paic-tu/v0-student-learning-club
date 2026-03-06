@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -19,8 +19,9 @@ const lessonSchema = z.object({
   titleEn: z.string().min(1, "English title is required"),
   titleAr: z.string().min(1, "Arabic title is required"),
   slug: z.string().min(1, "Slug is required"),
-  courseId: z.number({ required_error: "Course is required" }).int().positive(),
-  trackId: z.number().int().positive().optional().nullable(),
+  courseId: z.string().min(1, "Course is required"),
+  moduleId: z.string().uuid().optional().nullable(),
+  trackId: z.string().optional().nullable(),
   contentType: z.enum(["video", "article", "quiz", "assignment"]),
   status: z.enum(["draft", "published"]),
   orderIndex: z.number().int().min(0),
@@ -29,13 +30,13 @@ const lessonSchema = z.object({
   thumbnailUrl: z.string().url().optional().or(z.literal("")).nullable(),
   contentMarkdown: z.string().optional().nullable(),
   freePreview: z.boolean().default(false),
-  prerequisites: z.array(z.number()).default([]),
+  prerequisites: z.array(z.string()).default([]),
 })
 
 type LessonFormData = z.infer<typeof lessonSchema>
 
 interface LessonFormProps {
-  courses: Array<{ id: number; titleEn: string }>
+  courses: Array<{ id: string; titleEn: string }>
   initialData?: any
 }
 
@@ -44,6 +45,7 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadingThumb, setUploadingThumb] = useState(false)
+  const [modules, setModules] = useState<any[]>([])
 
   const form = useForm<LessonFormData>({
     resolver: zodResolver(lessonSchema),
@@ -52,6 +54,7 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
       titleAr: initialData?.title_ar || "",
       slug: initialData?.slug || "",
       courseId: initialData?.course_id || undefined,
+      moduleId: initialData?.module_id || null,
       contentType: (initialData?.content_type as any) || "video",
       status: (initialData?.status as any) || "draft",
       orderIndex: initialData?.order_index || 0,
@@ -63,18 +66,53 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
     },
   })
 
+  const courseId = form.watch("courseId")
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadModules() {
+      if (!courseId) {
+        setModules([])
+        return
+      }
+      try {
+        const res = await fetch(`/api/admin/modules?courseId=${encodeURIComponent(courseId)}`)
+        if (!res.ok) {
+          setModules([])
+          return
+        }
+        const data = await res.json()
+        if (!cancelled) setModules(Array.isArray(data) ? data : [])
+      } catch {
+        if (!cancelled) setModules([])
+      }
+    }
+
+    loadModules()
+
+    return () => {
+      cancelled = true
+    }
+  }, [courseId])
+
   async function onSubmit(data: LessonFormData) {
     setIsLoading(true)
     try {
       const cleanData = {
         ...data,
+        moduleId: data.moduleId || null,
         durationMinutes: data.durationMinutes || null,
         videoUrl: data.videoUrl || null,
         contentMarkdown: data.contentMarkdown || null,
       }
 
-      const response = await fetch("/api/admin/lessons", {
-        method: "POST",
+      const isEdit = !!initialData?.id
+      const url = isEdit ? `/api/admin/lessons/${initialData.id}` : "/api/admin/lessons"
+      const method = isEdit ? "PATCH" : "POST"
+
+      const response = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(cleanData),
       })
@@ -85,12 +123,18 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
       }
 
       const lesson = await response.json()
-      toast.success("Lesson created successfully")
-      router.push(`/admin/lessons`)
+      toast.success(isEdit ? "Lesson updated successfully" : "Lesson created successfully")
+      
+      // Redirect to course lessons page if courseId is available, otherwise lessons index
+      if (cleanData.courseId) {
+        router.push(`/admin/courses/${cleanData.courseId}`)
+      } else {
+        router.push(`/admin/lessons`)
+      }
       router.refresh()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create lesson")
-      console.error("[v0] Lesson creation error:", error)
+      toast.error(error instanceof Error ? error.message : "Failed to save lesson")
+      console.error("[v0] Lesson save error:", error)
     } finally {
       setIsLoading(false)
     }
@@ -212,11 +256,8 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
                 <FormItem>
                   <FormLabel>Course</FormLabel>
                   <Select
-                    onValueChange={(value) => {
-                      const parsed = safeParseInt(value)
-                      if (parsed !== null) field.onChange(parsed)
-                    }}
-                    value={field.value?.toString() || ""}
+                    onValueChange={field.onChange}
+                    value={field.value || ""}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -225,8 +266,38 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
                     </FormControl>
                     <SelectContent>
                       {courses.map((course) => (
-                        <SelectItem key={course.id} value={course.id.toString()}>
+                        <SelectItem key={course.id} value={course.id}>
                           {course.titleEn}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="moduleId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Module (Optional)</FormLabel>
+                  <Select
+                    onValueChange={(value) => field.onChange(value === "__none" ? null : value)}
+                    value={field.value || "__none"}
+                    disabled={!courseId}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={courseId ? "Select module" : "Select course first"} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="__none">No module</SelectItem>
+                      {modules.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.title_en || m.titleEn}
                         </SelectItem>
                       ))}
                     </SelectContent>

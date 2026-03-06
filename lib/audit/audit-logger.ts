@@ -28,6 +28,7 @@ export type AuditAction =
 export type AuditResource =
   | "user"
   | "course"
+  | "module"
   | "lesson"
   | "enrollment"
   | "product"
@@ -36,6 +37,7 @@ export type AuditResource =
   | "contest"
   | "certificate"
   | "setting"
+  | "category"
 
 interface AuditLogData {
   action: AuditAction

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib"
+import { PDFDocument, rgb, StandardFonts, type PDFFont } from "pdf-lib"
 import fontkit from "@pdf-lib/fontkit"
 import { Button } from "@/components/ui/button"
 import { Loader2, Download } from "lucide-react"
@@ -80,7 +80,7 @@ export function CertificateDownloadButton({
 
       // 4. Load Custom Font (Cormorant Garamond Regular)
       // Load from local public folder
-      let font
+      let font: PDFFont
       try {
         console.log("Attempting to load custom font...")
         // Add cache buster to ensure fresh fetch

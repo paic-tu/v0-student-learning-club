@@ -6,7 +6,7 @@ import { z } from "zod"
 const sql = neon(process.env.DATABASE_URL!)
 
 const CompleteSchema = z.object({
-  courseId: z.number().int(),
+  courseId: z.string().min(1),
   complete: z.boolean(),
 })
 
@@ -20,9 +20,9 @@ export async function POST(request: Request, props: { params: Promise<{ lessonId
 
     const body = await request.json()
     const { courseId, complete } = CompleteSchema.parse(body)
-    const lessonId = Number.parseInt(params.lessonId)
+    const lessonId = params.lessonId
 
-    if (Number.isNaN(lessonId)) {
+    if (!lessonId) {
       return NextResponse.json({ error: "Invalid lesson ID" }, { status: 400 })
     }
 
@@ -37,9 +37,17 @@ export async function POST(request: Request, props: { params: Promise<{ lessonId
       return NextResponse.json({ error: "Enrollment not found" }, { status: 404 })
     }
 
-    let completedLessons = []
+    let completedLessons: string[] = []
     try {
-      completedLessons = JSON.parse(enrollment[0].completed_lessons || "[]")
+      // In Postgres, JSONB array comes as object/array, but here it might be stored as string or JSON
+      // If it's stored as JSONB in DB, neon driver returns it as object/array directly usually.
+      // But let's handle both cases.
+      const raw = enrollment[0].completed_lessons
+      if (typeof raw === 'string') {
+        completedLessons = JSON.parse(raw)
+      } else if (Array.isArray(raw)) {
+        completedLessons = raw
+      }
     } catch {
       completedLessons = []
     }
@@ -48,7 +56,7 @@ export async function POST(request: Request, props: { params: Promise<{ lessonId
     if (complete && !completedLessons.includes(lessonId)) {
       completedLessons.push(lessonId)
     } else if (!complete && completedLessons.includes(lessonId)) {
-      completedLessons = completedLessons.filter((id: number) => id !== lessonId)
+      completedLessons = completedLessons.filter((id: string) => id !== lessonId)
     }
 
     // Get total lessons in course
@@ -56,7 +64,7 @@ export async function POST(request: Request, props: { params: Promise<{ lessonId
       SELECT COUNT(*) as count FROM lessons WHERE course_id = ${courseId}
     `
 
-    const totalLessons = totalLessonsResult[0]?.count || 1
+    const totalLessons = Number(totalLessonsResult[0]?.count || 1)
     const progressPct = Math.round((completedLessons.length / totalLessons) * 100)
 
     // Update enrollment

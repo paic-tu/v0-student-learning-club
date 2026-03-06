@@ -15,7 +15,7 @@ export async function PATCH(request: NextRequest, props: { params: Promise<{ id:
   try {
     await requirePermission("orders:write")
 
-    const orderId = Number.parseInt(params.id)
+    const orderId = params.id
     const body = await request.json()
     const { status } = updateStatusSchema.parse(body)
 
@@ -35,7 +35,7 @@ export async function PATCH(request: NextRequest, props: { params: Promise<{ id:
     await logAudit({
       action: "update",
       resource: "order",
-      resourceId: orderId.toString(),
+      resourceId: orderId,
       changes: {
         before: beforeState[0],
         after: result[0],

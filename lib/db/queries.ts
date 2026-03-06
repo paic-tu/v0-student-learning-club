@@ -386,11 +386,21 @@ export async function getInstructorAnalytics(instructorId: string) {
     `
     const averageRating = Math.round((Number(averageRatingResult[0]?.avg ?? 0) || 0) * 10) / 10
     
+    const revenueResult = await sql`
+      SELECT COALESCE(SUM(oi.price), 0) as total
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.id
+      JOIN courses c ON oi.course_id = c.id
+      WHERE c.instructor_id = ${instructorId}
+      AND o.status = 'paid'
+    `
+    const totalRevenue = Number(revenueResult[0]?.total ?? 0)
+
     return {
       totalStudents: parseInt(totalStudents[0].count),
       totalCourses: parseInt(totalCourses[0].count),
       totalReviews: parseInt(totalReviews[0].count),
-      totalRevenue: 0,
+      totalRevenue,
       averageRating
     }
   } catch (error) {
@@ -405,10 +415,40 @@ export async function getInstructorAnalytics(instructorId: string) {
   }
 }
 
+export async function getInstructorCoursePerformance(instructorId: string) {
+  try {
+    const courses = await sql`
+      SELECT 
+        c.id,
+        c.title_en,
+        c.title_ar,
+        c.enrollment_count,
+        c.rating,
+        COALESCE(SUM(CASE WHEN o.status = 'paid' THEN oi.price ELSE 0 END), 0) as revenue
+      FROM courses c
+      LEFT JOIN order_items oi ON c.id = oi.course_id
+      LEFT JOIN orders o ON oi.order_id = o.id
+      WHERE c.instructor_id = ${instructorId}
+      GROUP BY c.id
+      ORDER BY revenue DESC, c.enrollment_count DESC
+      LIMIT 5
+    `
+    return courses
+  } catch (error) {
+    console.error("[v0] Error fetching course performance:", error)
+    return []
+  }
+}
+
 export async function getInstructorReviews(instructorId: string) {
   try {
     const reviews = await sql`
-      SELECT r.*, u.name as user_name, u.avatar_url, c.title_en as course_title
+      SELECT 
+        r.*, 
+        u.name as user_name, 
+        u.avatar_url, 
+        c.title_en as course_title_en,
+        c.title_ar as course_title_ar
       FROM reviews r
       JOIN users u ON r.user_id = u.id
       JOIN courses c ON r.course_id = c.id
@@ -814,6 +854,67 @@ export async function getAllCategories() {
   } catch (error) {
     console.error("[v0] Error fetching categories:", error)
     return []
+  }
+}
+
+export async function createCategory(data: any) {
+  try {
+    const result = await sql`
+      INSERT INTO categories (
+        name_en, name_ar, slug, description_en, description_ar, icon_url
+      ) VALUES (
+        ${data.nameEn}, ${data.nameAr}, ${data.slug}, ${data.descriptionEn}, ${data.descriptionAr}, ${data.iconUrl}
+      )
+      RETURNING *
+    `
+    return result[0]
+  } catch (error) {
+    console.error("[v0] Error creating category:", error)
+    return null
+  }
+}
+
+export async function updateCategory(id: string, data: any) {
+  try {
+    const result = await sql`
+      UPDATE categories SET
+        name_en = ${data.nameEn},
+        name_ar = ${data.nameAr},
+        slug = ${data.slug},
+        description_en = ${data.descriptionEn},
+        description_ar = ${data.descriptionAr},
+        icon_url = ${data.iconUrl}
+      WHERE id = ${id}
+      RETURNING *
+    `
+    return result[0]
+  } catch (error) {
+    console.error("[v0] Error updating category:", error)
+    return null
+  }
+}
+
+export async function deleteCategory(id: string) {
+  try {
+    await sql`DELETE FROM categories WHERE id = ${id}`
+    return true
+  } catch (error) {
+    console.error("[v0] Error deleting category:", error)
+    return false
+  }
+}
+
+export async function getCategoryById(id: string) {
+  try {
+    const result = await sql`
+      SELECT * FROM categories
+      WHERE id = ${id}
+      LIMIT 1
+    `
+    return result[0] || null
+  } catch (error) {
+    console.error("[v0] Error fetching category:", error)
+    return null
   }
 }
 

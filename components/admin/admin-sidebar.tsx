@@ -45,6 +45,12 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
       permission: "users:read" as const,
     },
     {
+      href: "/admin/categories",
+      label: "Categories",
+      icon: BookOpen,
+      permission: "courses:write" as const,
+    },
+    {
       href: "/admin/courses",
       label: "Courses",
       icon: GraduationCap,

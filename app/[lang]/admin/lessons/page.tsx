@@ -35,7 +35,9 @@ async function getLessons() {
   }
 }
 
-export default async function LessonsPage() {
+export default async function LessonsPage(props: { params: Promise<{ lang: string }> }) {
+  const params = await props.params
+  const { lang } = params
   await requireAdmin()
   const lessonsData = await getLessons()
 
@@ -44,10 +46,10 @@ export default async function LessonsPage() {
       <PageHeader
         title="Lessons"
         description="Manage all lessons across courses"
-        breadcrumbs={[{ label: "Admin", href: "/admin" }, { label: "Lessons" }]}
+        breadcrumbs={[{ label: "Admin", href: `/${lang}/admin` }, { label: "Lessons" }]}
         action={{
           label: "New Lesson",
-          href: "/admin/lessons/new",
+          href: `/${lang}/admin/lessons/new`,
           icon: <Plus className="mr-2 h-4 w-4" />,
         }}
       />

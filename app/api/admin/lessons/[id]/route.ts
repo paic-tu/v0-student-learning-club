@@ -1,23 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
-import { getCurrentUser } from "@/lib/auth"
-import { canManageLessons } from "@/lib/rbac/permissions"
-import { logAudit } from "@/lib/audit/audit-logger"
+import { requirePermission } from "@/lib/rbac/require-permission"
 import { z } from "zod"
-
-const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
-let cachedLessonColumns: Set<string> | null = null
-
-async function getLessonColumns() {
-  if (cachedLessonColumns) return cachedLessonColumns
-  const rows = await sql`
-    SELECT column_name
-    FROM information_schema.columns
-    WHERE table_schema = 'public' AND table_name = 'lessons'
-  `
-  cachedLessonColumns = new Set(rows.map((r: any) => r.column_name))
-  return cachedLessonColumns
-}
+import { logAudit } from "@/lib/audit/audit-logger"
+import { db } from "@/lib/db"
+import { lessons } from "@/lib/db/schema"
+import { eq } from "drizzle-orm"
 
 const updateLessonSchema = z.object({
   titleEn: z.string().min(1).optional(),
@@ -35,166 +22,125 @@ const updateLessonSchema = z.object({
   freePreview: z.boolean().optional(),
 })
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params
   try {
-    const user = await getCurrentUser()
-    if (!user || !canManageLessons(user.role as any)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
-    }
+    await requirePermission("lessons:read")
 
-    const { id } = await params
-    const lessonId = id
+    const lessonId = params.id
+    const result = await db.query.lessons.findFirst({
+      where: eq(lessons.id, lessonId),
+      with: {
+        // We can't easily join courses here without defining relation in schema.ts properly
+        // Assuming relations are defined or we fetch separately.
+        // For now, just return lesson.
+      },
+    })
 
-    const result = await sql`
-      SELECT 
-        l.*,
-        c.title_en as course_title_en
-      FROM lessons l
-      LEFT JOIN courses c ON l.course_id = c.id
-      WHERE l.id = ${lessonId}
-      LIMIT 1
-    `
-
-    if (result.length === 0) {
+    if (!result) {
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 })
     }
 
-    return NextResponse.json(result[0])
-  } catch (error) {
+    return NextResponse.json(result)
+  } catch (error: any) {
     console.error("[v0] Failed to fetch lesson:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: error.message }, { status: error.name === "ForbiddenError" ? 403 : 500 })
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params
   try {
-    const user = await getCurrentUser()
-    if (!user || !canManageLessons(user.role as any)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
-    }
+    await requirePermission("lessons:write")
 
-    const { id } = await params
-    const lessonId = id
-
+    const lessonId = params.id
     const body = await req.json()
-    const parseResult = updateLessonSchema.safeParse(body)
+    const data = updateLessonSchema.parse(body)
 
-    if (!parseResult.success) {
-      return NextResponse.json({ error: "Validation failed", details: parseResult.error.flatten() }, { status: 400 })
-    }
+    const existing = await db.query.lessons.findFirst({
+      where: eq(lessons.id, lessonId),
+    })
 
-    // Get current state for audit
-    const currentResult = await sql`SELECT * FROM lessons WHERE id = ${lessonId} LIMIT 1`
-    if (currentResult.length === 0) {
+    if (!existing) {
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 })
     }
-    const before = currentResult[0]
 
-    const data = parseResult.data
-    const columns = await getLessonColumns()
-    const values: any[] = []
-    const setClauses: string[] = []
-
-    const addSet = (column: string, value: any) => {
-      if (!columns.has(column)) return
-      values.push(value)
-      setClauses.push(`${column} = $${values.length}`)
+    const updateData: any = {
+      updatedAt: new Date(),
     }
 
-    if (data.titleEn !== undefined) addSet("title_en", data.titleEn)
-    if (data.titleAr !== undefined) addSet("title_ar", data.titleAr)
-    if (data.slug !== undefined) addSet("slug", data.slug)
-    if (data.courseId !== undefined) addSet("course_id", data.courseId)
-    if (data.moduleId !== undefined) addSet("module_id", data.moduleId)
-    if (data.contentType !== undefined) {
-      addSet("content_type", data.contentType)
-      addSet("type", data.contentType)
+    if (data.titleEn !== undefined) updateData.titleEn = data.titleEn
+    if (data.titleAr !== undefined) updateData.titleAr = data.titleAr
+    if (data.slug !== undefined) updateData.slug = data.slug
+    if (data.courseId !== undefined) updateData.courseId = data.courseId
+    if (data.moduleId !== undefined) updateData.moduleId = data.moduleId
+    if (data.contentType !== undefined) updateData.type = data.contentType
+    if (data.status !== undefined) updateData.status = data.status
+    if (data.orderIndex !== undefined) updateData.orderIndex = data.orderIndex
+    if (data.durationMinutes !== undefined) updateData.durationMinutes = data.durationMinutes
+    if (data.videoUrl !== undefined) updateData.videoUrl = data.videoUrl
+    if (data.contentMarkdown !== undefined) updateData.contentEn = data.contentMarkdown
+    if (data.freePreview !== undefined) updateData.isPreview = data.freePreview
+
+    const result = await db
+      .update(lessons)
+      .set(updateData)
+      .where(eq(lessons.id, lessonId))
+      .returning()
+
+    if (!result || result.length === 0) {
+      return NextResponse.json({ error: "Failed to update lesson" }, { status: 500 })
     }
-    if (data.status !== undefined) addSet("status", data.status)
-    if (data.orderIndex !== undefined) addSet("order_index", data.orderIndex)
-
-    if (data.durationMinutes !== undefined) {
-      addSet("duration", data.durationMinutes)
-      addSet("duration_minutes", data.durationMinutes)
-    }
-
-    if (data.videoUrl !== undefined) addSet("video_url", data.videoUrl)
-    if (data.thumbnailUrl !== undefined) addSet("thumbnail_url", data.thumbnailUrl)
-    if (data.contentMarkdown !== undefined) addSet("content_markdown", data.contentMarkdown)
-
-    if (data.freePreview !== undefined) {
-      addSet("is_preview", data.freePreview)
-      addSet("free_preview", data.freePreview)
-    }
-
-    if (columns.has("updated_at")) {
-      setClauses.push(`updated_at = NOW()`)
-    }
-
-    if (setClauses.length === 0) {
-      return NextResponse.json({ error: "No fields to update" }, { status: 400 })
-    }
-
-    values.push(lessonId)
-    const query = `UPDATE lessons SET ${setClauses.join(", ")} WHERE id = $${values.length} RETURNING *`
-    const result = await sql.query(query, values)
-
-    const after = result[0]
 
     await logAudit({
       action: "update",
       resource: "lesson",
       resourceId: lessonId,
-      changes: { before, after },
+      changes: {
+        before: existing,
+        after: result[0],
+      },
     })
 
-    return NextResponse.json(after)
-  } catch (error) {
+    return NextResponse.json(result[0])
+  } catch (error: any) {
     console.error("[v0] Failed to update lesson:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Invalid data", details: error.errors }, { status: 400 })
+    }
+    return NextResponse.json({ error: error.message }, { status: error.name === "ForbiddenError" ? 403 : 500 })
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params
   try {
-    const user = await getCurrentUser()
-    if (!user || !canManageLessons(user.role as any)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
-    }
+    await requirePermission("lessons:delete")
 
-    const { id } = await params
-    const lessonId = id
+    const lessonId = params.id
 
-    const columns = await getLessonColumns()
-    const hasDeletedAt = columns.has("deleted_at")
-    const hasUpdatedAt = columns.has("updated_at")
+    const existing = await db.query.lessons.findFirst({
+      where: eq(lessons.id, lessonId),
+    })
 
-    let result: any[]
-    if (hasDeletedAt) {
-      const setClauses = [`deleted_at = NOW()`]
-      if (hasUpdatedAt) setClauses.push(`updated_at = NOW()`)
-      result = await sql.query(
-        `UPDATE lessons SET ${setClauses.join(", ")} WHERE id = $1 RETURNING *`,
-        [lessonId],
-      )
-    } else {
-      result = await sql.query(`DELETE FROM lessons WHERE id = $1 RETURNING *`, [lessonId])
-    }
-
-    if (result.length === 0) {
+    if (!existing) {
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 })
     }
 
+    await db.delete(lessons).where(eq(lessons.id, lessonId))
+
     await logAudit({
-      action: "soft_delete",
+      action: "delete",
       resource: "lesson",
       resourceId: lessonId,
-      changes: { before: result[0] },
+      changes: {
+        before: existing,
+      },
     })
 
     return NextResponse.json({ success: true })
-  } catch (error) {
+  } catch (error: any) {
     console.error("[v0] Failed to delete lesson:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: error.message }, { status: error.name === "ForbiddenError" ? 403 : 500 })
   }
 }

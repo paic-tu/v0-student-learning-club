@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { joinCohort } from "@/lib/db/queries"
 import { getCurrentUser } from "@/lib/auth"
-import { parseId } from "@/lib/utils"
 
 export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params

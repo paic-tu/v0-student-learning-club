@@ -27,12 +27,16 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    loadCart()
-  }, [])
+    if (!user?.id) {
+      setCartItems([])
+      return
+    }
+    loadCart(user.id)
+  }, [user?.id])
 
-  const loadCart = async () => {
-    const items = await getCartWithItems()
-    setCartItems(items)
+  const loadCart = async (userId: string) => {
+    const cart = await getCartWithItems(userId)
+    setCartItems(cart?.items ?? [])
   }
 
   const total = cartItems.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0)
@@ -43,16 +47,17 @@ export default function CheckoutPage() {
     setLoading(true)
     try {
       const orderItems = cartItems.map((item) => ({
-        itemId: item.id,
-        name: language === "ar" ? item.name_ar : item.name_en,
         price: Number(item.price),
         quantity: item.quantity,
+        type: item.type,
+        courseId: item.courseId,
+        productId: item.productId,
       }))
 
-      const order = await createOrder(user.id, orderItems, total, shippingAddress, notes)
+      const order = await createOrder(user.id, { totalAmount: total, items: orderItems })
 
       if (order) {
-        await clearCart()
+        await clearCart(user.id)
 
         toast({
           title: language === "ar" ? "تم إنشاء الطلب" : "Order created",

@@ -8,11 +8,7 @@ const sql = neon(process.env.DATABASE_URL!)
 export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params
   try {
-    const courseId = Number.parseInt(params.id)
-
-    if (isNaN(courseId)) {
-      return NextResponse.json({ error: "Invalid course ID" }, { status: 400 })
-    }
+    const courseId = params.id
 
     const courses = await sql`
       SELECT 

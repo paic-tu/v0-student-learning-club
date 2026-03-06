@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     add("module_id", data.moduleId || null)
     add("title_en", data.titleEn)
     add("title_ar", data.titleAr)
-    add("content_en", null)
+    add("content_en", data.contentMarkdown || null)
     add("content_ar", null)
     add("video_url", data.videoUrl || null)
     add("duration", data.durationMinutes ?? null)
@@ -82,7 +82,6 @@ export async function POST(req: NextRequest) {
     add("status", data.status)
     add("duration_minutes", data.durationMinutes ?? null)
     add("thumbnail_url", data.thumbnailUrl || null)
-    add("content_markdown", data.contentMarkdown || null)
     add("free_preview", data.freePreview)
     add("created_at", new Date())
     add("updated_at", new Date())
@@ -126,8 +125,6 @@ export async function GET(req: NextRequest) {
     const hasDeletedAt = columns.has("deleted_at")
     const hasUpdatedAt = columns.has("updated_at")
 
-    const courseIdNumber = courseId && !isNaN(Number.parseInt(courseId)) ? Number.parseInt(courseId) : null
-
     const whereClauses: string[] = []
     const values: any[] = []
     const addValue = (value: any) => {
@@ -135,8 +132,8 @@ export async function GET(req: NextRequest) {
       return `$${values.length}`
     }
 
-    if (courseIdNumber !== null) {
-      whereClauses.push(`l.course_id = ${addValue(courseIdNumber)}`)
+    if (courseId) {
+      whereClauses.push(`l.course_id = ${addValue(courseId)}`)
     }
 
     if (hasDeletedAt) {
@@ -144,7 +141,7 @@ export async function GET(req: NextRequest) {
     }
 
     const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : ""
-    const orderBy = courseIdNumber !== null
+    const orderBy = courseId
       ? "ORDER BY l.order_index ASC"
       : hasUpdatedAt
         ? "ORDER BY COALESCE(l.updated_at, l.created_at) DESC"

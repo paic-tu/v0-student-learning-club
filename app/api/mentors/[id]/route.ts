@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getMentorById } from "@/lib/db/queries"
-import { parseId } from "@/lib/utils"
 
 export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params

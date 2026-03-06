@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { UserEditForm } from "@/components/admin/user-edit-form"
-import { parseId } from "@/lib/utils"
 
 const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
 
@@ -20,10 +19,10 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
 
   await requirePermission("users:read")
 
-  let userId: number
-  try {
-    userId = parseId(id)
-  } catch {
+  let userId: string = id
+  
+  // Basic UUID validation could be added here if needed
+  if (!userId || userId.length < 10) { 
     notFound()
   }
 

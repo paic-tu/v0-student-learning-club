@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { updateBookingStatus } from "@/lib/db/queries"
 import { getCurrentUser } from "@/lib/auth"
-import { parseId } from "@/lib/utils"
 import { z } from "zod"
 
 const statusSchema = z.object({

@@ -8,7 +8,7 @@ import { ArrowLeft, Plus } from "lucide-react"
 import Link from "next/link"
 import { CourseEditForm } from "@/components/admin/course-edit-form"
 import { LessonsList } from "@/components/admin/lessons-list"
-import { parseId } from "@/lib/utils"
+import { ModulesList } from "@/components/admin/modules-list"
 
 const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
 
@@ -21,10 +21,9 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ i
 
   await requirePermission("courses:read")
 
-  let courseId: number
-  try {
-    courseId = parseId(id)
-  } catch {
+  let courseId: string = id
+
+  if (!courseId || courseId.length < 10) {
     notFound()
   }
 
@@ -48,6 +47,12 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ i
 
   const lessons = await sql`
     SELECT * FROM lessons 
+    WHERE course_id = ${courseId}
+    ORDER BY order_index ASC
+  `
+
+  const modules = await sql`
+    SELECT * FROM modules
     WHERE course_id = ${courseId}
     ORDER BY order_index ASC
   `
@@ -79,6 +84,15 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ i
         </CardHeader>
         <CardContent>
           <CourseEditForm course={course} categories={categories} instructors={instructors} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Modules ({modules.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ModulesList modules={modules as any} courseId={courseId} />
         </CardContent>
       </Card>
 

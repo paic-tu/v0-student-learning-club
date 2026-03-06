@@ -20,8 +20,10 @@ export default async function NotesPage({ params }: { params: Promise<{ lang: st
   const notesByCourse = notes.reduce((acc, note) => {
     const courseId = note.courseId || 'unknown'
     if (!acc[courseId]) {
+      const courseTitle =
+        lang === "ar" ? note.courseTitleAr || note.courseTitleEn : note.courseTitleEn || note.courseTitleAr
       acc[courseId] = {
-        title: lang === 'ar' ? (note.courseTitleAr || note.courseTitleEn) : (note.courseTitleEn || note.courseTitleAr),
+        title: courseTitle || (lang === "ar" ? "دورة غير معروفة" : "Unknown Course"),
         notes: []
       }
     }
