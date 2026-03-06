@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { db } from "@/lib/db"
+import { categories, courses } from "@/lib/db/schema"
+import { eq, and, ne } from "drizzle-orm"
 import { requirePermission } from "@/lib/rbac/require-permission"
-import { neon } from "@neondatabase/serverless"
 import { z } from "zod"
-import { logAudit } from "@/lib/audit/audit-logger"
-
-const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
+import { logAudit, type AuditResource } from "@/lib/audit/audit-logger"
 
 const updateCategorySchema = z.object({
   nameEn: z.string().min(1).optional(),
@@ -18,20 +18,16 @@ const updateCategorySchema = z.object({
 export async function GET(_request: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params
   try {
-    // Categories are public read, but this is an admin route, so maybe restrict?
-    // Actually, usually admin API is protected. Public API might be different.
-    // But let's require at least some permission or just be open if it's for public consumption?
-    // Given it's under /api/admin, we should protect it.
-    await requirePermission("courses:write") // Using courses:write as proxy for category management
+    await requirePermission("courses:read")
 
     const categoryId = params.id
-    const categories = await sql`SELECT * FROM categories WHERE id = ${categoryId} LIMIT 1`
+    const category = await db.select().from(categories).where(eq(categories.id, categoryId)).limit(1)
 
-    if (categories.length === 0) {
+    if (category.length === 0) {
       return NextResponse.json({ error: "Category not found" }, { status: 404 })
     }
 
-    return NextResponse.json(categories[0])
+    return NextResponse.json(category[0])
   } catch (error: any) {
     console.error("[v0] Error fetching category:", error)
     return NextResponse.json({ error: error.message }, { status: error.name === "ForbiddenError" ? 403 : 500 })
@@ -45,9 +41,14 @@ export async function PATCH(request: NextRequest, props: { params: Promise<{ id:
 
     const categoryId = params.id
     const body = await request.json()
-    const data = updateCategorySchema.parse(body)
+    const parseResult = updateCategorySchema.safeParse(body)
 
-    const existing = await sql`SELECT * FROM categories WHERE id = ${categoryId} LIMIT 1`
+    if (!parseResult.success) {
+      return NextResponse.json({ error: "Validation failed", details: parseResult.error.flatten() }, { status: 400 })
+    }
+
+    const data = parseResult.data
+    const existing = await db.select().from(categories).where(eq(categories.id, categoryId)).limit(1)
     
     if (existing.length === 0) {
       return NextResponse.json({ error: "Category not found" }, { status: 404 })
@@ -55,31 +56,42 @@ export async function PATCH(request: NextRequest, props: { params: Promise<{ id:
 
     // Check slug uniqueness if changed
     if (data.slug && data.slug !== existing[0].slug) {
-      const slugCheck = await sql`SELECT 1 FROM categories WHERE slug = ${data.slug} AND id != ${categoryId} LIMIT 1`
+      const slugCheck = await db
+        .select()
+        .from(categories)
+        .where(and(eq(categories.slug, data.slug), ne(categories.id, categoryId)))
+        .limit(1)
+      
       if (slugCheck.length > 0) {
         return NextResponse.json({ error: "Slug already exists" }, { status: 409 })
       }
     }
 
-    const result = await sql`
-      UPDATE categories SET 
-        name_en = COALESCE(${data.nameEn || null}, name_en),
-        name_ar = COALESCE(${data.nameAr || null}, name_ar),
-        slug = COALESCE(${data.slug || null}, slug),
-        description_en = COALESCE(${data.descriptionEn || null}, description_en),
-        description_ar = COALESCE(${data.descriptionAr || null}, description_ar),
-        icon_url = COALESCE(${data.iconUrl || null}, icon_url)
-      WHERE id = ${categoryId} 
-      RETURNING *
-    `
+    const updateData: any = {}
+    if (data.nameEn !== undefined) updateData.nameEn = data.nameEn
+    if (data.nameAr !== undefined) updateData.nameAr = data.nameAr
+    if (data.slug !== undefined) updateData.slug = data.slug
+    if (data.descriptionEn !== undefined) updateData.descriptionEn = data.descriptionEn
+    if (data.descriptionAr !== undefined) updateData.descriptionAr = data.descriptionAr
+    // iconUrl not in previous schema insert, but present in update schema. 
+    // Assuming schema has it or Drizzle will ignore/error. 
+    // Previous code had: icon_url = COALESCE(${data.iconUrl || null}, icon_url)
+    // I'll add it if defined.
+    if (data.iconUrl !== undefined) updateData.iconUrl = data.iconUrl
 
-    if (!result || result.length === 0) {
+    const result = await db
+      .update(categories)
+      .set(updateData)
+      .where(eq(categories.id, categoryId))
+      .returning()
+
+    if (result.length === 0) {
       return NextResponse.json({ error: "Failed to update category" }, { status: 500 })
     }
 
     await logAudit({
       action: "update",
-      resource: "category",
+      resource: "category" as AuditResource,
       resourceId: categoryId,
       changes: {
         before: existing[0],
@@ -90,36 +102,35 @@ export async function PATCH(request: NextRequest, props: { params: Promise<{ id:
     return NextResponse.json(result[0])
   } catch (error: any) {
     console.error("[v0] Error updating category:", error)
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 })
-    }
     return NextResponse.json({ error: error.message }, { status: error.name === "ForbiddenError" ? 403 : 500 })
   }
 }
 
-export async function DELETE(_request: NextRequest, props: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params
   try {
-    await requirePermission("courses:write")
+    await requirePermission("courses:delete")
 
     const categoryId = params.id
     
-    const existing = await sql`SELECT * FROM categories WHERE id = ${categoryId} LIMIT 1`
-    if (existing.length === 0) {
-      return NextResponse.json({ error: "Category not found" }, { status: 404 })
-    }
-
     // Check if category is used
-    const usage = await sql`SELECT 1 FROM courses WHERE category_id = ${categoryId} LIMIT 1`
+    const usage = await db.select({ id: courses.id }).from(courses).where(eq(courses.categoryId, categoryId)).limit(1)
+    
     if (usage.length > 0) {
       return NextResponse.json({ error: "Cannot delete category with associated courses" }, { status: 409 })
     }
 
-    await sql`DELETE FROM categories WHERE id = ${categoryId}`
+    const existing = await db.select().from(categories).where(eq(categories.id, categoryId)).limit(1)
+    
+    if (existing.length === 0) {
+      return NextResponse.json({ error: "Category not found" }, { status: 404 })
+    }
+
+    await db.delete(categories).where(eq(categories.id, categoryId))
 
     await logAudit({
       action: "delete",
-      resource: "category",
+      resource: "category" as AuditResource,
       resourceId: categoryId,
       changes: {
         before: existing[0],
@@ -132,3 +143,4 @@ export async function DELETE(_request: NextRequest, props: { params: Promise<{ i
     return NextResponse.json({ error: error.message }, { status: error.name === "ForbiddenError" ? 403 : 500 })
   }
 }
+

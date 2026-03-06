@@ -48,6 +48,8 @@ export default function LoginPage() {
       const formData = new FormData()
       formData.append("email", email)
       formData.append("password", password)
+      const callbackUrl = searchParams.get("callbackUrl") || `/${language}/dashboard`
+      formData.append("redirectTo", callbackUrl)
       
       const result = await loginAction(undefined, formData)
 
@@ -62,15 +64,11 @@ export default function LoginPage() {
             : "Login failed"
         setError(msg)
         console.error("Login failed:", result.error)
-      } else if (result?.success) {
-        toast({
-          title: language === "ar" ? "تم تسجيل الدخول" : "Logged in successfully",
-          description: language === "ar" ? "مرحباً بك في نيون" : "Welcome to Neon",
-        })
-        router.push(`/${language}/dashboard`)
-        router.refresh()
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message === "NEXT_REDIRECT" || error.digest?.startsWith("NEXT_REDIRECT")) {
+        return
+      }
       const errorMessage = language === "ar" ? "حدث خطأ أثناء تسجيل الدخول" : "An error occurred during login"
       setError(errorMessage)
       console.error("Login exception:", error)

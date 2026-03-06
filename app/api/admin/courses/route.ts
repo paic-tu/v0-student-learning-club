@@ -1,11 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
-import { getCurrentUser } from "@/lib/auth"
-import { canManageCourses } from "@/lib/rbac/permissions"
-import { logAudit } from "@/lib/audit/audit-logger"
+import { db } from "@/lib/db"
+import { courses, users } from "@/lib/db/schema"
+import { eq, desc, getTableColumns } from "drizzle-orm"
+import { requirePermission } from "@/lib/rbac/require-permission"
+import { logAudit, type AuditResource } from "@/lib/audit/audit-logger"
 import { z } from "zod"
-
-const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
 
 function slugify(input: string) {
   return input
@@ -40,10 +39,7 @@ const createCourseSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getCurrentUser()
-    if (!user || !canManageCourses(user.role as any)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
-    }
+    await requirePermission("courses:write")
 
     const body = await req.json()
     const parseResult = createCourseSchema.safeParse(body)
@@ -57,76 +53,54 @@ export async function POST(req: NextRequest) {
     // Generate unique slug
     let baseSlug = slugify(data.titleEn) || slugify(data.titleAr)
     if (!baseSlug) baseSlug = `course-${Date.now()}`
+    
     let finalSlug = baseSlug
-    const existing = await sql`SELECT 1 FROM courses WHERE slug = ${finalSlug} LIMIT 1`
+    
+    // Check for existing slug
+    const existing = await db.select().from(courses).where(eq(courses.slug, finalSlug)).limit(1)
+    
     if (existing.length > 0) {
       finalSlug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`
     }
 
-    const result = await sql`
-      INSERT INTO courses (
-        title_en,
-        title_ar,
-        subtitle_en,
-        subtitle_ar,
-        description_en,
-        description_ar,
-        language,
-        requirements,
-        learning_outcomes,
-        tags,
-        slug,
-        instructor_id,
-        category_id,
-        difficulty,
-        duration,
-        price,
-        is_free,
-        is_published,
-        thumbnail_url,
-        preview_video_url,
-        created_at,
-        updated_at
-      )
-      VALUES (
-        ${data.titleEn},
-        ${data.titleAr},
-        ${data.subtitleEn || null},
-        ${data.subtitleAr || null},
-        ${data.descriptionEn},
-        ${data.descriptionAr},
-        ${data.language},
-        ${JSON.stringify(data.requirements)},
-        ${JSON.stringify(data.learningOutcomes)},
-        ${JSON.stringify(data.tags)},
-        ${finalSlug},
-        ${data.instructorId},
-        ${data.categoryId || null},
-        ${data.difficulty},
-        ${data.duration},
-        ${data.price},
-        ${data.isFree},
-        ${data.isPublished},
-        ${data.thumbnailUrl || null},
-        ${data.videoUrl || null},
-        NOW(),
-        NOW()
-      )
-      RETURNING *
-    `
+    const result = await db
+      .insert(courses)
+      .values({
+        titleEn: data.titleEn,
+        titleAr: data.titleAr,
+        subtitleEn: data.subtitleEn || null,
+        subtitleAr: data.subtitleAr || null,
+        descriptionEn: data.descriptionEn,
+        descriptionAr: data.descriptionAr,
+        language: data.language,
+        requirements: data.requirements,
+        learningOutcomes: data.learningOutcomes,
+        tags: data.tags,
+        slug: finalSlug,
+        instructorId: data.instructorId,
+        categoryId: data.categoryId || null,
+        difficulty: data.difficulty,
+        duration: data.duration,
+        price: data.price.toString(), // Ensure decimal/numeric compatibility
+        isFree: data.isFree,
+        isPublished: data.isPublished,
+        thumbnailUrl: data.thumbnailUrl || null,
+        previewVideoUrl: data.videoUrl || null,
+      })
+      .returning()
 
     const course = result[0]
 
     await logAudit({
       action: "create",
-      resource: "course",
+      resource: "course" as AuditResource,
       resourceId: course.id,
       changes: { after: course },
     })
 
     // Return only the id field for redirect to work properly
     return NextResponse.json({ id: course.id })
-  } catch (error) {
+  } catch (error: any) {
     console.error("[v0] Failed to create course:", error)
     return NextResponse.json(
       { error: "Internal server error", details: error instanceof Error ? error.message : "Unknown" },
@@ -137,24 +111,24 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await getCurrentUser()
-    if (!user || !canManageCourses(user.role as any)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
-    }
+    await requirePermission("courses:read")
 
     const limit = Math.min(Number.parseInt(req.nextUrl.searchParams.get("limit") || "50") || 50, 100)
     const offset = Number.parseInt(req.nextUrl.searchParams.get("offset") || "0") || 0
 
-    const courses = await sql`
-      SELECT c.*, u.name as instructor_name
-      FROM courses c
-      LEFT JOIN users u ON c.instructor_id = u.id
-      ORDER BY c.updated_at DESC
-      LIMIT ${limit} OFFSET ${offset}
-    `
+    const result = await db
+      .select({
+        ...getTableColumns(courses),
+        instructorName: users.name,
+      })
+      .from(courses)
+      .leftJoin(users, eq(courses.instructorId, users.id))
+      .orderBy(desc(courses.updatedAt))
+      .limit(limit)
+      .offset(offset)
 
-    return NextResponse.json(courses)
-  } catch (error) {
+    return NextResponse.json(result)
+  } catch (error: any) {
     console.error("[v0] Failed to fetch courses:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }

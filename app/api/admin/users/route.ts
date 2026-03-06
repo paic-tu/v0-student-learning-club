@@ -1,11 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { db } from "@/lib/db"
+import { users } from "@/lib/db/schema"
+import { eq, or, and, ilike, desc, getTableColumns } from "drizzle-orm"
 import { requirePermission } from "@/lib/rbac/require-permission"
-import { neon } from "@neondatabase/serverless"
 import { z } from "zod"
 import bcrypt from "bcryptjs"
-import { logAudit } from "@/lib/audit/audit-logger"
-
-const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
+import { logAudit, type AuditResource } from "@/lib/audit/audit-logger"
 
 const createUserSchema = z.object({
   name: z.string().min(2),
@@ -28,58 +28,40 @@ export async function POST(request: NextRequest) {
     const data = parseResult.data
 
     // Check if user exists
-    const existing = await sql`SELECT 1 FROM users WHERE email = ${data.email} LIMIT 1`
+    const existing = await db.select().from(users).where(eq(users.email, data.email)).limit(1)
     if (existing.length > 0) {
       return NextResponse.json({ error: "User with this email already exists" }, { status: 409 })
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10)
 
-    // Insert user
-    // Note: We cast role to text to rely on implicit cast to enum if needed, or just pass as string
-    const result = await sql`
-      INSERT INTO users (
-        name, 
-        email, 
-        password_hash, 
-        role, 
-        email_verified, 
-        created_at, 
-        updated_at
-      )
-      VALUES (
-        ${data.name}, 
-        ${data.email}, 
-        ${hashedPassword}, 
-        ${data.role}, 
-        NOW(), 
-        NOW(), 
-        NOW()
-      )
-      RETURNING *
-    `
+    const result = await db
+      .insert(users)
+      .values({
+        name: data.name,
+        email: data.email,
+        passwordHash: hashedPassword,
+        role: data.role,
+        isActive: true,
+      })
+      .returning()
 
-    if (!result || result.length === 0) {
-      return NextResponse.json({ error: "Failed to create user" }, { status: 500 })
-    }
+    const user = result[0]
 
     // Log audit
     await logAudit({
       action: "create",
-      resource: "user",
-      resourceId: result[0].id,
+      resource: "user" as AuditResource,
+      resourceId: user.id,
       changes: {
-        after: result[0],
+        after: user,
       },
     })
 
-    const { password_hash, ...user } = result[0]
-    return NextResponse.json(user, { status: 201 })
+    const { passwordHash, ...userWithoutPassword } = user
+    return NextResponse.json(userWithoutPassword, { status: 201 })
   } catch (error: any) {
     console.error("[v0] Error creating user:", error)
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 })
-    }
     return NextResponse.json({ error: error.message }, { status: error.name === "ForbiddenError" ? 403 : 500 })
   }
 }
@@ -92,47 +74,31 @@ export async function GET(request: NextRequest) {
     const role = searchParams.get("role")
     const search = searchParams.get("search")
 
-    // Basic query with optional filters
-    // Note: neon template literal doesn't support dynamic WHERE clauses easily.
-    // We'll use a simple approach or fetch all (limit 100) and filter if needed, 
-    // but for search we should try to use SQL.
+    const conditions = []
     
-    let users
-    if (search && role) {
-      users = await sql`
-        SELECT id, name, email, role, avatar_url, created_at 
-        FROM users 
-        WHERE role = ${role} 
-          AND (name ILIKE ${`%${search}%`} OR email ILIKE ${`%${search}%`})
-        ORDER BY created_at DESC 
-        LIMIT 100
-      `
-    } else if (role) {
-      users = await sql`
-        SELECT id, name, email, role, avatar_url, created_at 
-        FROM users 
-        WHERE role = ${role}
-        ORDER BY created_at DESC 
-        LIMIT 100
-      `
-    } else if (search) {
-      users = await sql`
-        SELECT id, name, email, role, avatar_url, created_at 
-        FROM users 
-        WHERE name ILIKE ${`%${search}%`} OR email ILIKE ${`%${search}%`}
-        ORDER BY created_at DESC 
-        LIMIT 100
-      `
-    } else {
-      users = await sql`
-        SELECT id, name, email, role, avatar_url, created_at 
-        FROM users 
-        ORDER BY created_at DESC 
-        LIMIT 100
-      `
+    if (role) {
+      conditions.push(eq(users.role, role as any))
     }
 
-    return NextResponse.json(users)
+    if (search) {
+      conditions.push(or(ilike(users.name, `%${search}%`), ilike(users.email, `%${search}%`)))
+    }
+
+    const result = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        avatarUrl: users.image, // Mapping image to avatarUrl to match previous response
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .where(and(...conditions))
+      .orderBy(desc(users.createdAt))
+      .limit(100)
+
+    return NextResponse.json(result)
   } catch (error: any) {
     console.error("[v0] Error fetching users:", error)
     return NextResponse.json({ error: error.message }, { status: error.name === "ForbiddenError" ? 403 : 500 })

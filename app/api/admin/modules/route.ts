@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { db } from "@/lib/db"
+import { modules } from "@/lib/db/schema"
+import { eq, desc, asc, sql } from "drizzle-orm"
 import { z } from "zod"
 import { requirePermission } from "@/lib/rbac/require-permission"
 import { logAudit, type AuditResource } from "@/lib/audit/audit-logger"
-
-const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
 
 const createModuleSchema = z.object({
   courseId: z.string().uuid(),
@@ -26,19 +26,17 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const modulesList = courseId
-      ? await sql`
-          SELECT * FROM modules
-          WHERE course_id = ${courseId}
-          ORDER BY order_index ASC
-        `
-      : await sql`
-          SELECT * FROM modules
-          ORDER BY created_at DESC
-          LIMIT 200
-        `
+    let query = db.select().from(modules).$dynamic()
 
-    return NextResponse.json(modulesList)
+    if (courseId) {
+      query = query.where(eq(modules.courseId, courseId)).orderBy(asc(modules.orderIndex))
+    } else {
+      query = query.orderBy(desc(modules.createdAt)).limit(200)
+    }
+
+    const result = await query
+
+    return NextResponse.json(result)
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: error.name === "ForbiddenError" ? 403 : 500 })
   }
@@ -56,18 +54,24 @@ export async function POST(req: NextRequest) {
 
     const data = parsed.data
 
-    const maxRow = await sql`
-      SELECT COALESCE(MAX(order_index), -1) as max
-      FROM modules
-      WHERE course_id = ${data.courseId}
-    `
-    const orderIndex = Number(maxRow?.[0]?.max ?? -1) + 1
+    // Get max order index
+    const maxResult = await db
+      .select({ max: sql<number>`MAX(${modules.orderIndex})` })
+      .from(modules)
+      .where(eq(modules.courseId, data.courseId))
 
-    const result = await sql`
-      INSERT INTO modules (course_id, title_en, title_ar, order_index, created_at)
-      VALUES (${data.courseId}, ${data.titleEn}, ${data.titleAr}, ${orderIndex}, NOW())
-      RETURNING *
-    `
+    const currentMax = maxResult[0]?.max
+    const orderIndex = (currentMax !== null && currentMax !== undefined ? Number(currentMax) : -1) + 1
+
+    const result = await db
+      .insert(modules)
+      .values({
+        courseId: data.courseId,
+        titleEn: data.titleEn,
+        titleAr: data.titleAr,
+        orderIndex: orderIndex,
+      })
+      .returning()
 
     const moduleRow = result[0]
 

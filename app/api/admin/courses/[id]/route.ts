@@ -40,6 +40,39 @@ const updateCourseSchema = z.object({
     .transform((v) => v || null),
 })
 
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params
+  try {
+    await requirePermission("courses:read")
+
+    const courseId = params.id
+
+    const course = await db.query.courses.findFirst({
+      where: eq(courses.id, courseId),
+      with: {
+        category: true,
+        instructor: {
+          columns: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+          }
+        }
+      }
+    })
+
+    if (!course) {
+      return NextResponse.json({ error: "Course not found" }, { status: 404 })
+    }
+
+    return NextResponse.json(course)
+  } catch (error: any) {
+    console.error("[v0] Error fetching course:", error)
+    return NextResponse.json({ error: error.message }, { status: error.name === "ForbiddenError" ? 403 : 500 })
+  }
+}
+
 export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params
   try {

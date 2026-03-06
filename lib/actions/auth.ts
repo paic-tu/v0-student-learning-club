@@ -20,10 +20,12 @@ export async function loginAction(prevState: any, formData: FormData) {
 
     console.log("[Auth Action] Attempting login for:", email)
 
+    const redirectTo = formData.get("redirectTo") as string | undefined
+
     await signIn("credentials", {
       email,
       password,
-      redirect: false,
+      redirectTo: redirectTo || undefined,
     })
     
     console.log("[Auth Action] Login successful")
@@ -40,9 +42,8 @@ export async function loginAction(prevState: any, formData: FormData) {
       }
     }
 
-    // In NextAuth v5, redirect:false might still throw if configured incorrectly or due to bug.
-    // If it's not an AuthError, it might be a standard Error.
-    return { error: error instanceof Error ? error.message : "An unexpected error occurred." }
+    // Rethrow redirect errors
+    throw error
   }
 }
 

@@ -1,7 +1,7 @@
 "use server"
 
 import { neon } from "@neondatabase/serverless"
-import { and, desc, eq } from "drizzle-orm"
+import { and, desc, eq } from "drizzle-orm/expressions"
 import { db } from "@/lib/db"
 import { courses, enrollments, lessons, notes, users, bookmarks, modules, progress, carts, cartItems, products, orders, orderItems, reviews } from "@/lib/db/schema"
 

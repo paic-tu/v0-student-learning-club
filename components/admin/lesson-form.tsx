@@ -194,7 +194,7 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
             <FormField
               control={form.control}
               name="titleEn"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Title (English)</FormLabel>
                   <FormControl>
@@ -219,7 +219,7 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
             <FormField
               control={form.control}
               name="titleAr"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Title (Arabic)</FormLabel>
                   <FormControl>
@@ -235,7 +235,7 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
             <FormField
               control={form.control}
               name="slug"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Slug</FormLabel>
                   <FormControl>
@@ -252,7 +252,7 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
             <FormField
               control={form.control}
               name="courseId"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Course</FormLabel>
                   <Select
@@ -280,7 +280,7 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
             <FormField
               control={form.control}
               name="moduleId"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Module (Optional)</FormLabel>
                   <Select
@@ -310,7 +310,7 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
             <FormField
               control={form.control}
               name="contentType"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Content Type</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
@@ -334,7 +334,7 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
             <FormField
               control={form.control}
               name="status"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Status</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
@@ -356,7 +356,7 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
             <FormField
               control={form.control}
               name="orderIndex"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Order Index</FormLabel>
                   <FormControl>
@@ -376,7 +376,7 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
             <FormField
               control={form.control}
               name="durationMinutes"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Duration (minutes)</FormLabel>
                   <FormControl>
@@ -398,7 +398,7 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
           <FormField
             control={form.control}
             name="freePreview"
-            render={({ field }) => (
+            render={({ field }: { field: any }) => (
               <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                 <FormControl>
                   <Checkbox checked={field.value} onCheckedChange={field.onChange} />
@@ -416,7 +416,7 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
           <FormField
             control={form.control}
             name="videoUrl"
-            render={({ field }) => (
+            render={({ field }: { field: any }) => (
               <FormItem>
                 <FormLabel>Video URL or Upload</FormLabel>
                 <FormControl>
@@ -449,7 +449,7 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
           <FormField
             control={form.control}
             name="thumbnailUrl"
-            render={({ field }) => (
+            render={({ field }: { field: any }) => (
               <FormItem>
                 <FormLabel>Thumbnail URL or Upload (Cover Pic)</FormLabel>
                 <FormControl>
@@ -488,7 +488,7 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
           <FormField
             control={form.control}
             name="contentMarkdown"
-            render={({ field }) => (
+            render={({ field }: { field: any }) => (
               <FormItem>
                 <FormLabel>Content (Markdown)</FormLabel>
                 <FormControl>
