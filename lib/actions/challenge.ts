@@ -26,6 +26,40 @@ export async function getChallengesAction() {
     }
 }
 
+export async function getAdminQuizzesAction() {
+    console.log("[Action] getAdminQuizzesAction started")
+    try {
+        const session = await auth()
+        if (!session?.user?.id || session.user.role !== "admin") {
+             return { error: "Unauthorized" }
+        }
+
+        const quizzes = await db.query.challenges.findMany({
+            where: eq(challenges.type, 'quiz'),
+            with: {
+                category: true,
+                course: {
+                    columns: {
+                        titleEn: true,
+                        titleAr: true
+                    }
+                },
+                instructor: {
+                    columns: {
+                        name: true,
+                        email: true
+                    }
+                }
+            },
+            orderBy: [desc(challenges.createdAt)]
+        })
+        return { quizzes }
+    } catch (error) {
+        console.error("[Action] getAdminQuizzesAction error:", error)
+        return { error: "Failed to fetch quizzes" }
+    }
+}
+
 export async function getChallengeAction(id: string) {
     console.log("[Action] getChallengeAction started", { id })
     try {
@@ -114,5 +148,158 @@ export async function submitQuizAction(challengeId: string, answers: Record<numb
     } catch (error) {
         console.error("[Action] submitQuizAction error:", error)
         return { error: "Failed to submit quiz" }
+    }
+}
+
+export async function getInstructorQuizzesAction() {
+    console.log("[Action] getInstructorQuizzesAction started")
+    try {
+        const session = await auth()
+        if (!session?.user?.id) return { error: "Unauthorized" }
+        
+        const userId = session.user.id
+        
+        // Return challenges where instructorId matches OR created by admin if needed?
+        // For now, only return quizzes created by this instructor
+        const quizzes = await db.query.challenges.findMany({
+            where: and(
+                eq(challenges.type, 'quiz'),
+                eq(challenges.instructorId, userId)
+            ),
+            orderBy: [desc(challenges.createdAt)]
+        })
+        
+        return { quizzes }
+    } catch (error) {
+        console.error("[Action] getInstructorQuizzesAction error:", error)
+        return { error: "Failed to fetch quizzes" }
+    }
+}
+
+export async function getInstructorQuizAction(id: string) {
+    console.log("[Action] getInstructorQuizAction started", { id })
+    try {
+        const session = await auth()
+        if (!session?.user?.id) return { error: "Unauthorized" }
+        
+        const userId = session.user.id
+        
+        // Verify ownership and fetch (allow admin)
+        const whereClause = session.user.role === 'admin'
+            ? eq(challenges.id, id)
+            : and(eq(challenges.id, id), eq(challenges.instructorId, userId))
+
+        const quiz = await db.query.challenges.findFirst({
+            where: whereClause
+        })
+        
+        if (!quiz) return { error: "Quiz not found or unauthorized" }
+        
+        return { quiz }
+    } catch (error) {
+        console.error("[Action] getInstructorQuizAction error:", error)
+        return { error: "Failed to fetch quiz" }
+    }
+}
+
+export async function createQuizAction(data: any) {
+    console.log("[Action] createQuizAction started")
+    try {
+        const session = await auth()
+        if (!session?.user?.id) return { error: "Unauthorized" }
+        
+        const userId = session.user.id
+        
+        // Force type to quiz and set instructorId
+        const quizData = {
+            ...data,
+            type: 'quiz',
+            instructorId: userId,
+            difficulty: data.difficulty || 'beginner',
+            points: data.points || 10,
+            testCases: data.questions || [], // Map questions to testCases
+            solution: '', // Not used for quizzes
+            isActive: true
+        }
+        
+        // Remove questions from data if it exists separately (we mapped it to testCases)
+        delete quizData.questions
+        
+        await db.insert(challenges).values(quizData)
+        
+        revalidatePath('/instructor/quizzes')
+        revalidatePath('/admin/quizzes')
+        return { success: true }
+    } catch (error) {
+        console.error("[Action] createQuizAction error:", error)
+        return { error: "Failed to create quiz" }
+    }
+}
+
+export async function updateQuizAction(id: string, data: any) {
+    console.log("[Action] updateQuizAction started", { id })
+    try {
+        const session = await auth()
+        if (!session?.user?.id) return { error: "Unauthorized" }
+        
+        const userId = session.user.id
+        
+        // Verify ownership (allow admin)
+        const whereClause = session.user.role === 'admin'
+            ? eq(challenges.id, id)
+            : and(eq(challenges.id, id), eq(challenges.instructorId, userId))
+
+        const existing = await db.query.challenges.findFirst({
+            where: whereClause
+        })
+        
+        if (!existing) return { error: "Quiz not found or unauthorized" }
+        
+        const quizData = {
+            ...data,
+            testCases: data.questions || existing.testCases,
+        }
+        delete quizData.questions
+        
+        await db.update(challenges)
+            .set(quizData)
+            .where(eq(challenges.id, id))
+            
+        revalidatePath('/instructor/quizzes')
+        revalidatePath('/admin/quizzes')
+        return { success: true }
+    } catch (error) {
+        console.error("[Action] updateQuizAction error:", error)
+        return { error: "Failed to update quiz" }
+    }
+}
+
+export async function deleteQuizAction(id: string) {
+    console.log("[Action] deleteQuizAction started", { id })
+    try {
+        const session = await auth()
+        if (!session?.user?.id) return { error: "Unauthorized" }
+        
+        const userId = session.user.id
+        
+        // Verify ownership (allow admin)
+        const whereClause = session.user.role === 'admin'
+            ? eq(challenges.id, id)
+            : and(eq(challenges.id, id), eq(challenges.instructorId, userId))
+
+        const existing = await db.query.challenges.findFirst({
+            where: whereClause
+        })
+        
+        if (!existing) return { error: "Quiz not found or unauthorized" }
+        
+        await db.delete(challenges).where(eq(challenges.id, id))
+            
+        revalidatePath('/instructor/quizzes')
+        revalidatePath('/admin/quizzes')
+        return { success: true }
+    } catch (error) {
+        console.error("[Action] deleteQuizAction error:", error)
+        return { error: "Failed to delete quiz" }
     }
 }

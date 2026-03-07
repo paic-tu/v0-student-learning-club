@@ -1,9 +1,9 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { enrollments, progress, lessons } from "@/lib/db/schema"
+import { enrollments, progress, lessons, courses } from "@/lib/db/schema"
 import { auth } from "@/lib/auth"
-import { eq, and, count } from "drizzle-orm"
+import { eq, and, count, desc } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 // --- Course Actions ---
@@ -52,6 +52,62 @@ export async function enrollAction(courseId: string) {
   } catch (error) {
     console.error("Enrollment error:", error)
     return { error: "Failed to enroll" }
+  }
+}
+
+export async function getInstructorCoursesAction() {
+  console.log("[Action] getInstructorCoursesAction started")
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return { error: "Unauthorized" }
+    }
+
+    const userId = session.user.id
+    
+    // Check if user is instructor or admin
+    if (session.user.role !== "instructor" && session.user.role !== "admin") {
+        return { error: "Unauthorized" }
+    }
+
+    const instructorCourses = await db.query.courses.findMany({
+      where: eq(courses.instructorId, userId),
+      orderBy: [desc(courses.createdAt)],
+      columns: {
+        id: true,
+        titleEn: true,
+        titleAr: true,
+      }
+    })
+
+    return { courses: instructorCourses }
+  } catch (error) {
+    console.error("Get instructor courses error:", error)
+    return { error: "Failed to fetch courses" }
+  }
+}
+
+export async function getAllCoursesAction() {
+  console.log("[Action] getAllCoursesAction started")
+  try {
+    const session = await auth()
+    if (!session?.user?.id || session.user.role !== "admin") {
+      return { error: "Unauthorized" }
+    }
+
+    const allCourses = await db.query.courses.findMany({
+      orderBy: [desc(courses.createdAt)],
+      columns: {
+        id: true,
+        titleEn: true,
+        titleAr: true,
+      }
+    })
+
+    return { courses: allCourses }
+  } catch (error) {
+    console.error("Get all courses error:", error)
+    return { error: "Failed to fetch courses" }
   }
 }
 

@@ -27,6 +27,7 @@ export const cohortMemberRoleEnum = pgEnum("cohort_member_role", ["student", "me
 export const cohortMemberStatusEnum = pgEnum("cohort_member_status", ["active", "waitlist", "removed"])
 export const scheduleTypeEnum = pgEnum("schedule_type", ["live", "deadline", "exam", "workshop"])
 export const bookingStatusEnum = pgEnum("booking_status", ["requested", "confirmed", "completed", "cancelled"])
+export const conversationTypeEnum = pgEnum("conversation_type", ["individual", "group", "community"])
 
 // Users table
 export const users = pgTable("users", {
@@ -542,6 +543,8 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   cohortMemberships: many(cohortMembers),
   mentorProfile: one(mentors, { fields: [users.id], references: [mentors.userId] }),
   studentBookings: many(bookings),
+  conversations: many(conversationParticipants),
+  sentMessages: many(messages),
 }))
 
 export const coursesRelations = relations(courses, ({ one, many }) => ({
@@ -721,4 +724,68 @@ export const bookingsRelations = relations(bookings, ({ one, many }) => ({
 
 export const bookingReviewsRelations = relations(bookingReviews, ({ one }) => ({
   booking: one(bookings, { fields: [bookingReviews.bookingId], references: [bookings.id] }),
+}))
+
+
+// Chat System Tables
+export const conversations = pgTable("conversations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  type: conversationTypeEnum("type").notNull().default("individual"),
+  name: varchar("name", { length: 255 }), // For group chats
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+export const conversationParticipants = pgTable("conversation_participants", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  conversationId: uuid("conversation_id")
+    .notNull()
+    .references(() => conversations.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  joinedAt: timestamp("joined_at").notNull().defaultNow(),
+  lastReadAt: timestamp("last_read_at"),
+})
+
+export const messages = pgTable("messages", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  conversationId: uuid("conversation_id")
+    .notNull()
+    .references(() => conversations.id, { onDelete: "cascade" }),
+  senderId: uuid("sender_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  isSystemMessage: boolean("is_system_message").default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+// Chat Relations
+export const conversationsRelations = relations(conversations, ({ many }) => ({
+  participants: many(conversationParticipants),
+  messages: many(messages),
+}))
+
+export const conversationParticipantsRelations = relations(conversationParticipants, ({ one }) => ({
+  conversation: one(conversations, {
+    fields: [conversationParticipants.conversationId],
+    references: [conversations.id],
+  }),
+  user: one(users, {
+    fields: [conversationParticipants.userId],
+    references: [users.id],
+  }),
+}))
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  conversation: one(conversations, {
+    fields: [messages.conversationId],
+    references: [conversations.id],
+  }),
+  sender: one(users, {
+    fields: [messages.senderId],
+    references: [users.id],
+  }),
 }))

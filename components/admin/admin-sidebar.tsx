@@ -18,6 +18,8 @@ import {
   Zap,
   ChevronLeft,
   ChevronRight,
+  HelpCircle,
+  MessageCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { User } from "@/lib/auth"
@@ -90,6 +92,18 @@ function AdminNav({ user, isCollapsed }: AdminSidebarProps) {
       label: "Challenges",
       icon: Zap,
       permission: "challenges:read" as const,
+    },
+    {
+      href: "/admin/quizzes",
+      label: "Quizzes",
+      icon: HelpCircle,
+      permission: "challenges:read" as const,
+    },
+    {
+      href: "/admin/chat",
+      label: "Chat",
+      icon: MessageCircle,
+      permission: null,
     },
     {
       href: "/admin/contests",

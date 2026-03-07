@@ -12,7 +12,8 @@ import {
   Bookmark,
   StickyNote,
   User,
-  Settings
+  Settings,
+  MessageCircle
 } from "lucide-react"
 
 export function StudentNav({ isCollapsed }: { isCollapsed?: boolean }) {
@@ -51,6 +52,11 @@ export function StudentNav({ isCollapsed }: { isCollapsed?: boolean }) {
       href: "/student/notes",
       label: t("notes", locale),
       icon: StickyNote,
+    },
+    {
+      href: "/student/chat",
+      label: locale === "ar" ? "المحادثات" : "Chat",
+      icon: MessageCircle,
     },
     {
       href: "/student/profile",

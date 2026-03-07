@@ -11,7 +11,9 @@ import {
   User,
   Settings,
   PlusCircle,
-  BarChart
+  BarChart,
+  HelpCircle,
+  MessageCircle
 } from "lucide-react"
 
 function InstructorNav({ isCollapsed }: { isCollapsed?: boolean }) {
@@ -36,6 +38,16 @@ function InstructorNav({ isCollapsed }: { isCollapsed?: boolean }) {
       href: "/instructor/courses/new",
       label: isAr ? "إنشاء دورة" : "Create Course",
       icon: PlusCircle,
+    },
+    {
+      href: "/instructor/quizzes",
+      label: isAr ? "الكويزات" : "Quizzes",
+      icon: HelpCircle,
+    },
+    {
+      href: "/instructor/chat",
+      label: isAr ? "المحادثات" : "Chat",
+      icon: MessageCircle,
     },
     {
       href: "/instructor/analytics", // Placeholder for analytics
