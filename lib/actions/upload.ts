@@ -1,8 +1,7 @@
 "use server"
 
-import { writeFile, mkdir } from "fs/promises"
-import { join } from "path"
-import { nanoid } from "nanoid"
+import { db } from "@/lib/db"
+import { files } from "@/lib/db/schema"
 
 export async function uploadFileAction(formData: FormData) {
   try {
@@ -15,34 +14,24 @@ export async function uploadFileAction(formData: FormData) {
 
     console.log("Processing upload for file:", file.name, "Type:", file.type, "Size:", file.size)
 
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    const base64Data = buffer.toString("base64")
 
-    // Ensure uploads directory exists
-    const uploadsDir = join(process.cwd(), "public", "uploads")
-    console.log("Uploads directory:", uploadsDir)
+    console.log("Saving file to database...")
 
-    try {
-      await mkdir(uploadsDir, { recursive: true })
-    } catch (error) {
-      // Directory likely exists
-      console.log("Directory creation info (might exist):", error)
-    }
+    // Insert into database
+    const [insertedFile] = await db.insert(files).values({
+      name: file.name,
+      type: file.type,
+      data: base64Data,
+      size: file.size,
+    }).returning({ id: files.id })
 
-    // Generate unique filename
-    const ext = file.name.split(".").pop() || "jpg"
-    const filename = `${nanoid()}.${ext}`
-    const filepath = join(uploadsDir, filename)
+    console.log("File saved to database with ID:", insertedFile.id)
 
-    console.log("Writing file to:", filepath)
-
-    // Write file
-    await writeFile(filepath, buffer)
-
-    console.log("File written successfully")
-
-    // Return public URL
-    const url = `/uploads/${filename}`
+    // Return API route URL
+    const url = `/api/files/${insertedFile.id}`
     
     return { success: true, url }
   } catch (error: any) {

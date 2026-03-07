@@ -802,3 +802,14 @@ export const messagesRelations = relations(messages, ({ one }) => ({
     references: [users.id],
   }),
 }))
+
+// Files table for database storage
+export const files = pgTable("files", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  type: varchar("type", { length: 100 }).notNull(), // MIME type
+  data: text("data").notNull(), // Base64 encoded content
+  size: integer("size").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+
