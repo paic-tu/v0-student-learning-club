@@ -13,11 +13,14 @@ import { t } from "@/lib/i18n"
 import { useToast } from "@/hooks/use-toast"
 import { NavBar } from "@/components/nav-bar"
 import { registerAction, loginAction } from "@/lib/actions/auth"
+import PhoneInput from "react-phone-number-input"
+import "react-phone-number-input/style.css"
 
 export default function RegisterPage() {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [phoneNumber, setPhoneNumber] = useState("")
   const [loading, setLoading] = useState(false)
   const { language } = useLanguage()
   const router = useRouter()
@@ -31,6 +34,7 @@ export default function RegisterPage() {
     formData.append("name", name)
     formData.append("email", email)
     formData.append("password", password)
+    formData.append("phoneNumber", phoneNumber)
 
     try {
       const result = await registerAction(formData)
@@ -126,6 +130,21 @@ export default function RegisterPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phoneNumber">{language === "ar" ? "رقم الهاتف" : "Phone Number"}</Label>
+                <div dir="ltr">
+                  <PhoneInput
+                    id="phoneNumber"
+                    international
+                    defaultCountry="SA"
+                    value={phoneNumber}
+                    onChange={(value) => setPhoneNumber(value || "")}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&_.PhoneInputInput]:bg-transparent [&_.PhoneInputInput]:outline-none"
+                    required
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">

@@ -11,10 +11,37 @@ import Link from "next/link"
 import { BookOpen, Award, Users, Sparkles, Target, Zap } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
 import { t } from "@/lib/i18n"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
 
 export default function HomePage() {
   const { language } = useLanguage()
   const isRTL = language === "ar"
+  const { user, isAuthenticated, isLoading } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user) {
+      const dashboardLink = user.role === "admin" 
+        ? `/${language}/admin`
+        : user.role === "instructor" 
+          ? `/${language}/instructor/dashboard`
+          : `/${language}/student/dashboard`
+      router.push(dashboardLink)
+    }
+  }, [isLoading, isAuthenticated, user, language, router])
+
+  if (isAuthenticated && user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+          <p className="text-muted-foreground">{isRTL ? "جاري تحويلك للوحة التحكم..." : "Redirecting to dashboard..."}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen">

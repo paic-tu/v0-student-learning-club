@@ -51,6 +51,7 @@ const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  phoneNumber: z.string().min(1, "Phone number is required"),
 })
 
 export async function registerAction(formData: FormData) {
@@ -58,17 +59,18 @@ export async function registerAction(formData: FormData) {
     const name = formData.get("name")
     const email = formData.get("email")
     const password = formData.get("password")
+    const phoneNumber = formData.get("phoneNumber")
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !phoneNumber) {
       return { error: "Missing required fields" }
     }
 
     // Validate input types
-    if (typeof name !== "string" || typeof email !== "string" || typeof password !== "string") {
+    if (typeof name !== "string" || typeof email !== "string" || typeof password !== "string" || typeof phoneNumber !== "string") {
        return { error: "Invalid input format" }
     }
 
-    const validatedFields = registerSchema.safeParse({ name, email, password })
+    const validatedFields = registerSchema.safeParse({ name, email, password, phoneNumber })
 
     if (!validatedFields.success) {
       return { error: validatedFields.error.errors[0].message }
@@ -94,6 +96,7 @@ export async function registerAction(formData: FormData) {
       email: data.email,
       passwordHash,
       role: "student",
+      phoneNumber: data.phoneNumber,
       createdAt: new Date(),
       updatedAt: new Date(),
     })
