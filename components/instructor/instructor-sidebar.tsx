@@ -19,41 +19,42 @@ function InstructorNav({ isCollapsed }: { isCollapsed?: boolean }) {
   const segments = pathname.split("/")
   const locale = segments[1] || "ar"
   const pathWithoutLocale = "/" + segments.slice(2).join("/")
+  const isAr = locale === "ar"
 
   const menuItems = [
     {
       href: "/instructor/dashboard",
-      label: "Dashboard",
+      label: isAr ? "لوحة التحكم" : "Dashboard",
       icon: LayoutDashboard,
     },
     {
       href: "/instructor/courses",
-      label: "My Courses",
+      label: isAr ? "دوراتي" : "My Courses",
       icon: BookOpen,
     },
     {
       href: "/instructor/courses/new",
-      label: "Create Course",
+      label: isAr ? "إنشاء دورة" : "Create Course",
       icon: PlusCircle,
     },
     {
       href: "/instructor/analytics", // Placeholder for analytics
-      label: "Analytics",
+      label: isAr ? "التحليلات" : "Analytics",
       icon: BarChart,
     },
     {
       href: "/instructor/reviews",
-      label: "Reviews",
+      label: isAr ? "المراجعات" : "Reviews",
       icon: MessageSquare,
     },
     {
       href: "/instructor/profile",
-      label: "Profile",
+      label: isAr ? "الملف الشخصي" : "Profile",
       icon: User,
     },
     {
       href: "/instructor/settings",
-      label: "Settings",
+      label: isAr ? "الإعدادات" : "Settings",
       icon: Settings,
     },
   ]
@@ -114,7 +115,7 @@ export function InstructorSidebar() {
       <aside className="hidden md:flex w-64 flex-col border-r bg-background h-screen sticky top-0">
         <div className="flex h-16 items-center border-b px-6">
           <Link href={`/${locale}/instructor/dashboard`} className="flex items-center gap-2 font-bold text-xl">
-            <span>Instructor</span>
+            <span>{isAr ? "لوحة المدرب" : "Instructor"}</span>
           </Link>
         </div>
         <InstructorNav />
@@ -135,27 +136,18 @@ export function InstructorSidebar() {
         isCollapsed ? "w-[70px]" : "w-64"
       )}
     >
-      <div className={cn("flex h-16 items-center border-b", isCollapsed ? "justify-center px-0" : "px-6")}>
-        <Link href={`/${locale}/instructor/dashboard`} className="flex items-center gap-2 font-bold text-xl overflow-hidden whitespace-nowrap">
-          {/* <Image src="/logo.svg" alt="Neon Logo" width={40} height={40} className="h-8 w-auto" /> */}
-          {!isCollapsed ? (
-            <span>Instructor</span>
-          ) : (
-            <span className="text-2xl text-primary">I</span>
-          )}
-        </Link>
-      </div>
-      
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <InstructorNav isCollapsed={isCollapsed} />
-      </div>
-
-      <div className="p-4 border-t flex justify-center">
+      <div className={cn("flex h-16 items-center border-b", isCollapsed ? "justify-center" : "px-6 justify-between")}>
+        {!isCollapsed && (
+          <Link href={`/${locale}/instructor/dashboard`} className="flex items-center gap-2 font-bold text-xl overflow-hidden whitespace-nowrap">
+            <span>{isAr ? "لوحة المدرب" : "Instructor"}</span>
+          </Link>
+        )}
+        
         <Button 
           variant="ghost" 
           size="icon" 
           onClick={toggleSidebar}
-          className="w-full flex items-center justify-center hover:bg-muted"
+          className={cn("hover:bg-muted", isCollapsed ? "h-10 w-10" : "h-8 w-8")}
         >
           {isCollapsed ? (
              isAr ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
@@ -163,6 +155,10 @@ export function InstructorSidebar() {
              isAr ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />
           )}
         </Button>
+      </div>
+      
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <InstructorNav isCollapsed={isCollapsed} />
       </div>
     </aside>
   )
@@ -172,13 +168,14 @@ export function InstructorMobileNav() {
   const pathname = usePathname()
   const segments = pathname.split("/")
   const locale = segments[1] || "ar"
+  const isAr = locale === "ar"
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex h-16 items-center border-b px-6">
         <Link href={`/${locale}/instructor/dashboard`} className="flex items-center gap-2 font-bold text-xl">
           {/* <Image src="/logo.svg" alt="Neon Logo" width={40} height={40} className="h-8 w-auto" /> */}
-          <span>Instructor</span>
+          <span>{isAr ? "لوحة المدرب" : "Instructor"}</span>
         </Link>
       </div>
       <InstructorNav />

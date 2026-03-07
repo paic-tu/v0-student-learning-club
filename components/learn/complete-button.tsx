@@ -51,7 +51,7 @@ export function CompleteLessonButton({
       disabled={isPending || isCompleted}
       variant={isCompleted ? "secondary" : "default"}
       className={cn(
-        "gap-2 min-w-[140px]",
+        "gap-2",
         isCompleted && "text-green-600 bg-green-50 hover:bg-green-100 border border-green-200"
       )}
     >
@@ -62,10 +62,18 @@ export function CompleteLessonButton({
       ) : (
         <Circle className="h-4 w-4" />
       )}
-      {isCompleted 
-        ? (isAr ? "مكتمل" : "Completed") 
-        : (isAr ? "تحديد كمكتمل" : "Mark Complete")
-      }
+      <span className="hidden sm:inline">
+        {isCompleted 
+          ? (isAr ? "مكتمل" : "Completed") 
+          : (isAr ? "تحديد كمكتمل" : "Mark Complete")
+        }
+      </span>
+      <span className="sm:hidden">
+        {isCompleted 
+          ? (isAr ? "مكتمل" : "Done") 
+          : (isAr ? "إكمال" : "Complete")
+        }
+      </span>
     </Button>
   )
 }

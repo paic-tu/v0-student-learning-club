@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Check } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
 
 interface CertificatePreviewProps {
@@ -17,6 +19,7 @@ export function CertificatePreview({ studentName, certificates }: CertificatePre
   
   const [selectedCertId, setSelectedCertId] = useState<string>(certificates.length > 0 ? certificates[0].id : "")
   const [previewStudentName, setPreviewStudentName] = useState(studentName)
+  const [selectedDesign, setSelectedDesign] = useState("design-1")
   
   // Get the selected certificate object
   const selectedCert = certificates.find(c => c.id === selectedCertId)
@@ -49,10 +52,14 @@ export function CertificatePreview({ studentName, certificates }: CertificatePre
   const pdfHeightCm = 21.0
 
   const studentNameLeft = (3.0 / pdfWidthCm) * 100
-  const studentNameTop = (9.5 / pdfHeightCm) * 100
+  const studentNameTop = (9.2 / pdfHeightCm) * 100
   
   const courseNameLeft = (3.0 / pdfWidthCm) * 100
   const courseNameTop = (12.48 / pdfHeightCm) * 100
+
+  // Certificate Number: x=21.0cm, y=19.17cm
+  const certNumLeft = (21.0 / pdfWidthCm) * 100
+  const certNumTop = (19.17 / pdfHeightCm) * 100
 
   return (
     <Card className="w-full">
@@ -74,77 +81,138 @@ export function CertificatePreview({ studentName, certificates }: CertificatePre
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label>{isAr ? "اسم الطالب" : "Student Name"}</Label>
-            <div className="h-9 px-3 py-1 flex items-center border rounded-md bg-muted text-muted-foreground font-serif">
-               {previewStudentName}
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Main Content: Inputs & Preview */}
+          <div className="flex-1 space-y-6 order-2 lg:order-1">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>{isAr ? "اسم الطالب" : "Student Name"}</Label>
+                <div className="h-9 px-3 py-1 flex items-center border rounded-md bg-muted text-muted-foreground font-serif">
+                   {previewStudentName}
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>{isAr ? "الدورة" : "Course"}</Label>
+                {certificates.length > 0 ? (
+                  <Select value={selectedCertId} onValueChange={setSelectedCertId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={isAr ? "اختر دورة..." : "Select a course..."} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {certificates.map((cert) => (
+                        <SelectItem key={cert.id} value={cert.id}>
+                          {isAr ? cert.course_title_ar || cert.title_ar : cert.course_title_en || cert.title_en}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                   <div className="h-9 px-3 py-1 flex items-center border rounded-md bg-muted text-muted-foreground">
+                    {isAr ? "لا توجد شهادات متاحة" : "No certificates available"}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="relative w-full overflow-hidden rounded-lg shadow-md bg-white border">
+              {/* Aspect Ratio Box for A4 Landscape (sqrt(2) approx 1.414) */}
+              <div style={{ paddingBottom: "70.707%" /* 100% / 1.414 */ }} />
+              
+              {/* Background Image */}
+              <img 
+                src={`/certificates/${selectedDesign}.svg`}
+                alt="Certificate Background" 
+                className="absolute top-0 left-0 w-full h-full object-contain"
+              />
+              
+              {/* Overlays */}
+              <div 
+                className="absolute text-black whitespace-nowrap"
+                style={{
+                  left: `${studentNameLeft}%`,
+                  top: `${studentNameTop}%`,
+                  fontFamily: "'Amiri', 'Cormorant Garamond', serif",
+                  fontSize: "clamp(12px, 3.2vw, 36px)", // Scaled to match PDF ~30pt
+                  transform: "translateY(-50%)", // Center vertically on the line
+                  pointerEvents: "none",
+                  color: "black"
+                }}
+              >
+                {previewStudentName}
+              </div>
+              
+              <div 
+                className="absolute text-black whitespace-nowrap"
+                style={{
+                  left: `${courseNameLeft}%`,
+                  top: `${courseNameTop}%`,
+                  fontFamily: "'Amiri', 'Cormorant Garamond', serif",
+                  fontSize: "clamp(10px, 2.5vw, 28px)", // Scaled to match PDF ~24pt
+                  transform: "translateY(-50%)",
+                  pointerEvents: "none",
+                  color: "black"
+                }}
+              >
+                {previewCourseName}
+              </div>
+
+              {selectedCert?.certificate_number && (
+                <div 
+                  className="absolute text-black whitespace-nowrap text-center"
+                  style={{
+                    left: `${certNumLeft}%`,
+                    top: `${certNumTop}%`,
+                    fontFamily: "'Amiri', 'Cormorant Garamond', serif",
+                    fontSize: "clamp(8px, 1.5vw, 16px)", // Scaled to match PDF ~14.1pt
+                    transform: "translate(-50%, -50%)",
+                    pointerEvents: "none",
+                    color: "black"
+                  }}
+                >
+                  {selectedCert.certificate_number}
+                </div>
+              )}
             </div>
           </div>
-          
-          <div className="space-y-2">
-            <Label>{isAr ? "الدورة" : "Course"}</Label>
-            {certificates.length > 0 ? (
-              <Select value={selectedCertId} onValueChange={setSelectedCertId}>
-                <SelectTrigger>
-                  <SelectValue placeholder={isAr ? "اختر دورة..." : "Select a course..."} />
-                </SelectTrigger>
-                <SelectContent>
-                  {certificates.map((cert) => (
-                    <SelectItem key={cert.id} value={cert.id}>
-                      {isAr ? cert.course_title_ar || cert.title_ar : cert.course_title_en || cert.title_en}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-               <div className="h-9 px-3 py-1 flex items-center border rounded-md bg-muted text-muted-foreground">
-                {isAr ? "لا توجد شهادات متاحة" : "No certificates available"}
-              </div>
-            )}
-          </div>
-        </div>
 
-        <div className="relative w-full overflow-hidden rounded-lg shadow-md bg-white">
-          {/* Aspect Ratio Box for A4 Landscape (sqrt(2) approx 1.414) */}
-          <div style={{ paddingBottom: "70.707%" /* 100% / 1.414 */ }} />
-          
-          {/* Background Image */}
-          <img 
-            src="/certificates/neon-certificate.svg" 
-            alt="Certificate Background" 
-            className="absolute top-0 left-0 w-full h-full object-contain"
-          />
-          
-          {/* Overlays */}
-          <div 
-            className="absolute text-black whitespace-nowrap"
-            style={{
-              left: `${studentNameLeft}%`,
-              top: `${studentNameTop}%`,
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: "clamp(12px, 3.2vw, 36px)", // Scaled to match PDF ~30pt
-              transform: "translateY(-50%)", // Center vertically on the line
-              pointerEvents: "none",
-              color: "black"
-            }}
-          >
-            {previewStudentName}
-          </div>
-          
-          <div 
-            className="absolute text-black whitespace-nowrap"
-            style={{
-              left: `${courseNameLeft}%`,
-              top: `${courseNameTop}%`,
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: "clamp(10px, 2.5vw, 28px)", // Scaled to match PDF ~24pt
-              transform: "translateY(-50%)",
-              pointerEvents: "none",
-              color: "black"
-            }}
-          >
-            {previewCourseName}
+          {/* Sidebar: Design Selector */}
+          <div className="w-full lg:w-40 space-y-3 order-1 lg:order-2">
+            <Label className="text-base font-semibold">{isAr ? "تصميم الشهادة" : "Certificate Design"}</Label>
+            <RadioGroup 
+              value={selectedDesign} 
+              onValueChange={setSelectedDesign}
+              className="grid grid-cols-3 lg:grid-cols-1 gap-3"
+            >
+              {[1, 2, 3].map((num) => (
+                <div key={num} className="w-full max-w-[120px] lg:max-w-none mx-auto">
+                  <RadioGroupItem
+                    value={`design-${num}`}
+                    id={`preview-design-${num}`}
+                    className="peer sr-only"
+                  />
+                  <Label
+                    htmlFor={`preview-design-${num}`}
+                    className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-1 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all h-full shadow-sm"
+                  >
+                    <div className="relative w-full aspect-[1.41] bg-muted rounded overflow-hidden border">
+                       <img 
+                         src={`/certificates/design-${num}.svg`} 
+                         alt={`Design ${num}`}
+                         className="object-cover w-full h-full"
+                       />
+                       {selectedDesign === `design-${num}` && (
+                         <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                           <div className="bg-primary text-primary-foreground rounded-full p-1 shadow-md">
+                             <Check className="w-3 h-3" />
+                           </div>
+                         </div>
+                       )}
+                    </div>
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
           </div>
         </div>
       </CardContent>

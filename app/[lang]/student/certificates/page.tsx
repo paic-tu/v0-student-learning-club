@@ -63,7 +63,8 @@ export default async function CertificatesPage({ params }: { params: Promise<{ l
   const previewCertificates = displayItems.map(item => ({
     id: item.id,
     title_en: item.titleEn,
-    title_ar: item.titleAr
+    title_ar: item.titleAr,
+    certificate_number: item.certificateNumber
   }))
 
   return (
@@ -76,11 +77,6 @@ export default async function CertificatesPage({ params }: { params: Promise<{ l
             : "View and download certificates earned from completed courses"}
         </p>
       </div>
-
-      <CertificatePreview 
-        studentName={user.name || "Student Name"} 
-        certificates={previewCertificates}
-      />
 
       {displayItems.length === 0 ? (
         <Card className="border-dashed">
@@ -164,6 +160,11 @@ export default async function CertificatesPage({ params }: { params: Promise<{ l
           ))}
         </div>
       )}
+
+      <CertificatePreview 
+        studentName={user.name || "Student Name"} 
+        certificates={previewCertificates}
+      />
     </div>
   )
 }

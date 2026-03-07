@@ -75,7 +75,7 @@ export default async function InstructorDashboardPage({ params }: { params: Prom
                 {coursePerformance.map((course: any) => (
                   <div key={course.id} className="flex items-center">
                     <div className="ml-4 space-y-1 flex-1">
-                      <p className="text-sm font-medium leading-none">{isAr ? course.title_ar : course.title_en}</p>
+                      <p className="text-sm font-medium leading-none">{isAr ? course.titleAr : course.titleEn}</p>
                       <p className="text-xs text-muted-foreground">
                         {isAr ? "تقييم: " : "Rating: "} {course.rating || "N/A"}
                       </p>
@@ -104,7 +104,7 @@ export default async function InstructorDashboardPage({ params }: { params: Prom
                  {recentReviews.slice(0, 5).map((review: any) => (
                    <div key={review.id} className="flex items-start gap-4 border-b pb-4 last:border-0 last:pb-0">
                      <Avatar className="w-8 h-8">
-                       <AvatarImage src={review.avatar_url || "/default-avatar.svg"} />
+                       <AvatarImage src={review.user_avatar || "/default-avatar.svg"} />
                        <AvatarFallback>{review.user_name?.[0] || "U"}</AvatarFallback>
                      </Avatar>
                      <div className="flex-1 space-y-1">

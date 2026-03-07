@@ -9,6 +9,7 @@ import { eq, and } from "drizzle-orm"
 export default async function InstructorCourseEditPage({ params }: { params: Promise<{ lang: string, courseId: string }> }) {
   const { lang, courseId } = await params
   const session = await auth()
+  const isAr = lang === "ar"
   
   if (!session?.user?.id || (session.user.role !== "instructor" && session.user.role !== "admin")) {
     redirect(`/${lang}/auth/login`)
@@ -31,7 +32,20 @@ export default async function InstructorCourseEditPage({ params }: { params: Pro
 
   const course = {
     ...courseRaw,
-    category_name: courseRaw.category?.nameEn
+    category_name: courseRaw.category?.nameEn,
+    title_en: courseRaw.titleEn,
+    title_ar: courseRaw.titleAr,
+    subtitle_en: courseRaw.subtitleEn,
+    subtitle_ar: courseRaw.subtitleAr,
+    description_en: courseRaw.descriptionEn,
+    description_ar: courseRaw.descriptionAr,
+    instructor_id: courseRaw.instructorId,
+    category_id: courseRaw.categoryId,
+    thumbnail_url: courseRaw.thumbnailUrl,
+    video_url: courseRaw.previewVideoUrl,
+    is_free: courseRaw.isFree,
+    is_published: courseRaw.isPublished,
+    learning_outcomes: courseRaw.learningOutcomes,
   }
 
   const categories = await getAllCategories()
@@ -46,9 +60,14 @@ export default async function InstructorCourseEditPage({ params }: { params: Pro
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Course Settings</h1>
+        <h1 className="text-3xl font-bold">{isAr ? "إعدادات الدورة" : "Course Settings"}</h1>
       </div>
-      <CourseEditForm course={course} categories={categories as any} instructors={instructors as any} />
+      <CourseEditForm 
+        course={course} 
+        categories={categories as any} 
+        instructors={instructors as any} 
+        lang={lang}
+      />
     </div>
   )
 }

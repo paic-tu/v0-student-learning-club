@@ -8,7 +8,6 @@ import Link from "next/link"
 import { ChevronLeft, ChevronRight, Menu } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { CompleteLessonButton } from "@/components/learn/complete-button"
-import { CertificateDownloadButton } from "@/components/certificate/certificate-download-button"
 
 export default async function LearningPage({ 
   params 
@@ -83,16 +82,17 @@ export default async function LearningPage({
         course={sidebarCourse} 
         currentLessonId={currentLessonAny.id} 
         lang={lang} 
+        className="w-80 border-e hidden md:flex"
       />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Navigation Bar */}
-        <header className="flex items-center justify-between h-16 px-4 border-b bg-background shrink-0">
-          <div className="flex items-center gap-2">
+        <header className="flex items-center justify-between h-16 px-4 border-b bg-background shrink-0 gap-4">
+          <div className="flex items-center gap-2 min-w-0">
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
+                <Button variant="ghost" size="icon" className="md:hidden shrink-0">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
@@ -101,30 +101,20 @@ export default async function LearningPage({
                   course={sidebarCourse} 
                   currentLessonId={currentLessonAny.id} 
                   lang={lang} 
+                  className="w-full h-full pt-12"
                 />
               </SheetContent>
             </Sheet>
             
             <Link 
               href={`/${lang}/student/course/${courseAny.id}`}
-              className="text-sm font-medium hover:underline text-muted-foreground hover:text-foreground hidden sm:block"
+              className="text-sm font-medium hover:underline text-muted-foreground hover:text-foreground hidden sm:block truncate"
             >
               {isAr ? sidebarCourse.titleAr : sidebarCourse.titleEn}
             </Link>
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* Certificate Button */}
-            {progress === 100 && (
-              <CertificateDownloadButton 
-                studentName={user.name || "Student"}
-                courseName={isAr ? courseAny.title_ar : courseAny.title_en}
-                instructorName={courseAny.instructor_name || "Mohsen Alghamdi"}
-                completionDate={new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                className="me-2"
-              />
-            )}
-
+          <div className="flex items-center gap-2 shrink-0">
             <Button 
               variant="outline" 
               size="sm" 
@@ -133,13 +123,13 @@ export default async function LearningPage({
             >
               {prevLessonId ? (
                 <Link href={`/${lang}/student/learn/${courseAny.id}/${prevLessonId}`}>
-                  {isAr ? <ChevronRight className="h-4 w-4 ms-1" /> : <ChevronLeft className="h-4 w-4 me-1" />}
-                  {isAr ? "السابق" : "Previous"}
+                  {isAr ? <ChevronRight className="h-4 w-4 sm:ms-1" /> : <ChevronLeft className="h-4 w-4 sm:me-1" />}
+                  <span className="hidden sm:inline">{isAr ? "السابق" : "Previous"}</span>
                 </Link>
               ) : (
                 <span className="flex items-center">
-                  {isAr ? <ChevronRight className="h-4 w-4 ms-1" /> : <ChevronLeft className="h-4 w-4 me-1" />}
-                  {isAr ? "السابق" : "Previous"}
+                  {isAr ? <ChevronRight className="h-4 w-4 sm:ms-1" /> : <ChevronLeft className="h-4 w-4 sm:me-1" />}
+                  <span className="hidden sm:inline">{isAr ? "السابق" : "Previous"}</span>
                 </span>
               )}
             </Button>
@@ -159,13 +149,13 @@ export default async function LearningPage({
             >
               {nextLessonId ? (
                 <Link href={`/${lang}/student/learn/${courseAny.id}/${nextLessonId}`}>
-                  {isAr ? "التالي" : "Next"}
-                  {isAr ? <ChevronLeft className="h-4 w-4 me-1" /> : <ChevronRight className="h-4 w-4 ms-1" />}
+                  <span className="hidden sm:inline">{isAr ? "التالي" : "Next"}</span>
+                  {isAr ? <ChevronLeft className="h-4 w-4 sm:me-1" /> : <ChevronRight className="h-4 w-4 sm:ms-1" />}
                 </Link>
               ) : (
                 <span className="flex items-center">
-                  {isAr ? "التالي" : "Next"}
-                  {isAr ? <ChevronLeft className="h-4 w-4 me-1" /> : <ChevronRight className="h-4 w-4 ms-1" />}
+                  <span className="hidden sm:inline">{isAr ? "التالي" : "Next"}</span>
+                  {isAr ? <ChevronLeft className="h-4 w-4 sm:me-1" /> : <ChevronRight className="h-4 w-4 sm:ms-1" />}
                 </span>
               )}
             </Button>
@@ -173,8 +163,8 @@ export default async function LearningPage({
         </header>
 
         {/* Content Scroll Area */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8">
-          <div className="max-w-4xl mx-auto">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-20 md:pb-12">
+          <div className="max-w-5xl mx-auto w-full">
             <LessonContent 
               lesson={currentLessonMapped} 
               lang={lang} 

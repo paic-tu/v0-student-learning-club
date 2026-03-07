@@ -21,29 +21,29 @@ import { StringListInput } from "@/components/ui/string-list-input"
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
-const courseSchema = z.object({
-  titleEn: z.string().min(1, "English title is required"),
-  titleAr: z.string().min(1, "Arabic title is required"),
+const getCourseSchema = (isAr: boolean) => z.object({
+  titleEn: z.string().min(1, isAr ? "العنوان بالإنجليزية مطلوب" : "English title is required"),
+  titleAr: z.string().min(1, isAr ? "العنوان بالعربية مطلوب" : "Arabic title is required"),
   subtitleEn: z.string().optional().or(z.literal("")),
   subtitleAr: z.string().optional().or(z.literal("")),
-  descriptionEn: z.string().min(10, "English description must be at least 10 characters"),
-  descriptionAr: z.string().min(10, "Arabic description must be at least 10 characters"),
+  descriptionEn: z.string().min(10, isAr ? "الوصف بالإنجليزية يجب أن يكون 10 أحرف على الأقل" : "English description must be at least 10 characters"),
+  descriptionAr: z.string().min(10, isAr ? "الوصف بالعربية يجب أن يكون 10 أحرف على الأقل" : "Arabic description must be at least 10 characters"),
   language: z.string().default("ar"),
   requirements: z.array(z.string()).default([]),
   learningOutcomes: z.array(z.string()).default([]),
   tags: z.array(z.string()).default([]),
-  instructorId: z.string().min(1, "Instructor is required"),
+  instructorId: z.string().min(1, isAr ? "المدرب مطلوب" : "Instructor is required"),
   categoryId: z.string().optional().nullable(),
   difficulty: z.enum(["beginner", "intermediate", "advanced"]),
   duration: z.number().int().min(0),
   price: z.number().min(0),
   isFree: z.boolean().default(false),
   isPublished: z.boolean().default(false),
-  thumbnailUrl: z.string().url("Invalid thumbnail URL").optional().or(z.literal("")),
-  videoUrl: z.string().url("Invalid video URL").optional().or(z.literal("")),
+  thumbnailUrl: z.string().url(isAr ? "رابط غير صالح" : "Invalid thumbnail URL").optional().or(z.literal("")),
+  videoUrl: z.string().url(isAr ? "رابط غير صالح" : "Invalid video URL").optional().or(z.literal("")),
 })
 
-export function CourseForm({ categories: initialCategories, instructors, redirectBase }: CourseFormProps) {
+export function CourseForm({ categories: initialCategories, instructors, redirectBase, lang = "en" }: CourseFormProps) {
   const router = useRouter()
   const pathname = usePathname()
   const { toast } = useToast()
@@ -51,6 +51,9 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
   const [categories, setCategories] = useState<any[]>(initialCategories)
   const [previewThumbnail, setPreviewThumbnail] = useState<string | null>(null)
   
+  const isAr = lang === "ar"
+  const courseSchema = getCourseSchema(isAr)
+
   // New Category State
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false)
   const [newCategoryNameEn, setNewCategoryNameEn] = useState("")
@@ -61,8 +64,8 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
   const handleCreateCategory = async () => {
     if (!newCategoryNameEn || !newCategoryNameAr) {
       toast({
-        title: "Validation Error",
-        description: "Both English and Arabic names are required",
+        title: isAr ? "خطأ في التحقق" : "Validation Error",
+        description: isAr ? "الأسماء بالإنجليزية والعربية مطلوبة" : "Both English and Arabic names are required",
         variant: "destructive",
       })
       return
@@ -87,11 +90,14 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
       setIsCategoryDialogOpen(false)
       setNewCategoryNameEn("")
       setNewCategoryNameAr("")
-      toast({ title: "Success", description: "Category created successfully" })
+      toast({ 
+        title: isAr ? "تم بنجاح" : "Success", 
+        description: isAr ? "تم إنشاء التصنيف بنجاح" : "Category created successfully" 
+      })
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to create category",
+        title: isAr ? "خطأ" : "Error",
+        description: isAr ? "فشل إنشاء التصنيف" : "Failed to create category",
         variant: "destructive",
       })
     } finally {
@@ -99,7 +105,7 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
     }
   }
 
-  const defaultValues = useMemo<z.infer<typeof courseSchema>>(
+  const defaultValues = useMemo<z.infer<ReturnType<typeof getCourseSchema>>>(
     () => ({
       titleEn: "",
       titleAr: "",
@@ -124,12 +130,12 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
     [instructors],
   )
 
-  const form = useForm<z.infer<typeof courseSchema>>({
+  const form = useForm<z.infer<ReturnType<typeof getCourseSchema>>>({
     resolver: zodResolver(courseSchema),
     defaultValues,
   })
 
-  const onSubmit = async (data: z.infer<typeof courseSchema>) => {
+  const onSubmit = async (data: z.infer<ReturnType<typeof getCourseSchema>>) => {
     setIsLoading(true)
 
     try {
@@ -147,8 +153,8 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
       const result = await response.json()
 
       toast({
-        title: "Success",
-        description: "Course created successfully",
+        title: isAr ? "تم بنجاح" : "Success",
+        description: isAr ? "تم إنشاء الدورة بنجاح" : "Course created successfully",
       })
 
       // Redirect to the course edit page with the new ID
@@ -165,8 +171,8 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
     } catch (error) {
       console.error("[v0] Error creating course:", error)
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create course",
+        title: isAr ? "خطأ" : "Error",
+        description: error instanceof Error ? error.message : (isAr ? "فشل إنشاء الدورة" : "Failed to create course"),
         variant: "destructive",
       })
     } finally {
@@ -195,40 +201,43 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="basic">
               <FileText className="w-4 h-4 mr-2" />
-              Basic
+              {isAr ? "الأساسية" : "Basic"}
             </TabsTrigger>
             <TabsTrigger value="description">
               <FileText className="w-4 h-4 mr-2" />
-              Description
+              {isAr ? "الوصف" : "Description"}
             </TabsTrigger>
             <TabsTrigger value="details">
               <List className="w-4 h-4 mr-2" />
-              Details
+              {isAr ? "التفاصيل" : "Details"}
             </TabsTrigger>
             <TabsTrigger value="media">
               <ImageIcon className="w-4 h-4 mr-2" />
-              Media
+              {isAr ? "الوسائط" : "Media"}
             </TabsTrigger>
             <TabsTrigger value="advanced">
               <Cog className="w-4 h-4 mr-2" />
-              Advanced
+              {isAr ? "متقدم" : "Advanced"}
             </TabsTrigger>
           </TabsList>
 
           {/* Basic Information Tab */}
           <TabsContent value="basic" className="space-y-6 mt-6">
-            <FormLayout title="Basic Information" description="Enter the basic course details">
+            <FormLayout 
+              title={isAr ? "المعلومات الأساسية" : "Basic Information"} 
+              description={isAr ? "أدخل تفاصيل الدورة الأساسية" : "Enter the basic course details"}
+            >
               <div className="grid gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="titleEn"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Title (English) *</FormLabel>
+                      <FormLabel>{isAr ? "العنوان بالإنجليزية *" : "Title (English) *"}</FormLabel>
                       <FormControl>
                         <Input 
                           {...field} 
-                          placeholder="e.g., Python for Beginners" 
+                          placeholder={isAr ? "مثال: بايثون للمبتدئين" : "e.g., Python for Beginners"} 
                           dir="ltr" 
                           lang="en" 
                           autoComplete="off" 
@@ -237,7 +246,7 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                           spellCheck={false}
                         />
                       </FormControl>
-                      <p className="text-xs text-muted-foreground">The course title displayed to students</p>
+                      <p className="text-xs text-muted-foreground">{isAr ? "عنوان الدورة المعروض للطلاب" : "The course title displayed to students"}</p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -248,11 +257,11 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                   name="titleAr"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Title (Arabic) *</FormLabel>
+                      <FormLabel>{isAr ? "العنوان بالعربية *" : "Title (Arabic) *"}</FormLabel>
                       <FormControl>
                         <Input {...field} placeholder="بايثون للمبتدئين" dir="rtl" />
                       </FormControl>
-                      <p className="text-xs text-muted-foreground">العنوان المعروض للطلاب</p>
+                      <p className="text-xs text-muted-foreground">{isAr ? "العنوان المعروض للطلاب" : "The course title displayed to students"}</p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -263,9 +272,9 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                   name="subtitleEn"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Subtitle (English)</FormLabel>
+                      <FormLabel>{isAr ? "العنوان الفرعي بالإنجليزية" : "Subtitle (English)"}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Short subtitle in English" {...field} />
+                        <Input placeholder={isAr ? "عنوان فرعي قصير بالإنجليزية" : "Short subtitle in English"} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -277,9 +286,9 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                   name="subtitleAr"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Subtitle (Arabic)</FormLabel>
+                      <FormLabel>{isAr ? "العنوان الفرعي بالعربية" : "Subtitle (Arabic)"}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Short subtitle in Arabic" {...field} />
+                        <Input placeholder="عنوان فرعي قصير بالعربية" {...field} dir="rtl" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -291,14 +300,14 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                   name="instructorId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Instructor *</FormLabel>
+                      <FormLabel>{isAr ? "المدرب *" : "Instructor *"}</FormLabel>
                       <Select
                         onValueChange={(value) => field.onChange(value)}
                         value={field.value || ""}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select the course instructor" />
+                            <SelectValue placeholder={isAr ? "اختر مدرب الدورة" : "Select the course instructor"} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -309,7 +318,7 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                           ))}
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-muted-foreground">Who will teach this course</p>
+                      <p className="text-xs text-muted-foreground">{isAr ? "من سيقوم بتدريس هذه الدورة" : "Who will teach this course"}</p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -320,7 +329,7 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                   name="categoryId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category (Optional)</FormLabel>
+                      <FormLabel>{isAr ? "التصنيف (اختياري)" : "Category (Optional)"}</FormLabel>
                       <div className="flex gap-2">
                         <Select
                           onValueChange={(value) => field.onChange(value === "null" ? null : value)}
@@ -328,14 +337,14 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select a category" />
+                              <SelectValue placeholder={isAr ? "اختر تصنيفاً" : "Select a category"} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="null">None</SelectItem>
+                            <SelectItem value="null">{isAr ? "لا يوجد" : "None"}</SelectItem>
                             {categories.map((category) => (
                               <SelectItem key={category.id} value={category.id.toString()}>
-                                {category.nameEn || category.name_en}
+                                {isAr ? category.nameAr || category.name_en : category.nameEn || category.name_en}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -343,17 +352,17 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
 
                         <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
                           <DialogTrigger asChild>
-                            <Button variant="outline" size="icon" type="button" title="Add new category">
+                            <Button variant="outline" size="icon" type="button" title={isAr ? "إضافة تصنيف جديد" : "Add new category"}>
                               <Plus className="h-4 w-4" />
                             </Button>
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
-                              <DialogTitle>Create New Category</DialogTitle>
+                              <DialogTitle>{isAr ? "إنشاء تصنيف جديد" : "Create New Category"}</DialogTitle>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
                               <div className="space-y-2">
-                                <label className="text-sm font-medium">English Name</label>
+                                <label className="text-sm font-medium">{isAr ? "الاسم بالإنجليزية" : "English Name"}</label>
                                 <Input 
                                   value={newCategoryNameEn} 
                                   onChange={(e) => setNewCategoryNameEn(e.target.value)}
@@ -361,7 +370,7 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                                 />
                               </div>
                               <div className="space-y-2">
-                                <label className="text-sm font-medium">Arabic Name</label>
+                                <label className="text-sm font-medium">{isAr ? "الاسم بالعربية" : "Arabic Name"}</label>
                                 <Input 
                                   value={newCategoryNameAr} 
                                   onChange={(e) => setNewCategoryNameAr(e.target.value)}
@@ -371,7 +380,7 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                               </div>
                               <Button onClick={handleCreateCategory} disabled={isCreatingCategory} className="w-full" type="button">
                                 {isCreatingCategory && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Create
+                                {isAr ? "إنشاء" : "Create"}
                               </Button>
                             </div>
                           </DialogContent>
@@ -387,7 +396,7 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                   name="difficulty"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Difficulty Level *</FormLabel>
+                      <FormLabel>{isAr ? "مستوى الصعوبة *" : "Difficulty Level *"}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -395,12 +404,12 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="beginner">Beginner</SelectItem>
-                          <SelectItem value="intermediate">Intermediate</SelectItem>
-                          <SelectItem value="advanced">Advanced</SelectItem>
+                          <SelectItem value="beginner">{isAr ? "مبتدئ" : "Beginner"}</SelectItem>
+                          <SelectItem value="intermediate">{isAr ? "متوسط" : "Intermediate"}</SelectItem>
+                          <SelectItem value="advanced">{isAr ? "متقدم" : "Advanced"}</SelectItem>
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-muted-foreground">Target audience level</p>
+                      <p className="text-xs text-muted-foreground">{isAr ? "مستوى الجمهور المستهدف" : "Target audience level"}</p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -411,7 +420,7 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                   name="duration"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Duration (minutes) *</FormLabel>
+                      <FormLabel>{isAr ? "المدة (بالدقائق) *" : "Duration (minutes) *"}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -420,7 +429,7 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                           onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 0)}
                         />
                       </FormControl>
-                      <p className="text-xs text-muted-foreground">Total course duration</p>
+                      <p className="text-xs text-muted-foreground">{isAr ? "إجمالي مدة الدورة" : "Total course duration"}</p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -431,18 +440,21 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
 
           {/* Description Tab */}
           <TabsContent value="description" className="space-y-6 mt-6">
-            <FormLayout title="Course Description" description="Provide detailed course information in both languages">
+            <FormLayout 
+              title={isAr ? "وصف الدورة" : "Course Description"} 
+              description={isAr ? "قدم وصفاً مفصلاً للدورة باللغتين" : "Provide detailed course information in both languages"}
+            >
               <FormField
                 control={form.control}
                 name="descriptionEn"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description (English) *</FormLabel>
+                    <FormLabel>{isAr ? "الوصف بالإنجليزية *" : "Description (English) *"}</FormLabel>
                     <FormControl>
                       <Textarea
                         {...field}
                         rows={8}
-                        placeholder="Provide a comprehensive description of your course..."
+                        placeholder={isAr ? "قدم وصفاً شاملاً للدورة..." : "Provide a comprehensive description of your course..."}
                         dir="ltr"
                         lang="en"
                         autoComplete="off"
@@ -452,7 +464,7 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                         className="font-mono text-sm"
                       />
                     </FormControl>
-                    <p className="text-xs text-muted-foreground">{field.value?.length || 0} characters</p>
+                    <p className="text-xs text-muted-foreground">{field.value?.length || 0} {isAr ? "حرف" : "characters"}</p>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -463,7 +475,7 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                 name="descriptionAr"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description (Arabic) *</FormLabel>
+                    <FormLabel>{isAr ? "الوصف بالعربية *" : "Description (Arabic) *"}</FormLabel>
                     <FormControl>
                       <Textarea
                         {...field}
@@ -473,7 +485,7 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                         className="font-mono text-sm"
                       />
                     </FormControl>
-                    <p className="text-xs text-muted-foreground">{field.value?.length || 0} أحرف</p>
+                    <p className="text-xs text-muted-foreground">{field.value?.length || 0} {isAr ? "حرف" : "أحرف"}</p>
                     <FormMessage />
                   </FormItem>
               )}
@@ -484,16 +496,16 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
               name="language"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Course Language</FormLabel>
+                  <FormLabel>{isAr ? "لغة الدورة" : "Course Language"}</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select language" />
+                        <SelectValue placeholder={isAr ? "اختر اللغة" : "Select language"} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="ar">Arabic</SelectItem>
-                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="ar">{isAr ? "العربية" : "Arabic"}</SelectItem>
+                      <SelectItem value="en">{isAr ? "الإنجليزية" : "English"}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -505,23 +517,26 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
 
           {/* Details Tab */}
           <TabsContent value="details" className="space-y-6 mt-6">
-            <FormLayout title="Course Details" description="Manage requirements, learning outcomes, and tags">
+            <FormLayout 
+              title={isAr ? "تفاصيل الدورة" : "Course Details"} 
+              description={isAr ? "إدارة المتطلبات ومخرجات التعلم والوسوم" : "Manage requirements, learning outcomes, and tags"}
+            >
               <div className="grid gap-6">
                 <FormField
                   control={form.control}
                   name="requirements"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Requirements</FormLabel>
+                      <FormLabel>{isAr ? "المتطلبات" : "Requirements"}</FormLabel>
                       <FormControl>
                         <StringListInput 
                           value={field.value} 
                           onChange={field.onChange} 
-                          placeholder="Add a requirement..."
+                          placeholder={isAr ? "أضف متطلباً..." : "Add a requirement..."}
                         />
                       </FormControl>
                       <FormDescription>
-                        What students should know before taking this course.
+                        {isAr ? "ما يجب أن يعرفه الطلاب قبل الالتحاق بالدورة" : "What students should know before taking this course."}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -533,16 +548,16 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                   name="learningOutcomes"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Learning Outcomes</FormLabel>
+                      <FormLabel>{isAr ? "مخرجات التعلم" : "Learning Outcomes"}</FormLabel>
                       <FormControl>
                         <StringListInput 
                           value={field.value} 
                           onChange={field.onChange} 
-                          placeholder="Add a learning outcome..."
+                          placeholder={isAr ? "أضف مخرج تعلم..." : "Add a learning outcome..."}
                         />
                       </FormControl>
                       <FormDescription>
-                        What students will learn from this course.
+                        {isAr ? "ما سيتعلمه الطلاب من هذه الدورة" : "What students will learn from this course."}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -554,16 +569,16 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                   name="tags"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tags</FormLabel>
+                      <FormLabel>{isAr ? "الوسوم" : "Tags"}</FormLabel>
                       <FormControl>
                         <StringListInput 
                           value={field.value} 
                           onChange={field.onChange} 
-                          placeholder="Add a tag..."
+                          placeholder={isAr ? "أضف وسماً..." : "Add a tag..."}
                         />
                       </FormControl>
                       <FormDescription>
-                        Keywords to help students find your course.
+                        {isAr ? "الكلمات المفتاحية لمساعدة الطلاب في العثور على دورتك" : "Keywords to help students find your course."}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -575,13 +590,16 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
 
           {/* Media Tab */}
           <TabsContent value="media" className="space-y-6 mt-6">
-            <FormLayout title="Media & Thumbnails" description="Add course thumbnail and video URLs">
+            <FormLayout 
+              title={isAr ? "الوسائط والصور المصغرة" : "Media & Thumbnails"} 
+              description={isAr ? "أضف روابط الصورة المصغرة والفيديو للدورة" : "Add course thumbnail and video URLs"}
+            >
               <FormField
                 control={form.control}
                 name="thumbnailUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Thumbnail URL</FormLabel>
+                    <FormLabel>{isAr ? "رابط الصورة المصغرة" : "Thumbnail URL"}</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -592,10 +610,10 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                         }}
                       />
                     </FormControl>
-                    <p className="text-xs text-muted-foreground">Course thumbnail image URL (HTTPS)</p>
+                    <p className="text-xs text-muted-foreground">{isAr ? "رابط الصورة المصغرة للدورة (HTTPS)" : "Course thumbnail image URL (HTTPS)"}</p>
                     {previewThumbnail && (
                       <div className="mt-4 p-4 border rounded-lg">
-                        <p className="text-xs font-medium mb-2">Preview:</p>
+                        <p className="text-xs font-medium mb-2">{isAr ? "معاينة:" : "Preview:"}</p>
                         <img
                           src={previewThumbnail || "/placeholder.svg"}
                           alt="Thumbnail preview"
@@ -614,14 +632,14 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                 name="videoUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Intro Video URL</FormLabel>
+                    <FormLabel>{isAr ? "رابط فيديو المقدمة" : "Intro Video URL"}</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         placeholder="https://example.com/video.mp4 or https://youtube.com/watch?v=..."
                       />
                     </FormControl>
-                    <p className="text-xs text-muted-foreground">Link to intro or course trailer video</p>
+                    <p className="text-xs text-muted-foreground">{isAr ? "رابط فيديو المقدمة أو إعلان الدورة" : "Link to intro or course trailer video"}</p>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -631,14 +649,17 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
 
           {/* Advanced Tab */}
           <TabsContent value="advanced" className="space-y-6 mt-6">
-            <FormLayout title="Pricing & Publishing" description="Configure course pricing and availability">
+            <FormLayout 
+              title={isAr ? "التسعير والنشر" : "Pricing & Publishing"} 
+              description={isAr ? "تكوين تسعير الدورة وتوافرها" : "Configure course pricing and availability"}
+            >
               <div className="grid gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Price (USD)</FormLabel>
+                      <FormLabel>{isAr ? "السعر (دولار)" : "Price (USD)"}</FormLabel>
                       <FormControl>
                         <div className="flex items-center gap-2">
                           <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -652,7 +673,7 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                           />
                         </div>
                       </FormControl>
-                      <p className="text-xs text-muted-foreground">Leave at 0 for free courses</p>
+                      <p className="text-xs text-muted-foreground">{isAr ? "اتركه 0 للدورات المجانية" : "Leave at 0 for free courses"}</p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -667,8 +688,8 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                         <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>Free Course</FormLabel>
-                        <p className="text-xs text-muted-foreground">Mark this course as free</p>
+                        <FormLabel>{isAr ? "دورة مجانية" : "Free Course"}</FormLabel>
+                        <p className="text-xs text-muted-foreground">{isAr ? "جعل هذه الدورة مجانية" : "Mark this course as free"}</p>
                       </div>
                     </FormItem>
                   )}
@@ -684,8 +705,8 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                       <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                     </FormControl>
                     <div className="space-y-1 leading-none">
-                      <FormLabel>Publish Course</FormLabel>
-                      <p className="text-xs text-muted-foreground">Make this course visible to students</p>
+                      <FormLabel>{isAr ? "نشر الدورة" : "Publish Course"}</FormLabel>
+                      <p className="text-xs text-muted-foreground">{isAr ? "جعل هذه الدورة مرئية للطلاب" : "Make this course visible to students"}</p>
                     </div>
                   </FormItem>
                 )}
@@ -698,10 +719,10 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
         <div className="flex gap-4 pt-4 border-t">
           <Button type="submit" disabled={isLoading} size="lg">
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Create Course
+            {isAr ? "إنشاء الدورة" : "Create Course"}
           </Button>
           <Button type="button" variant="outline" onClick={() => router.back()} disabled={isLoading} size="lg">
-            Cancel
+            {isAr ? "إلغاء" : "Cancel"}
           </Button>
         </div>
       </form>

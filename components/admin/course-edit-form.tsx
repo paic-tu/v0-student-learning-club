@@ -18,10 +18,12 @@ export function CourseEditForm({
   course,
   categories,
   instructors,
-}: { course: any; categories: any[]; instructors: any[] }) {
+  lang,
+}: { course: any; categories: any[]; instructors: any[]; lang: string }) {
   const router = useRouter()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const isAr = lang === "ar"
   
   // JSON array fields
   const [requirements, setRequirements] = useState<string[]>(Array.isArray(course.requirements) ? course.requirements : [])
@@ -72,15 +74,15 @@ export function CourseEditForm({
       if (!response.ok) throw new Error("Failed to update course")
 
       toast({
-        title: "Success",
-        description: "Course updated successfully",
+        title: isAr ? "تم بنجاح" : "Success",
+        description: isAr ? "تم تحديث الدورة بنجاح" : "Course updated successfully",
       })
 
       router.refresh()
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to update course",
+        title: isAr ? "خطأ" : "Error",
+        description: isAr ? "فشل تحديث الدورة" : "Failed to update course",
         variant: "destructive",
       })
     } finally {
@@ -92,27 +94,27 @@ export function CourseEditForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="title_en">Title (English)</Label>
+          <Label htmlFor="title_en">{isAr ? "العنوان بالإنجليزية" : "Title (English)"}</Label>
           <Input id="title_en" name="title_en" defaultValue={course.title_en} required />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="title_ar">Title (Arabic)</Label>
+          <Label htmlFor="title_ar">{isAr ? "العنوان بالعربية" : "Title (Arabic)"}</Label>
           <Input id="title_ar" name="title_ar" defaultValue={course.title_ar} required />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="subtitle_en">Subtitle (English)</Label>
+          <Label htmlFor="subtitle_en">{isAr ? "العنوان الفرعي بالإنجليزية" : "Subtitle (English)"}</Label>
           <Input id="subtitle_en" name="subtitle_en" defaultValue={course.subtitle_en || ""} />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="subtitle_ar">Subtitle (Arabic)</Label>
+          <Label htmlFor="subtitle_ar">{isAr ? "العنوان الفرعي بالعربية" : "Subtitle (Arabic)"}</Label>
           <Input id="subtitle_ar" name="subtitle_ar" defaultValue={course.subtitle_ar || ""} />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="instructor_id">Instructor</Label>
+          <Label htmlFor="instructor_id">{isAr ? "المدرب" : "Instructor"}</Label>
           <Select name="instructor_id" defaultValue={course.instructor_id.toString()}>
             <SelectTrigger>
               <SelectValue />
@@ -128,15 +130,15 @@ export function CourseEditForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="category_id">Category</Label>
+          <Label htmlFor="category_id">{isAr ? "التصنيف" : "Category"}</Label>
           <Select name="category_id" defaultValue={course.category_id?.toString() || ""}>
             <SelectTrigger>
-              <SelectValue placeholder="Select category" />
+              <SelectValue placeholder={isAr ? "اختر التصنيف" : "Select category"} />
             </SelectTrigger>
             <SelectContent>
               {categories.map((category: any) => (
                 <SelectItem key={category.id} value={category.id.toString()}>
-                  {category.name_en}
+                  {isAr ? category.name_ar || category.name_en : category.name_en}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -144,90 +146,90 @@ export function CourseEditForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="difficulty">Difficulty</Label>
+          <Label htmlFor="difficulty">{isAr ? "المستوى" : "Difficulty"}</Label>
           <Select name="difficulty" defaultValue={course.difficulty}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="beginner">Beginner</SelectItem>
-              <SelectItem value="intermediate">Intermediate</SelectItem>
-              <SelectItem value="advanced">Advanced</SelectItem>
+              <SelectItem value="beginner">{isAr ? "مبتدئ" : "Beginner"}</SelectItem>
+              <SelectItem value="intermediate">{isAr ? "متوسط" : "Intermediate"}</SelectItem>
+              <SelectItem value="advanced">{isAr ? "متقدم" : "Advanced"}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="language">Language</Label>
+          <Label htmlFor="language">{isAr ? "لغة الدورة" : "Language"}</Label>
           <Select name="language" defaultValue={course.language || "ar"}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ar">Arabic</SelectItem>
-              <SelectItem value="en">English</SelectItem>
+              <SelectItem value="ar">{isAr ? "العربية" : "Arabic"}</SelectItem>
+              <SelectItem value="en">{isAr ? "الإنجليزية" : "English"}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="duration">Duration (minutes)</Label>
+          <Label htmlFor="duration">{isAr ? "المدة (بالدقائق)" : "Duration (minutes)"}</Label>
           <Input id="duration" name="duration" type="number" defaultValue={course.duration} />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="price">Price ($)</Label>
+          <Label htmlFor="price">{isAr ? "السعر ($)" : "Price ($)"}</Label>
           <Input id="price" name="price" type="number" step="0.01" defaultValue={course.price} />
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description_en">Description (English)</Label>
+        <Label htmlFor="description_en">{isAr ? "الوصف بالإنجليزية" : "Description (English)"}</Label>
         <Textarea id="description_en" name="description_en" defaultValue={course.description_en} rows={4} required />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description_ar">Description (Arabic)</Label>
+        <Label htmlFor="description_ar">{isAr ? "الوصف بالعربية" : "Description (Arabic)"}</Label>
         <Textarea id="description_ar" name="description_ar" defaultValue={course.description_ar} rows={4} required />
       </div>
 
       <div className="space-y-4 pt-4 border-t">
-        <h3 className="text-lg font-semibold">Course Details</h3>
+        <h3 className="text-lg font-semibold">{isAr ? "تفاصيل الدورة" : "Course Details"}</h3>
         <div className="grid gap-6">
           <div className="space-y-2">
-            <Label>Requirements</Label>
+            <Label>{isAr ? "المتطلبات" : "Requirements"}</Label>
             <StringListInput 
               value={requirements} 
               onChange={setRequirements} 
-              placeholder="Add requirement..."
+              placeholder={isAr ? "أضف متطلب..." : "Add requirement..."}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Learning Outcomes</Label>
+            <Label>{isAr ? "مخرجات التعلم" : "Learning Outcomes"}</Label>
             <StringListInput 
               value={learningOutcomes} 
               onChange={setLearningOutcomes} 
-              placeholder="Add learning outcome..."
+              placeholder={isAr ? "أضف مخرج تعلم..." : "Add learning outcome..."}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Tags</Label>
+            <Label>{isAr ? "الوسوم" : "Tags"}</Label>
             <StringListInput 
               value={tags} 
               onChange={setTags} 
-              placeholder="Add tag..."
+              placeholder={isAr ? "أضف وسم..." : "Add tag..."}
             />
           </div>
         </div>
       </div>
 
       <div className="space-y-4 pt-4 border-t">
-        <h3 className="text-lg font-semibold">Media</h3>
+        <h3 className="text-lg font-semibold">{isAr ? "الوسائط" : "Media"}</h3>
         <div className="grid gap-4">
           <div className="space-y-2">
-            <Label htmlFor="thumbnail_url">Thumbnail URL</Label>
+            <Label htmlFor="thumbnail_url">{isAr ? "رابط الصورة المصغرة" : "Thumbnail URL"}</Label>
             <Input
               id="thumbnail_url"
               name="thumbnail_url"
@@ -235,11 +237,11 @@ export function CourseEditForm({
               placeholder="https://example.com/thumbnail.jpg"
               defaultValue={course.thumbnail_url || ""}
             />
-            <p className="text-xs text-muted-foreground">Course thumbnail image URL</p>
+            <p className="text-xs text-muted-foreground">{isAr ? "رابط الصورة المصغرة للدورة" : "Course thumbnail image URL"}</p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="video_url">Video URL</Label>
+            <Label htmlFor="video_url">{isAr ? "رابط الفيديو" : "Video URL"}</Label>
             <Input
               id="video_url"
               name="video_url"
@@ -247,7 +249,7 @@ export function CourseEditForm({
               placeholder="https://youtube.com/watch?v=..."
               defaultValue={course.video_url || ""}
             />
-            <p className="text-xs text-muted-foreground">Course introduction or trailer video URL</p>
+            <p className="text-xs text-muted-foreground">{isAr ? "رابط فيديو مقدمة الدورة" : "Course introduction or trailer video URL"}</p>
           </div>
         </div>
       </div>
@@ -255,21 +257,21 @@ export function CourseEditForm({
       <div className="flex items-center gap-8">
         <div className="flex items-center gap-2">
           <Switch id="is_free" name="is_free" defaultChecked={course.is_free} />
-          <Label htmlFor="is_free">Free Course</Label>
+          <Label htmlFor="is_free">{isAr ? "دورة مجانية" : "Free Course"}</Label>
         </div>
 
         <div className="flex items-center gap-2">
           <Switch id="is_published" name="is_published" defaultChecked={course.is_published} />
-          <Label htmlFor="is_published">Published</Label>
+          <Label htmlFor="is_published">{isAr ? "منشور" : "Published"}</Label>
         </div>
       </div>
 
       <div className="flex gap-2">
         <Button type="submit" disabled={loading}>
-          {loading ? "Saving..." : "Save Changes"}
+          {loading ? (isAr ? "جاري الحفظ..." : "Saving...") : (isAr ? "حفظ التغييرات" : "Save Changes")}
         </Button>
         <Button type="button" variant="outline" onClick={() => router.back()}>
-          Cancel
+          {isAr ? "إلغاء" : "Cancel"}
         </Button>
       </div>
     </form>

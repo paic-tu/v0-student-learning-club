@@ -26,19 +26,24 @@ export default async function NewInstructorCoursePage({ params }: { params: Prom
     email: session.user.email || ""
   }]
 
+  const isAr = lang === "ar"
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold">Create New Course</h1>
-        <p className="text-muted-foreground">Fill in the details to create your new course.</p>
+        <h1 className="text-3xl font-bold">{isAr ? "إنشاء دورة جديدة" : "Create New Course"}</h1>
+        <p className="text-muted-foreground">
+          {isAr ? "املأ التفاصيل لإنشاء دورتك الجديدة." : "Fill in the details to create your new course."}
+        </p>
       </div>
 
       <div className="grid gap-8">
-        <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading form...</div>}>
+        <Suspense fallback={<div className="p-8 text-center text-muted-foreground">{isAr ? "جاري تحميل النموذج..." : "Loading form..."}</div>}>
           <CourseForm 
             categories={categories} 
             instructors={instructors} 
             redirectBase={`/${lang}/instructor/courses/:id/edit`}
+            lang={lang}
           />
         </Suspense>
       </div>

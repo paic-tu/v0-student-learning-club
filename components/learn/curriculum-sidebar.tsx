@@ -15,9 +15,10 @@ interface CurriculumSidebarProps {
   course: any
   currentLessonId: string
   lang: string
+  className?: string
 }
 
-export function CurriculumSidebar({ course, currentLessonId, lang }: CurriculumSidebarProps) {
+export function CurriculumSidebar({ course, currentLessonId, lang, className }: CurriculumSidebarProps) {
   const isAr = lang === "ar"
 
   const getIcon = (type: string) => {
@@ -29,10 +30,12 @@ export function CurriculumSidebar({ course, currentLessonId, lang }: CurriculumS
   }
 
   return (
-    <div dir={isAr ? "rtl" : "ltr"} className="flex flex-col h-full border-e bg-background w-80 shrink-0 hidden md:flex">
-      <div className="p-4 border-b">
-        <h2 className="font-semibold line-clamp-2">{isAr ? course.titleAr : course.titleEn}</h2>
-        <p className="text-xs text-muted-foreground mt-1">
+    <div dir={isAr ? "rtl" : "ltr"} className={cn("flex flex-col h-full bg-background shrink-0", className)}>
+      <div className="h-16 flex flex-col justify-center px-4 border-b shrink-0">
+        <h2 className="font-semibold text-sm line-clamp-1" title={isAr ? course.titleAr : course.titleEn}>
+          {isAr ? course.titleAr : course.titleEn}
+        </h2>
+        <p className="text-xs text-muted-foreground">
           {course.enrollmentCount} {isAr ? "طالب" : "Students"}
         </p>
       </div>

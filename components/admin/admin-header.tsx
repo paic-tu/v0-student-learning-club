@@ -1,7 +1,7 @@
 "use client"
 
 import type { User } from "@/lib/auth"
-import { Bell, Search, LogOut, Menu } from "lucide-react"
+import { Bell, Search, LogOut, Menu, Moon, Sun, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { useLanguage } from "@/lib/language-context"
+import { useTheme } from "@/lib/theme-context"
 
 import {
   Sheet,
@@ -29,6 +31,8 @@ interface AdminHeaderProps {
 
 export function AdminHeader({ user, mobileNav }: AdminHeaderProps) {
   const router = useRouter()
+  const { language, setLanguage } = useLanguage()
+  const { theme, toggleTheme } = useTheme()
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: "/auth/login" })
@@ -57,7 +61,23 @@ export function AdminHeader({ user, mobileNav }: AdminHeaderProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" onClick={toggleTheme}>
+          {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+        </Button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <Globe className="h-5 w-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setLanguage("ar")}>العربية {language === "ar" && "✓"}</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setLanguage("en")}>English {language === "en" && "✓"}</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <Button variant="ghost" size="icon">
           <Bell className="h-5 w-5" />
         </Button>

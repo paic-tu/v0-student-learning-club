@@ -14,22 +14,22 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, Upload } from "lucide-react"
 
-const lessonSchema = z.object({
-  titleEn: z.string().min(1, "English title is required"),
-  titleAr: z.string().min(1, "Arabic title is required"),
-  slug: z.string().min(1, "Slug is required"),
+const getLessonSchema = (isAr: boolean) => z.object({
+  titleEn: z.string().min(1, isAr ? "العنوان بالإنجليزية مطلوب" : "English title is required"),
+  titleAr: z.string().min(1, isAr ? "العنوان بالعربية مطلوب" : "Arabic title is required"),
+  slug: z.string().min(1, isAr ? "الرابط المختصر مطلوب" : "Slug is required"),
   contentType: z.enum(["video", "article", "quiz", "assignment"]),
   status: z.enum(["draft", "published"]),
   orderIndex: z.coerce.number().int().min(0),
   durationMinutes: z.coerce.number().int().min(0).optional().nullable(),
-  videoUrl: z.string().url().optional().or(z.literal("")).nullable(),
-  thumbnailUrl: z.string().url().optional().or(z.literal("")).nullable(),
+  videoUrl: z.string().url(isAr ? "رابط غير صالح" : "Invalid URL").optional().or(z.literal("")).nullable(),
+  thumbnailUrl: z.string().url(isAr ? "رابط غير صالح" : "Invalid URL").optional().or(z.literal("")).nullable(),
   contentMarkdown: z.string().optional().nullable(),
   freePreview: z.boolean().default(false),
   moduleId: z.string().uuid().optional().nullable(),
 })
 
-type LessonFormData = z.infer<typeof lessonSchema>
+type LessonFormData = z.infer<ReturnType<typeof getLessonSchema>>
 
 interface InstructorLessonFormProps {
   courseId: string
@@ -46,6 +46,9 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
   const [isLoading, setIsLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadingThumb, setUploadingThumb] = useState(false)
+
+  const isAr = lang === "ar"
+  const lessonSchema = getLessonSchema(isAr)
 
   const form = useForm<LessonFormData>({
     resolver: zodResolver(lessonSchema),
@@ -65,50 +68,37 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
     },
   })
 
-  async function onSubmit(data: LessonFormData) {
+  async function onSubmit(data: z.infer<ReturnType<typeof getLessonSchema>>) {
     setIsLoading(true)
-    try {
-      const cleanData = {
-        ...data,
-        slug: data.slug?.trim() || generateSlug(data.titleEn || ""),
-        courseId: courseId,
-        moduleId: data.moduleId,
-        durationMinutes: data.durationMinutes || null,
-        videoUrl: data.videoUrl || null,
-        contentMarkdown: data.contentMarkdown || null,
-      }
 
+    try {
       const url = lessonId 
-        ? `/api/admin/lessons/${lessonId}`
-        : `/api/admin/lessons`
+        ? `/api/courses/${courseId}/lessons/${lessonId}`
+        : `/api/courses/${courseId}/lessons`
       
       const method = lessonId ? "PATCH" : "POST"
-
-      // For PATCH, we don't need courseId in body usually, but keeping it doesn't hurt unless API strict
-      // The API uses params.id for PATCH
 
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(cleanData),
+        body: JSON.stringify(data),
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.details?.fieldErrors ? JSON.stringify(error.details.fieldErrors) : error.error || "Failed to save lesson")
+        throw new Error("Something went wrong")
       }
 
       toast({
-        title: "Success",
-        description: `Lesson ${lessonId ? "updated" : "created"} successfully`,
+        title: isAr ? "تم بنجاح" : "Success",
+        description: isAr ? "تم حفظ الدرس بنجاح" : "Lesson saved successfully",
       })
-      
+
       router.push(`/${lang}/instructor/courses/${courseId}/edit`)
       router.refresh()
     } catch (error) {
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save lesson",
+        title: isAr ? "خطأ" : "Error",
+        description: isAr ? "حدث خطأ ما. يرجى المحاولة مرة أخرى." : "Something went wrong. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -148,13 +138,13 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
       const data = await res.json()
       form.setValue(fieldName, data.url)
       toast({
-        title: "Success",
-        description: "File uploaded successfully",
+        title: isAr ? "تم بنجاح" : "Success",
+        description: isAr ? "تم رفع الملف بنجاح" : "File uploaded successfully",
       })
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to upload file",
+        title: isAr ? "خطأ" : "Error",
+        description: isAr ? "فشل رفع الملف" : "Failed to upload file",
         variant: "destructive",
       })
       console.error(error)
@@ -173,11 +163,11 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
             name="moduleId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Module</FormLabel>
+                <FormLabel>{isAr ? "الوحدة" : "Module"}</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a module" />
+                      <SelectValue placeholder={isAr ? "اختر وحدة" : "Select a module"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -189,7 +179,7 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
                   </SelectContent>
                 </Select>
                 <FormDescription>
-                  Organize this lesson under a specific module.
+                  {isAr ? "نظم هذا الدرس تحت وحدة معينة." : "Organize this lesson under a specific module."}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -203,11 +193,11 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
               name="titleEn"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Title (English)</FormLabel>
+                  <FormLabel>{isAr ? "العنوان (إنجليزي)" : "Title (English)"}</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
-                      placeholder="Introduction to Python"
+                      placeholder={isAr ? "مقدمة في بايثون" : "Introduction to Python"}
                       dir="ltr"
                       lang="en"
                       autoComplete="off"
@@ -232,7 +222,7 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
               name="titleAr"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Title (Arabic)</FormLabel>
+                  <FormLabel>{isAr ? "العنوان (عربي)" : "Title (Arabic)"}</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="مقدمة في بايثون" dir="rtl" />
                   </FormControl>
@@ -246,11 +236,11 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
               name="slug"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Slug</FormLabel>
+                  <FormLabel>{isAr ? "الرابط المختصر (Slug)" : "Slug"}</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="introduction-to-python" />
+                    <Input {...field} placeholder={isAr ? "introduction-to-python" : "introduction-to-python"} />
                   </FormControl>
-                  <FormDescription>URL-friendly identifier</FormDescription>
+                  <FormDescription>{isAr ? "معرف مناسب للرابط" : "URL-friendly identifier"}</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -261,7 +251,7 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
               name="contentType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Content Type</FormLabel>
+                  <FormLabel>{isAr ? "نوع المحتوى" : "Content Type"}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -269,10 +259,10 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="video">Video</SelectItem>
-                      <SelectItem value="article">Article</SelectItem>
-                      <SelectItem value="quiz">Quiz</SelectItem>
-                      <SelectItem value="assignment">Assignment</SelectItem>
+                      <SelectItem value="video">{isAr ? "فيديو" : "Video"}</SelectItem>
+                      <SelectItem value="article">{isAr ? "مقال" : "Article"}</SelectItem>
+                      <SelectItem value="quiz">{isAr ? "اختبار" : "Quiz"}</SelectItem>
+                      <SelectItem value="assignment">{isAr ? "واجب" : "Assignment"}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -285,7 +275,7 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
               name="status"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Status</FormLabel>
+                  <FormLabel>{isAr ? "الحالة" : "Status"}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -293,8 +283,8 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="published">Published</SelectItem>
+                      <SelectItem value="draft">{isAr ? "مسودة" : "Draft"}</SelectItem>
+                      <SelectItem value="published">{isAr ? "منشور" : "Published"}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -307,7 +297,7 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
               name="orderIndex"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Order Index</FormLabel>
+                  <FormLabel>{isAr ? "ترتيب العرض" : "Order Index"}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -324,7 +314,7 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
               name="durationMinutes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Duration (minutes)</FormLabel>
+                  <FormLabel>{isAr ? "المدة (بالدقائق)" : "Duration (minutes)"}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -348,25 +338,25 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
                   <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                 </FormControl>
                 <div className="space-y-1 leading-none">
-                  <FormLabel>Free Preview</FormLabel>
-                  <FormDescription>Allow non-enrolled users to preview this lesson</FormDescription>
+                  <FormLabel>{isAr ? "معاينة مجانية" : "Free Preview"}</FormLabel>
+                  <FormDescription>{isAr ? "السماح لغير المشتركين بمعاينة هذا الدرس" : "Allow non-enrolled users to preview this lesson"}</FormDescription>
                 </div>
               </FormItem>
             )}
           />
 
           <div className="space-y-4 border rounded-md p-4">
-            <h3 className="text-lg font-medium">Content</h3>
+            <h3 className="text-lg font-medium">{isAr ? "المحتوى" : "Content"}</h3>
             <FormField
             control={form.control}
             name="videoUrl"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Video URL or Upload</FormLabel>
+                <FormLabel>{isAr ? "رابط الفيديو أو رفع ملف" : "Video URL or Upload"}</FormLabel>
                 <FormControl>
                   <div className="space-y-2">
                     <div className="flex gap-2">
-                      <Input {...field} value={field.value || ""} placeholder="https://youtube.com/... or upload file" />
+                      <Input {...field} value={field.value || ""} placeholder={isAr ? "https://youtube.com/... أو رفع ملف" : "https://youtube.com/... or upload file"} />
                       <div className="relative">
                         <Input
                           type="file"
@@ -392,11 +382,11 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
             name="thumbnailUrl"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Thumbnail URL or Upload (Cover Pic)</FormLabel>
+                <FormLabel>{isAr ? "رابط الصورة المصغرة أو رفع صورة" : "Thumbnail URL or Upload (Cover Pic)"}</FormLabel>
                 <FormControl>
                   <div className="space-y-2">
                     <div className="flex gap-2">
-                      <Input {...field} value={field.value || ""} placeholder="https://... or upload image" />
+                      <Input {...field} value={field.value || ""} placeholder={isAr ? "https://... أو رفع صورة" : "https://... or upload image"} />
                       <div className="relative">
                         <Input
                           type="file"
@@ -428,11 +418,11 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
             name="contentMarkdown"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Content (Markdown)</FormLabel>
+                <FormLabel>{isAr ? "المحتوى (Markdown)" : "Content (Markdown)"}</FormLabel>
                 <FormControl>
-                  <Textarea {...field} value={field.value || ""} rows={10} placeholder="# Lesson Content..." />
+                  <Textarea {...field} value={field.value || ""} rows={10} placeholder={isAr ? "# محتوى الدرس..." : "# Lesson Content..."} />
                 </FormControl>
-                <FormDescription>Use Markdown for formatting</FormDescription>
+                <FormDescription>{isAr ? "استخدم Markdown للتنسيق" : "Use Markdown for formatting"}</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -442,10 +432,10 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
         <div className="flex gap-4">
           <Button type="submit" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {lessonId ? "Update Lesson" : "Create Lesson"}
+            {lessonId ? (isAr ? "تحديث الدرس" : "Update Lesson") : (isAr ? "إنشاء الدرس" : "Create Lesson")}
           </Button>
           <Button type="button" variant="outline" onClick={() => router.back()} disabled={isLoading}>
-            Cancel
+            {isAr ? "إلغاء" : "Cancel"}
           </Button>
         </div>
       </form>

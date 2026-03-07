@@ -9,6 +9,7 @@ import { getCourseModules } from "@/lib/db/queries"
 export default async function EditInstructorLessonPage({ params }: { params: Promise<{ lang: string, courseId: string, lessonId: string }> }) {
   const { lang, courseId, lessonId } = await params
   const session = await auth()
+  const isAr = lang === "ar"
   
   if (!session?.user?.id || (session.user.role !== "instructor" && session.user.role !== "admin")) {
     redirect(`/${lang}/auth/login`)
@@ -44,8 +45,8 @@ export default async function EditInstructorLessonPage({ params }: { params: Pro
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold">Edit Lesson</h1>
-        <p className="text-muted-foreground">Update your lesson content.</p>
+        <h1 className="text-3xl font-bold">{isAr ? "تعديل الدرس" : "Edit Lesson"}</h1>
+        <p className="text-muted-foreground">{isAr ? "تحديث محتوى الدرس" : "Update your lesson content."}</p>
       </div>
       <div className="max-w-2xl">
         <InstructorLessonForm 

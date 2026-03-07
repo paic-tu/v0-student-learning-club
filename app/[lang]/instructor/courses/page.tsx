@@ -11,6 +11,7 @@ import { Users, Clock, Star } from "lucide-react"
 export default async function InstructorCoursesPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params
   const session = await auth()
+  const isAr = lang === "ar"
   
   if (!session?.user?.id || (session.user.role !== "instructor" && session.user.role !== "admin")) {
     redirect(`/${lang}/auth/login`)
@@ -22,23 +23,23 @@ export default async function InstructorCoursesPage({ params }: { params: Promis
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">My Courses</h1>
-          <p className="text-muted-foreground mt-2">Manage your courses and track student progress</p>
+          <h1 className="text-3xl font-bold">{isAr ? "دوراتي" : "My Courses"}</h1>
+          <p className="text-muted-foreground mt-2">{isAr ? "إدارة الدورات الخاصة بك وتتبع تقدم الطلاب" : "Manage your courses and track student progress"}</p>
         </div>
         <Button asChild>
-          <Link href={`/${lang}/instructor/courses/new`}>Create New Course</Link>
+          <Link href={`/${lang}/instructor/courses/new`}>{isAr ? "إنشاء دورة جديدة" : "Create New Course"}</Link>
         </Button>
       </div>
 
       {courses.length === 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle>No courses found</CardTitle>
-            <CardDescription>You have not created any courses yet.</CardDescription>
+            <CardTitle>{isAr ? "لم يتم العثور على دورات" : "No courses found"}</CardTitle>
+            <CardDescription>{isAr ? "لم تقم بإنشاء أي دورات بعد." : "You have not created any courses yet."}</CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild variant="outline">
-              <Link href={`/${lang}/instructor/courses/new`}>Get Started</Link>
+              <Link href={`/${lang}/instructor/courses/new`}>{isAr ? "ابدأ الآن" : "Get Started"}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -47,37 +48,39 @@ export default async function InstructorCoursesPage({ params }: { params: Promis
           {courses.map((course) => (
             <Card key={course.id} className="overflow-hidden flex flex-col h-full hover:shadow-lg transition-shadow">
               <div className="relative aspect-video w-full bg-muted">
-                {course.thumbnail_url ? (
+                {course.thumbnailUrl ? (
                   <Image 
-                    src={course.thumbnail_url} 
-                    alt={lang === "ar" ? course.title_ar : course.title_en}
+                    src={course.thumbnailUrl} 
+                    alt={isAr ? course.titleAr : course.titleEn}
                     fill
                     className="object-cover"
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full bg-secondary text-secondary-foreground">
-                    No Image
+                    {isAr ? "لا توجد صورة" : "No Image"}
                   </div>
                 )}
                 <div className="absolute top-2 right-2">
-                  <Badge variant={course.is_published ? "default" : "secondary"}>
-                    {course.is_published ? "Published" : "Draft"}
+                  <Badge variant={course.isPublished ? "default" : "secondary"}>
+                    {course.isPublished 
+                      ? (isAr ? "منشور" : "Published") 
+                      : (isAr ? "مسودة" : "Draft")}
                   </Badge>
                 </div>
               </div>
               <CardHeader>
                 <CardTitle className="line-clamp-1">
-                  {lang === "ar" ? course.title_ar : course.title_en}
+                  {isAr ? course.titleAr : course.titleEn}
                 </CardTitle>
                 <CardDescription className="line-clamp-2">
-                  {lang === "ar" ? course.description_ar : course.description_en}
+                  {isAr ? course.descriptionAr : course.descriptionEn}
                 </CardDescription>
               </CardHeader>
               <CardContent className="mt-auto space-y-4">
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Users className="h-4 w-4" />
-                    <span>{course.students_count || 0} Students</span>
+                    <span>{course.enrollmentCount || 0} {isAr ? "طالب" : "Students"}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Star className="h-4 w-4 text-yellow-500" />
@@ -86,10 +89,10 @@ export default async function InstructorCoursesPage({ params }: { params: Promis
                 </div>
                 <div className="flex gap-2">
                   <Button asChild variant="outline" className="flex-1">
-                    <Link href={`/${lang}/instructor/courses/${course.id}/edit`}>Edit</Link>
+                    <Link href={`/${lang}/instructor/courses/${course.id}/edit`}>{isAr ? "تعديل" : "Edit"}</Link>
                   </Button>
                   <Button asChild className="flex-1">
-                    <Link href={`/${lang}/instructor/courses/${course.id}/edit`}>Manage</Link>
+                    <Link href={`/${lang}/instructor/courses/${course.id}/edit`}>{isAr ? "إدارة" : "Manage"}</Link>
                   </Button>
                 </div>
               </CardContent>

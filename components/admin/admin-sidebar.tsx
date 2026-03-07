@@ -196,27 +196,18 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
         isCollapsed ? "w-[70px]" : "w-64"
       )}
     >
-      <div className={cn("flex h-16 items-center border-b", isCollapsed ? "justify-center px-0" : "px-6")}>
-        <Link href={`/${locale}/admin`} className="flex items-center gap-2 font-bold text-xl overflow-hidden whitespace-nowrap">
-          {/* <Image src="/logo.svg" alt="Neon Logo" width={40} height={40} className="h-8 w-auto" /> */}
-          {!isCollapsed ? (
+      <div className={cn("flex h-16 items-center border-b", isCollapsed ? "justify-center" : "px-6 justify-between")}>
+        {!isCollapsed && (
+          <Link href={`/${locale}/admin`} className="flex items-center gap-2 font-bold text-xl overflow-hidden whitespace-nowrap">
             <span>Neon Admin</span>
-          ) : (
-            <span className="text-2xl text-primary">A</span>
-          )}
-        </Link>
-      </div>
-      
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <AdminNav user={user} isCollapsed={isCollapsed} />
-      </div>
-
-      <div className="p-4 border-t flex justify-center">
+          </Link>
+        )}
+        
         <Button 
           variant="ghost" 
           size="icon" 
           onClick={toggleSidebar}
-          className="w-full flex items-center justify-center hover:bg-muted"
+          className={cn("hover:bg-muted", isCollapsed ? "h-10 w-10" : "h-8 w-8")}
         >
           {isCollapsed ? (
              isAr ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
@@ -224,6 +215,10 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
              isAr ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />
           )}
         </Button>
+      </div>
+      
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <AdminNav user={user} isCollapsed={isCollapsed} />
       </div>
     </aside>
   )
