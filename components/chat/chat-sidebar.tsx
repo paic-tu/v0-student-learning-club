@@ -18,8 +18,8 @@ interface ChatSidebarProps {
 
 export function ChatSidebar({ conversations, selectedId, onSelect, onCommunityChat, action }: ChatSidebarProps) {
   return (
-    <div className="flex flex-col h-full border-r w-80 bg-background">
-      <div className="p-4 border-b flex items-center justify-between">
+    <div className="flex flex-col h-full border-r w-full md:w-80 bg-background">
+      <div className="p-4 border-b flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur z-10">
         <h2 className="font-semibold text-lg">Messages</h2>
         {action}
       </div>

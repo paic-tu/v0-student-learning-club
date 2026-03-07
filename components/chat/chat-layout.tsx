@@ -73,28 +73,21 @@ export function ChatLayout({ userId, initialConversations = [] }: ChatLayoutProp
   if (isMobile) {
     if (selectedId) {
       return (
-        <div className="h-[calc(100vh-4rem)] flex flex-col bg-background">
-          <div className="p-2 border-b">
-            <button 
-              onClick={() => setSelectedId(undefined)}
-              className="text-sm text-muted-foreground flex items-center gap-1"
-            >
-              ← Back
-            </button>
-          </div>
+        <div className="h-[calc(100dvh-4rem)] flex flex-col bg-background">
           <ChatWindow
             conversationId={selectedId}
             currentUserId={userId}
             recipientName={selectedConversation?.name}
             recipientImage={selectedConversation?.image}
+            onBack={() => setSelectedId(undefined)}
           />
         </div>
       )
     }
 
     return (
-      <div className="h-[calc(100vh-4rem)] flex flex-col bg-background">
-         <div className="flex-1 overflow-hidden">
+      <div className="h-[calc(100dvh-4rem)] flex flex-col bg-background">
+         <div className="flex-1 overflow-hidden w-full">
             <ChatSidebar
             conversations={conversations}
             selectedId={selectedId}
@@ -109,19 +102,17 @@ export function ChatLayout({ userId, initialConversations = [] }: ChatLayoutProp
 
   // Desktop View
   return (
-    <div className="flex h-[calc(100vh-8rem)] border rounded-lg overflow-hidden bg-background shadow-sm">
-      <div className="w-80 border-r flex flex-col">
-          <div className="flex-1 overflow-hidden">
-            <ChatSidebar
-            conversations={conversations}
-            selectedId={selectedId}
-            onSelect={handleSelectConversation}
-            onCommunityChat={handleJoinCommunity}
-            action={<NewChatDialog onChatCreated={handleNewChat} />}
-            />
-          </div>
+    <div className="flex h-[calc(100dvh-8rem)] border rounded-lg overflow-hidden bg-background shadow-sm">
+      <div className="flex-none h-full">
+        <ChatSidebar
+          conversations={conversations}
+          selectedId={selectedId}
+          onSelect={handleSelectConversation}
+          onCommunityChat={handleJoinCommunity}
+          action={<NewChatDialog onChatCreated={handleNewChat} />}
+        />
       </div>
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {selectedId ? (
           <ChatWindow
             conversationId={selectedId}
@@ -130,8 +121,13 @@ export function ChatLayout({ userId, initialConversations = [] }: ChatLayoutProp
             recipientImage={selectedConversation?.image}
           />
         ) : (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground">
-            Select a conversation to start chatting
+          <div className="flex-1 flex items-center justify-center text-muted-foreground bg-muted/10">
+            <div className="flex flex-col items-center gap-2">
+              <div className="p-4 rounded-full bg-muted">
+                <Loader2 className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p>Select a conversation to start chatting</p>
+            </div>
           </div>
         )}
       </div>
