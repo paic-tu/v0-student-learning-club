@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils"
 import { GifPicker } from "./gif-picker"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { UserActionPopover } from "./user-action-popover"
 
 const formSchema = z.object({
   content: z.string().min(1),
@@ -165,10 +166,12 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
               )}
             >
               {!isSameSender ? (
-                <Avatar className="w-8 h-8 mt-1 cursor-pointer hover:scale-105 transition-transform">
-                  <AvatarImage src={msg.sender?.avatarUrl || "/placeholder-user.jpg"} />
-                  <AvatarFallback>{msg.sender?.name?.[0]}</AvatarFallback>
-                </Avatar>
+                <UserActionPopover user={msg.sender} currentUserId={currentUserId}>
+                  <Avatar className="w-8 h-8 mt-1 cursor-pointer hover:scale-105 transition-transform">
+                    <AvatarImage src={msg.sender?.avatarUrl || "/placeholder-user.jpg"} />
+                    <AvatarFallback>{msg.sender?.name?.[0]}</AvatarFallback>
+                  </Avatar>
+                </UserActionPopover>
               ) : (
                  <div className="w-8" /> 
               )}
@@ -176,9 +179,11 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
               <div className={cn("flex-1 min-w-0 flex flex-col", isMe && "items-end")}>
                 {!isSameSender && (
                   <div className={cn("flex items-center gap-2 mb-1 opacity-70 group-hover:opacity-100 transition-opacity", isMe && "flex-row-reverse")}>
-                    <span className="font-semibold text-sm hover:underline cursor-pointer">
-                      {msg.sender?.name}
-                    </span>
+                    <UserActionPopover user={msg.sender} currentUserId={currentUserId}>
+                      <span className="font-semibold text-sm hover:underline cursor-pointer">
+                        {msg.sender?.name}
+                      </span>
+                    </UserActionPopover>
                     {msg.sender?.role && (
                       <span className={cn(
                         "text-[10px] px-1.5 py-0.5 rounded-full text-white font-medium uppercase tracking-wider",

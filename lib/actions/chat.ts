@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { conversations, conversationParticipants, messages, users } from "@/lib/db/schema"
+import { conversations, conversationParticipants, messages, users, enrollments } from "@/lib/db/schema"
 import { eq, and, desc, or, sql, asc, gt, ne } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
@@ -276,4 +276,50 @@ export async function getAllUsers() {
         },
         limit: 50
     })
+}
+
+export async function getPublicUserProfile(userId: string) {
+  const session = await auth()
+  if (!session?.user?.id) return null
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: {
+      id: true,
+      name: true,
+      avatarUrl: true,
+      role: true,
+      bio: true,
+      headline: true,
+      websiteUrl: true,
+      twitterUrl: true,
+      linkedinUrl: true,
+      points: true,
+      level: true,
+      createdAt: true,
+    },
+  })
+
+  if (!user) return null
+
+  // Get some stats
+  const enrolledCount = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(enrollments)
+    .where(eq(enrollments.userId, userId))
+    .then((res) => res[0].count)
+
+  const completedCount = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(enrollments)
+    .where(and(eq(enrollments.userId, userId), eq(enrollments.status, "completed")))
+    .then((res) => res[0].count)
+
+  return {
+    ...user,
+    stats: {
+      enrolled: enrolledCount,
+      completed: completedCount,
+    }
+  }
 }
