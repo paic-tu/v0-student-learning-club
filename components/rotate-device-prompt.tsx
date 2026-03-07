@@ -36,7 +36,10 @@ export function RotateDevicePrompt() {
         // If we rotate to landscape (or are on big screen), hide it
         if (isSmallScreen && !isPortrait) {
              // User rotated to landscape -> Mark as seen so it doesn't return
-             sessionStorage.setItem("hasSeenRotatePrompt_v3", "true")
+             // Only write if not already set to avoid constant writes
+             if (sessionStorage.getItem("hasSeenRotatePrompt_v3") !== "true") {
+                sessionStorage.setItem("hasSeenRotatePrompt_v3", "true")
+             }
         }
         setShowPrompt(false)
       }
@@ -69,10 +72,10 @@ export function RotateDevicePrompt() {
   if (!showPrompt) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/95 backdrop-blur-md p-6 text-center animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/95 p-6 text-center animate-in fade-in duration-300">
       <div className="relative mb-10">
         {/* Phone Frame */}
-        <div className="relative h-40 w-24 rounded-[2rem] border-4 border-foreground/20 bg-background/50 shadow-2xl animate-rotate-device flex items-center justify-center overflow-hidden">
+        <div className="relative h-40 w-24 rounded-[2rem] border-4 border-foreground/20 bg-background/50 shadow-2xl animate-rotate-device flex items-center justify-center overflow-hidden will-change-transform">
           {/* Notch/Speaker */}
           <div className="absolute top-3 left-1/2 h-1.5 w-8 -translate-x-1/2 rounded-full bg-foreground/20" />
           
