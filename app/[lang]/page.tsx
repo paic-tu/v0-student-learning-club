@@ -28,9 +28,12 @@ export default function HomePage() {
         : user.role === "instructor" 
           ? `/${language}/instructor/dashboard`
           : `/${language}/student/dashboard`
-      router.replace(dashboardLink)
+      
+      // Use window.location.href to ensure a full state refresh and avoid client-side routing issues
+      // caused by middleware/client-state mismatches
+      window.location.href = dashboardLink
     }
-  }, [isLoading, isAuthenticated, user, language, router])
+  }, [isLoading, isAuthenticated, user, language])
 
   return (
     <div className="min-h-screen">

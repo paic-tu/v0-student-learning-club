@@ -64,9 +64,16 @@ export default function LoginPage() {
             : "Login failed"
         setError(msg)
         console.error("Login failed:", result.error)
+      } else {
+        // If no error and no redirect thrown yet, force redirect manually
+        // This handles cases where loginAction might return success without throwing redirect
+        window.location.href = callbackUrl
       }
     } catch (error: any) {
       if (error.message === "NEXT_REDIRECT" || error.digest?.startsWith("NEXT_REDIRECT")) {
+        // Force hard navigation if redirect is thrown
+        const callbackUrl = searchParams.get("callbackUrl") || `/${language}/dashboard`
+        window.location.href = callbackUrl
         return
       }
       const errorMessage = language === "ar" ? "حدث خطأ أثناء تسجيل الدخول" : "An error occurred during login"

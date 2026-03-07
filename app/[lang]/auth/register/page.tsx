@@ -59,8 +59,8 @@ export default function RegisterPage() {
             title: language === "ar" ? "تم إنشاء الحساب" : "Account created",
             description: language === "ar" ? "مرحباً بك في نيون" : "Welcome to Neon",
           })
-          router.push(`/${language}/dashboard`)
-          router.refresh()
+          // Force hard navigation to ensure session is picked up
+          window.location.href = `/${language}/dashboard`
         }
       } else {
         let errorMessage = result.error
@@ -83,7 +83,8 @@ export default function RegisterPage() {
           title: language === "ar" ? "تم إنشاء الحساب" : "Account created",
           description: language === "ar" ? "مرحباً بك في نيون" : "Welcome to Neon",
         })
-        router.push(`/${language}/dashboard`)
+        // Force hard navigation here as well
+        window.location.href = `/${language}/dashboard`
         return
       }
       console.error("Client registration error:", error)
