@@ -18,22 +18,8 @@ import { useAuth } from "@/lib/auth-context"
 export default function HomePage() {
   const { language } = useLanguage()
   const isRTL = language === "ar"
-  const { user, isAuthenticated, isLoading } = useAuth()
+  const { user, isAuthenticated } = useAuth()
   const router = useRouter()
-
-  useEffect(() => {
-    if (!isLoading && isAuthenticated && user) {
-      const dashboardLink = user.role === "admin" 
-        ? `/${language}/admin`
-        : user.role === "instructor" 
-          ? `/${language}/instructor/dashboard`
-          : `/${language}/student/dashboard`
-      
-      // Use window.location.href to ensure a full state refresh and avoid client-side routing issues
-      // caused by middleware/client-state mismatches
-      window.location.href = dashboardLink
-    }
-  }, [isLoading, isAuthenticated, user, language])
 
   return (
     <div className="min-h-screen">
@@ -85,7 +71,7 @@ export default function HomePage() {
                         : user?.role === "instructor" 
                           ? `/${language}/instructor/dashboard`
                           : `/${language}/student/dashboard`
-                      router.push(dashboardLink)
+                      window.location.href = dashboardLink
                     }}
                   >
                     <Target className="h-5 w-5 mr-2" />
