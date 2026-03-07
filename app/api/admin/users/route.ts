@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
         name: users.name,
         email: users.email,
         role: users.role,
-        avatarUrl: users.image, // Mapping image to avatarUrl to match previous response
+        avatarUrl: users.avatarUrl,
         createdAt: users.createdAt,
       })
       .from(users)

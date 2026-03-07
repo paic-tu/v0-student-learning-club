@@ -1,7 +1,10 @@
 import { neon } from "@neondatabase/serverless"
 
-// Hardcoded for script execution to avoid dotenv issues
-const databaseUrl = "postgresql://neondb_owner:npg_wQIfhX8gvT9e@ep-falling-cloud-a424l6xo-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require"
+// Read from environment variable
+const databaseUrl = process.env.DATABASE_URL
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL environment variable is not set")
+}
 
 const sql = neon(databaseUrl)
 

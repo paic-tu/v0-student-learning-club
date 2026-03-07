@@ -1,8 +1,13 @@
+"use client"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ShieldAlert } from "lucide-react"
+import { useLanguage } from "@/lib/language-context"
 
 export default function AccessDeniedPage() {
+  const { language } = useLanguage()
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 text-center">
       <div className="bg-destructive/10 p-6 rounded-full mb-6">
@@ -14,10 +19,10 @@ export default function AccessDeniedPage() {
       </p>
       <div className="flex gap-4">
         <Button asChild variant="default">
-          <Link href="/">Return Home</Link>
+          <Link href={`/${language}`}>Return Home</Link>
         </Button>
         <Button asChild variant="outline">
-          <Link href="/auth/login">Login / Switch Account</Link>
+          <Link href={`/${language}/auth/login`}>Login / Switch Account</Link>
         </Button>
       </div>
     </div>

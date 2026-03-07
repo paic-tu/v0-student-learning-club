@@ -103,7 +103,7 @@ export default async function StudentDashboardPage({ params }: { params: Promise
             <CardTitle>{isAr ? "دوراتي" : "My Courses"}</CardTitle>
           </CardHeader>
           <CardContent>
-            {data.enrolledCourses.length > 0 ? (
+            {data?.enrolledCourses?.length > 0 ? (
               <div className="space-y-4">
                 {data.enrolledCourses.map((enrollment: any) => (
                   <div key={enrollment.id} className="flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">

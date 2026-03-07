@@ -2,9 +2,9 @@ import { auth } from "@/lib/auth"
 import { notFound, redirect } from "next/navigation"
 import { CourseEditForm } from "@/components/admin/course-edit-form"
 import { getAllCategories } from "@/lib/db/queries"
-import { neon } from "@neondatabase/serverless"
-
-const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
+import { db } from "@/lib/db"
+import { courses } from "@/lib/db/schema"
+import { eq, and } from "drizzle-orm"
 
 export default async function InstructorCourseEditPage({ params }: { params: Promise<{ lang: string, courseId: string }> }) {
   const { lang, courseId } = await params
@@ -15,21 +15,25 @@ export default async function InstructorCourseEditPage({ params }: { params: Pro
   }
 
   // Fetch course and verify ownership
-  const courses = await sql`
-    SELECT 
-      c.*,
-      cat.name_en as category_name
-    FROM courses c
-    LEFT JOIN categories cat ON c.category_id = cat.id
-    WHERE c.id = ${courseId} AND c.instructor_id = ${session.user.id}
-    LIMIT 1
-  `
+  const courseRaw = await db.query.courses.findFirst({
+    where: and(
+      eq(courses.id, courseId),
+      eq(courses.instructorId, session.user.id)
+    ),
+    with: {
+      category: true
+    }
+  })
 
-  if (courses.length === 0) {
+  if (!courseRaw) {
     notFound()
   }
 
-  const course = courses[0]
+  const course = {
+    ...courseRaw,
+    category_name: courseRaw.category?.nameEn
+  }
+
   const categories = await getAllCategories()
   
   // Instructors can only see themselves

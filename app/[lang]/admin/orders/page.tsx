@@ -1,5 +1,7 @@
 import { requirePermission } from "@/lib/rbac/require-permission"
-import { neon } from "@neondatabase/serverless"
+import { db } from "@/lib/db"
+import { orders, users } from "@/lib/db/schema"
+import { eq, desc } from "drizzle-orm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -9,21 +11,24 @@ import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { OrderActionsMenu } from "@/components/admin/order-actions-menu"
 
-const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
-
 export default async function OrdersManagementPage() {
   await requirePermission("orders:read")
 
-  const orders = await sql`
-    SELECT 
-      o.*,
-      u.name as user_name,
-      u.email as user_email
-    FROM orders o
-    JOIN users u ON o.user_id = u.id
-    ORDER BY o.created_at DESC
-    LIMIT 100
-  `
+  const ordersData = await db
+    .select({
+      id: orders.id,
+      userId: orders.userId,
+      totalAmount: orders.totalAmount,
+      status: orders.status,
+      createdAt: orders.createdAt,
+      updatedAt: orders.updatedAt,
+      user_name: users.name,
+      user_email: users.email,
+    })
+    .from(orders)
+    .leftJoin(users, eq(orders.userId, users.id))
+    .orderBy(desc(orders.createdAt))
+    .limit(100)
 
   return (
     <div className="space-y-6">
@@ -49,7 +54,7 @@ export default async function OrdersManagementPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Orders ({orders.length})</CardTitle>
+          <CardTitle>All Orders ({ordersData.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -64,7 +69,7 @@ export default async function OrdersManagementPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {orders.map((order: any) => (
+              {ordersData.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">#{order.id}</TableCell>
                   <TableCell>
@@ -73,11 +78,11 @@ export default async function OrdersManagementPage() {
                       <p className="text-sm text-muted-foreground">{order.user_email}</p>
                     </div>
                   </TableCell>
-                  <TableCell>${order.total_amount}</TableCell>
+                  <TableCell>${Number(order.totalAmount).toFixed(2)}</TableCell>
                   <TableCell>
                     <Badge
                       variant={
-                        order.status === "completed"
+                        order.status === "completed" || order.status === "paid" || order.status === "delivered"
                           ? "default"
                           : order.status === "cancelled"
                             ? "destructive"
@@ -87,13 +92,13 @@ export default async function OrdersManagementPage() {
                       {order.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
+                  <TableCell>{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "-"}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       <Button variant="ghost" size="sm" asChild>
                         <Link href={`/admin/orders/${order.id}`}>View</Link>
                       </Button>
-                      <OrderActionsMenu orderId={order.id} currentStatus={order.status} />
+                      <OrderActionsMenu orderId={order.id} currentStatus={order.status || "pending"} />
                     </div>
                   </TableCell>
                 </TableRow>

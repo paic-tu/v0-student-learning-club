@@ -1,19 +1,23 @@
 import { Suspense } from "react"
-import { neon } from "@neondatabase/serverless"
+import { db } from "@/lib/db"
+import { courses } from "@/lib/db/schema"
+import { eq, asc } from "drizzle-orm"
 import { PageHeader } from "@/components/admin/page-header"
 import { LessonForm } from "@/components/admin/lesson-form"
 import { requireAdmin } from "@/lib/rbac/require-permission"
 
-const sql = neon(process.env.DATABASE_URL!)
-
 async function getCourses() {
   try {
-    const result = await sql`
-      SELECT id, title_en as "titleEn", title_ar as "titleAr", is_published as "isPublished"
-      FROM courses
-      WHERE is_published = true
-      ORDER BY title_en ASC
-    `
+    const result = await db.query.courses.findMany({
+      where: eq(courses.isPublished, true),
+      columns: {
+        id: true,
+        titleEn: true,
+        titleAr: true,
+        isPublished: true,
+      },
+      orderBy: [asc(courses.titleEn)],
+    })
     return result
   } catch (error) {
     console.error("[v0] Error fetching courses:", error)

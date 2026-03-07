@@ -40,6 +40,7 @@ export default function RegisterPage() {
         const loginFormData = new FormData()
         loginFormData.append("email", email)
         loginFormData.append("password", password)
+        loginFormData.append("redirectTo", `/${language}/dashboard`)
         
         const loginResult = await loginAction(undefined, loginFormData)
 
@@ -58,13 +59,30 @@ export default function RegisterPage() {
           router.refresh()
         }
       } else {
+        let errorMessage = result.error
+        if (language === "ar") {
+          if (result.error === "Email already registered") errorMessage = "البريد الإلكتروني مسجل مسبقاً"
+          else if (result.error === "Missing required fields") errorMessage = "يرجى ملء جميع الحقول المطلوبة"
+          else if (result.error === "Invalid input format") errorMessage = "تنسيق البيانات غير صحيح"
+          else errorMessage = "فشل إنشاء الحساب"
+        }
+
         toast({
           title: language === "ar" ? "خطأ" : "Error",
-          description: result.error || (language === "ar" ? "فشل إنشاء الحساب" : "Registration failed"),
+          description: errorMessage || (language === "ar" ? "فشل إنشاء الحساب" : "Registration failed"),
           variant: "destructive",
         })
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message === "NEXT_REDIRECT" || error.digest?.startsWith("NEXT_REDIRECT")) {
+        toast({
+          title: language === "ar" ? "تم إنشاء الحساب" : "Account created",
+          description: language === "ar" ? "مرحباً بك في نيون" : "Welcome to Neon",
+        })
+        router.push(`/${language}/dashboard`)
+        return
+      }
+      console.error("Client registration error:", error)
       toast({
         title: language === "ar" ? "خطأ" : "Error",
         description: language === "ar" ? "حدث خطأ أثناء إنشاء الحساب" : "An error occurred during registration",

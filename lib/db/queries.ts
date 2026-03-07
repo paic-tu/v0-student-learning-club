@@ -1,198 +1,745 @@
 "use server"
 
-import { neon } from "@neondatabase/serverless"
-import { and, desc, eq } from "drizzle-orm/expressions"
+import { and, desc, eq, count, sql, inArray, asc, getTableColumns, sum, not } from "drizzle-orm"
 import { db } from "@/lib/db"
-import { courses, enrollments, lessons, notes, users, bookmarks, modules, progress, carts, cartItems, products, orders, orderItems, reviews } from "@/lib/db/schema"
-
-const sql = neon(process.env.DATABASE_URL!)
-
-let cachedUsersColumns: Set<string> | null = null
-
-async function getUsersColumns() {
-  if (cachedUsersColumns) return cachedUsersColumns
-  const rows = await sql`
-    SELECT column_name
-    FROM information_schema.columns
-    WHERE table_schema = 'public' AND table_name = 'users'
-  `
-  cachedUsersColumns = new Set(rows.map((r: any) => r.column_name))
-  return cachedUsersColumns
-}
+import { 
+  courses, enrollments, lessons, notes, users, bookmarks, modules, progress, 
+  carts, cartItems, products, orders, orderItems, reviews,
+  certificates, challenges, contests, categories, challengeSubmissions, contestParticipants,
+  cohorts, cohortMembers, cohortCourses, cohortSchedule, cohortAnnouncements,
+  mentors, bookings, bookingReviews, mentorAvailability
+} from "@/lib/db/schema"
 
 // Courses
 export async function getAllCourses() {
   try {
-    const courses = await sql`
-      SELECT 
-        c.*,
-        u.name as instructor_name,
-        cat.name_en as category_name_en,
-        cat.name_ar as category_name_ar
-      FROM courses c
-      JOIN users u ON c.instructor_id = u.id
-      LEFT JOIN categories cat ON c.category_id = cat.id
-      WHERE c.is_published = true
-      ORDER BY c.created_at DESC
-    `
-    return courses
+    const allCourses = await db.query.courses.findMany({
+      where: eq(courses.isPublished, true),
+      with: {
+        instructor: true,
+        category: true,
+      },
+      orderBy: [desc(courses.createdAt)],
+    })
+
+    return allCourses.map(c => ({
+      ...c,
+      instructor_name: c.instructor.name,
+      category_name_en: c.category?.nameEn,
+      category_name_ar: c.category?.nameAr,
+    }))
   } catch (error) {
     console.error("[v0] Error fetching courses:", error)
     return []
   }
 }
 
-export async function getUserBookmarks(userId: string) {
+export async function getCourseById(id: string) {
   try {
-    const userBookmarks = await sql`
-      SELECT 
-        b.id,
-        b.course_id as "courseId",
-        b.created_at,
-        c.title_en as "courseTitleEn",
-        c.title_ar as "courseTitleAr",
-        c.thumbnail_url as "thumbnailUrl",
-        c.price,
-        c.is_free as "isFree",
-        cat.name_en as "categoryNameEn",
-        cat.name_ar as "categoryNameAr",
-        u.name as "instructorName"
-      FROM bookmarks b
-      JOIN courses c ON b.course_id = c.id
-      LEFT JOIN categories cat ON c.category_id = cat.id
-      LEFT JOIN users u ON c.instructor_id = u.id
-      WHERE b.user_id = ${userId}
-      ORDER BY b.created_at DESC
-    `
-    
-    // Map to expected structure
-    return userBookmarks.map(b => ({
-      id: b.id,
-      courseId: b.courseId,
-      createdAt: b.created_at,
-      course: {
-        titleEn: b.courseTitleEn,
-        titleAr: b.courseTitleAr,
-        thumbnailUrl: b.thumbnailUrl,
-        price: b.price,
-        isFree: b.isFree,
-        category: {
-          nameEn: b.categoryNameEn,
-          nameAr: b.categoryNameAr
+    const course = await db.query.courses.findFirst({
+      where: eq(courses.id, id),
+      with: {
+        instructor: true,
+        category: true,
+        modules: {
+          orderBy: [asc(modules.orderIndex)],
+          with: {
+            lessons: {
+              orderBy: [asc(lessons.orderIndex)],
+            },
+          },
         },
-        instructor: {
-          name: b.instructorName
+      },
+    })
+    return course
+  } catch (error) {
+    console.error("Error fetching course:", error)
+    return null
+  }
+}
+
+export async function getCourseContent(courseId: string) {
+  return getCourseById(courseId)
+}
+
+export async function getLessonById(id: string) {
+  try {
+    const lesson = await db.query.lessons.findFirst({
+      where: eq(lessons.id, id),
+      with: {
+        module: {
+          with: {
+            course: true
+          }
         }
       }
-    }))
+    })
+    return lesson
   } catch (error) {
-    console.error("[v0] Error fetching bookmarks:", error)
+    console.error("Error fetching lesson:", error)
+    return null
+  }
+}
+
+export async function getCourseModules(courseId: string) {
+  try {
+    return await db.query.modules.findMany({
+      where: eq(modules.courseId, courseId),
+      orderBy: [asc(modules.orderIndex)],
+      with: {
+        lessons: {
+          orderBy: [asc(lessons.orderIndex)],
+        },
+      },
+    })
+  } catch (error) {
+    console.error("Error fetching course modules:", error)
     return []
   }
 }
 
-export async function toggleBookmark(userId: string, courseId: string) {
+export async function getCourseLessons(courseId: string) {
   try {
-    const existing = await sql`
-      SELECT id FROM bookmarks 
-      WHERE user_id = ${userId} AND course_id = ${courseId}
-    `
+    return await db.query.lessons.findMany({
+      where: eq(lessons.courseId, courseId),
+      orderBy: [asc(lessons.orderIndex)],
+      with: {
+        module: true
+      }
+    })
+  } catch (error) {
+    console.error("Error fetching course lessons:", error)
+    return []
+  }
+}
+
+export async function getInstructors() {
+  try {
+    return await db.query.users.findMany({
+      where: inArray(users.role, ["instructor", "admin"]),
+    })
+  } catch (error) {
+    console.error("Error fetching instructors:", error)
+    return []
+  }
+}
+
+export async function getInstructorCourses(instructorId: string) {
+  try {
+    return await db.query.courses.findMany({
+      where: eq(courses.instructorId, instructorId),
+      orderBy: [desc(courses.createdAt)],
+      with: {
+        category: true,
+      }
+    })
+  } catch (error) {
+    console.error("Error fetching instructor courses:", error)
+    return []
+  }
+}
+
+export async function getInstructorStats(instructorId: string) {
+  try {
+    const coursesCount = await db
+      .select({ count: count() })
+      .from(courses)
+      .where(eq(courses.instructorId, instructorId))
+      .then((res) => res[0].count)
+
+    const enrollmentsCount = await db
+      .select({ count: count() })
+      .from(enrollments)
+      .innerJoin(courses, eq(enrollments.courseId, courses.id))
+      .where(eq(courses.instructorId, instructorId))
+      .then((res) => res[0].count)
+
+    // Calculate total revenue (mock calculation for now as we don't have transaction amount linked directly easily without more joins)
+    // Assuming we can sum up order items for courses owned by instructor
+    // For now returning 0 or mock
+    const totalRevenue = 0 
+
+    // Average rating
+    const reviewsData = await db
+        .select({ rating: reviews.rating })
+        .from(reviews)
+        .innerJoin(courses, eq(reviews.courseId, courses.id))
+        .where(eq(courses.instructorId, instructorId))
     
-    if (existing.length > 0) {
-      await sql`
-        DELETE FROM bookmarks 
-        WHERE user_id = ${userId} AND course_id = ${courseId}
-      `
-      return { bookmarked: false }
-    } else {
-      await sql`
-        INSERT INTO bookmarks (user_id, course_id)
-        VALUES (${userId}, ${courseId})
-      `
-      return { bookmarked: true }
+    const averageRating = reviewsData.length > 0 
+        ? reviewsData.reduce((acc, curr) => acc + curr.rating, 0) / reviewsData.length 
+        : 0
+
+    return {
+      totalStudents: enrollmentsCount,
+      totalCourses: coursesCount,
+      totalRevenue: totalRevenue,
+      averageRating: averageRating
     }
   } catch (error) {
-    console.error("[v0] Error toggling bookmark:", error)
-    throw error
+    console.error("Error fetching instructor stats:", error)
+    return {
+      totalStudents: 0,
+      totalCourses: 0,
+      totalRevenue: 0,
+      averageRating: 0
+    }
   }
 }
 
-export async function isBookmarked(userId: string, courseId: string) {
+export async function getInstructorAnalytics(instructorId: string) {
+  return getInstructorStats(instructorId)
+}
+
+export async function getInstructorCoursePerformance(instructorId: string) {
   try {
-    const result = await sql`
-      SELECT 1 FROM bookmarks 
-      WHERE user_id = ${userId} AND course_id = ${courseId}
-    `
-    return result.length > 0
+    const instructorCourses = await db.query.courses.findMany({
+      where: eq(courses.instructorId, instructorId),
+      orderBy: [desc(courses.createdAt)],
+    })
+
+    // For each course, get enrollment count and average rating
+    const performanceData = await Promise.all(instructorCourses.map(async (course) => {
+        const enrollmentsCount = await db
+            .select({ count: count() })
+            .from(enrollments)
+            .where(eq(enrollments.courseId, course.id))
+            .then((res) => res[0].count)
+
+        const reviewsData = await db
+            .select({ rating: reviews.rating })
+            .from(reviews)
+            .where(eq(reviews.courseId, course.id))
+        
+        const averageRating = reviewsData.length > 0
+            ? reviewsData.reduce((acc, curr) => acc + curr.rating, 0) / reviewsData.length
+            : 0
+
+        return {
+            ...course,
+            enrollments: enrollmentsCount,
+            rating: averageRating,
+            revenue: 0 // Mock
+        }
+    }))
+
+    return performanceData
   } catch (error) {
-    console.error("[v0] Error checking bookmark:", error)
-    return false
+    console.error("Error fetching instructor course performance:", error)
+    return []
   }
 }
 
-export async function getLearningData(userId: string, courseId: string, lessonId: string, userRole: string) {
+export async function getEnrollment(userId: string, courseId: string) {
   try {
-    // 1. Check enrollment if not instructor/admin
-    if (userRole === 'student') {
-      const isEnrolled = await checkEnrollmentStatus(userId, courseId)
-      if (!isEnrolled) {
+    return await db.query.enrollments.findFirst({
+      where: and(eq(enrollments.userId, userId), eq(enrollments.courseId, courseId)),
+      with: {
+        course: true
+      }
+    })
+  } catch (error) {
+    console.error("Error fetching enrollment:", error)
+    return null
+  }
+}
+
+export async function checkEnrollmentStatus(userId: string, courseId: string) {
+  return getEnrollment(userId, courseId)
+}
+
+// Store & Cart
+export async function getAllStoreItems() {
+  return getProducts()
+}
+
+export async function addToCart(userId: string, data: any) {
+  try {
+    // Get or create cart
+    let cart = await db.query.carts.findFirst({
+        where: eq(carts.userId, userId)
+    })
+    
+    if (!cart) {
+        const [newCart] = await db.insert(carts).values({ userId }).returning()
+        cart = newCart
+    }
+
+    // Check if item exists
+    const existingItem = await db.query.cartItems.findFirst({
+        where: and(
+            eq(cartItems.cartId, cart.id),
+            data.courseId ? eq(cartItems.courseId, data.courseId) : eq(cartItems.productId, data.productId)
+        )
+    })
+
+    if (existingItem) {
+        // Update quantity
+        await db.update(cartItems)
+            .set({ quantity: existingItem.quantity + (data.quantity || 1) })
+            .where(eq(cartItems.id, existingItem.id))
+    } else {
+        // Add new item
+        await db.insert(cartItems).values({
+            cartId: cart.id,
+            ...data,
+            quantity: data.quantity || 1
+        })
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error("Error adding to cart:", error)
+    return { success: false, error: "Failed to add to cart" }
+  }
+}
+
+export async function getCartWithItems(userId: string) {
+  try {
+    const cart = await db.query.carts.findFirst({
+      where: eq(carts.userId, userId),
+      with: {
+        items: {
+          with: {
+            course: true,
+            product: true
+          }
+        }
+      }
+    })
+    return cart
+  } catch (error) {
+    console.error("Error fetching cart:", error)
+    return null
+  }
+}
+
+export async function clearCart(userId: string) {
+  try {
+    const cart = await db.query.carts.findFirst({
+        where: eq(carts.userId, userId)
+    })
+    if (cart) {
+        await db.delete(cartItems).where(eq(cartItems.cartId, cart.id))
+    }
+    return { success: true }
+  } catch (error) {
+    console.error("Error clearing cart:", error)
+    return { success: false, error: "Failed to clear cart" }
+  }
+}
+
+export async function createOrder(userId: string, data: any) {
+  try {
+    const cart = await getCartWithItems(userId)
+    if (!cart || !cart.items || cart.items.length === 0) {
+        return { success: false, error: "Cart is empty" }
+    }
+
+    // Calculate total
+    let total = 0
+    cart.items.forEach(item => {
+        if (item.course) total += Number(item.course.price) * item.quantity
+        if (item.product) total += Number(item.product.price) * item.quantity
+    })
+
+    // Create order
+    const [newOrder] = await db.insert(orders).values({
+        userId,
+        totalAmount: total.toString(),
+        status: "pending",
+        ...data
+    }).returning()
+
+    // Create order items
+    for (const item of cart.items) {
+        await db.insert(orderItems).values({
+            orderId: newOrder.id,
+            productId: item.productId,
+            courseId: item.courseId,
+            quantity: item.quantity,
+            price: (item.course ? item.course.price : item.product?.price) || "0"
+        })
+    }
+
+    // Clear cart
+    await clearCart(userId)
+
+    return { success: true, orderId: newOrder.id }
+  } catch (error) {
+    console.error("Error creating order:", error)
+    return { success: false, error: "Failed to create order" }
+  }
+}
+
+// Categories
+export async function getAllCategories() {
+  try {
+    return await db.query.categories.findMany()
+  } catch (error) {
+    console.error("Error fetching categories:", error)
+    return []
+  }
+}
+
+export async function getCategoryById(id: string) {
+  try {
+    return await db.query.categories.findFirst({ where: eq(categories.id, id) })
+  } catch (error) {
+    console.error("Error fetching category:", error)
+    return null
+  }
+}
+
+export async function createCategory(data: any) {
+  try {
+    await db.insert(categories).values(data)
+    return { success: true }
+  } catch (error) {
+    console.error("Error creating category:", error)
+    return { success: false, error: "Failed to create category" }
+  }
+}
+
+export async function updateCategory(id: string, data: any) {
+  try {
+    await db.update(categories).set(data).where(eq(categories.id, id))
+    return { success: true }
+  } catch (error) {
+    console.error("Error updating category:", error)
+    return { success: false, error: "Failed to update category" }
+  }
+}
+
+export async function deleteCategory(id: string) {
+  try {
+    await db.delete(categories).where(eq(categories.id, id))
+    return { success: true }
+  } catch (error) {
+    console.error("Error deleting category:", error)
+    return { success: false, error: "Failed to delete category" }
+  }
+}
+
+// User Profile
+export async function getUserProfile(userId: string) {
+  try {
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    })
+    return user
+  } catch (error) {
+    console.error("Error fetching user profile:", error)
+    return null
+  }
+}
+
+export async function updateUserProfile(userId: string, data: any) {
+  try {
+    await db.update(users).set(data).where(eq(users.id, userId))
+    return { success: true }
+  } catch (error) {
+    console.error("Error updating user profile:", error)
+    return { success: false, error: "Failed to update profile" }
+  }
+}
+
+// Student Dashboard
+export async function getStudentDashboardData(userId: string) {
+  try {
+    const activeCourses = await db
+      .select({ count: count() })
+      .from(enrollments)
+      .where(and(eq(enrollments.userId, userId), eq(enrollments.status, "active")))
+      .then((res) => res[0].count)
+
+    const completedCourses = await db
+      .select({ count: count() })
+      .from(enrollments)
+      .where(and(eq(enrollments.userId, userId), eq(enrollments.status, "completed")))
+      .then((res) => res[0].count)
+
+    const certificatesCount = await db
+      .select({ count: count() })
+      .from(certificates)
+      .where(eq(certificates.userId, userId))
+      .then((res) => res[0].count)
+
+    // Last Activity Logic
+    const lastEnrollment = await db.query.enrollments.findFirst({
+        where: eq(enrollments.userId, userId),
+        orderBy: [desc(enrollments.lastAccessedAt)],
+        with: {
+            course: true
+        }
+    })
+    
+    // Fetch enrolled courses for the list
+    const enrolledCourses = await db.query.enrollments.findMany({
+        where: eq(enrollments.userId, userId),
+        with: {
+            course: {
+                with: {
+                    instructor: true,
+                    category: true
+                }
+            }
+        },
+        orderBy: [desc(enrollments.lastAccessedAt)],
+        limit: 5
+    })
+    
+    let lastActivity = null
+    if (lastEnrollment) {
+         // Try to find the last accessed lesson
+         const lastProgress = await db.query.progress.findFirst({
+             where: eq(progress.userId, userId),
+             orderBy: [desc(progress.lastAccessed)],
+             with: {
+                 lesson: true
+             }
+         })
+
+         // Verify the progress belongs to the last accessed course
+         if (lastProgress && lastProgress.lesson && lastProgress.lesson.courseId === lastEnrollment.courseId) {
+              lastActivity = {
+                  courseId: lastEnrollment.courseId,
+                  courseTitleEn: lastEnrollment.course.titleEn,
+                  courseTitleAr: lastEnrollment.course.titleAr,
+                  lessonId: lastProgress.lessonId,
+                  lessonTitleEn: lastProgress.lesson.titleEn,
+                  lessonTitleAr: lastProgress.lesson.titleAr,
+                  progress: lastEnrollment.progress
+              }
+         } else {
+              // Fallback to first lesson
+              const firstModule = await db.query.modules.findFirst({
+                  where: eq(modules.courseId, lastEnrollment.courseId),
+                  with: { lessons: { limit: 1, orderBy: [asc(lessons.orderIndex)] } },
+                  orderBy: [asc(modules.orderIndex)]
+              })
+              
+              if (firstModule && firstModule.lessons && firstModule.lessons.length > 0) {
+                  lastActivity = {
+                      courseId: lastEnrollment.courseId,
+                      courseTitleEn: lastEnrollment.course.titleEn,
+                      courseTitleAr: lastEnrollment.course.titleAr,
+                      lessonId: firstModule.lessons[0].id,
+                      lessonTitleEn: firstModule.lessons[0].titleEn,
+                      lessonTitleAr: firstModule.lessons[0].titleAr,
+                      progress: lastEnrollment.progress
+                  }
+              }
+         }
+    }
+
+    return {
+      stats: {
+        activeCourses,
+        completedCourses,
+        certificates: certificatesCount,
+      },
+      lastActivity,
+      enrolledCourses
+    }
+  } catch (error) {
+    console.error("Error fetching dashboard data:", error)
+    return {
+      stats: { activeCourses: 0, completedCourses: 0, certificates: 0 },
+      lastActivity: null,
+      enrolledCourses: []
+    }
+  }
+}
+
+export async function getStudentCourses(userId: string) {
+    try {
+        const userEnrollments = await db.query.enrollments.findMany({
+            where: eq(enrollments.userId, userId),
+            with: {
+                course: {
+                    with: {
+                        instructor: true,
+                        category: true
+                    }
+                }
+            },
+            orderBy: [desc(enrollments.lastAccessedAt)]
+        })
+        return userEnrollments
+    } catch (error) {
+        console.error("Error fetching student courses:", error)
+        return []
+    }
+}
+
+// Enrollments & Learning
+export async function getUserEnrollments(userId: string) {
+  try {
+    const userEnrollments = await db.query.enrollments.findMany({
+      where: eq(enrollments.userId, userId),
+      with: {
+        course: {
+          with: {
+            instructor: true,
+            category: true,
+          }
+        }
+      },
+      orderBy: [desc(enrollments.lastAccessedAt)],
+    })
+
+    const enrollmentsWithDetails = await Promise.all(userEnrollments.map(async (enrollment) => {
+      const firstModule = await db.query.modules.findFirst({
+        where: eq(modules.courseId, enrollment.courseId),
+        orderBy: [asc(modules.orderIndex)],
+        with: {
+          lessons: {
+            orderBy: [asc(lessons.orderIndex)],
+            limit: 1
+          }
+        }
+      })
+      
+      const firstLesson = firstModule?.lessons[0]
+
+      return {
+        ...enrollment,
+        course_title_en: enrollment.course.titleEn,
+        course_title_ar: enrollment.course.titleAr,
+        course_thumbnail: enrollment.course.thumbnailUrl,
+        instructor_name: enrollment.course.instructor.name,
+        first_lesson_id: firstLesson?.id,
+        first_lesson_title_en: firstLesson?.titleEn,
+        first_lesson_title_ar: firstLesson?.titleAr,
+      }
+    }))
+
+    return enrollmentsWithDetails
+  } catch (error) {
+    console.error("[v0] Error fetching user enrollments:", error)
+    return []
+  }
+}
+
+export async function getUserLessonNotes(userId: string, lessonId: string) {
+  try {
+    const userNotes = await db.query.notes.findMany({
+      where: and(
+        eq(notes.userId, userId),
+        eq(notes.lessonId, lessonId)
+      ),
+      orderBy: [desc(notes.createdAt)],
+    })
+    return userNotes
+  } catch (error) {
+    console.error("[v0] Error fetching lesson notes:", error)
+    return []
+  }
+}
+
+export async function getUserNotes(userId: string) {
+  try {
+    const userNotes = await db.query.notes.findMany({
+      where: eq(notes.userId, userId),
+      with: {
+        lesson: {
+            with: {
+                course: true
+            }
+        }
+      },
+      orderBy: [desc(notes.createdAt)],
+    })
+    
+    return userNotes.map(note => ({
+      ...note,
+      courseId: note.lesson.courseId,
+      courseTitleEn: note.lesson.course.titleEn,
+      courseTitleAr: note.lesson.course.titleAr,
+      lessonTitleEn: note.lesson.titleEn,
+      lessonTitleAr: note.lesson.titleAr,
+      lessonSlug: note.lesson.slug,
+    }))
+  } catch (error) {
+    console.error("[v0] Error fetching user notes:", error)
+    return []
+  }
+}
+
+export async function getLearningData(userId: string, courseId: string, lessonId: string, role: string) {
+  try {
+    if (role === "student") {
+      const enrollment = await db.query.enrollments.findFirst({
+        where: and(
+          eq(enrollments.userId, userId),
+          eq(enrollments.courseId, courseId)
+        )
+      })
+      if (!enrollment) {
         return { error: "Not enrolled" }
       }
     }
 
-    // 2. Fetch Course
-    const course = await getCourseById(courseId)
+    const course = await db.query.courses.findFirst({
+      where: eq(courses.id, courseId),
+      with: {
+        instructor: true
+      }
+    })
+
     if (!course) return { error: "Course not found" }
 
-    // 3. Fetch Content (Modules + Lessons)
-    const modulesList = await getCourseModules(courseId)
-    const lessonsList = await getCourseLessons(courseId)
+    const courseModules = await db.query.modules.findMany({
+      where: eq(modules.courseId, courseId),
+      orderBy: [asc(modules.orderIndex)],
+      with: {
+        lessons: {
+          orderBy: [asc(lessons.orderIndex)]
+        }
+      }
+    })
+
+    let currentLesson = null
+    let prevLesson = null
+    let nextLesson = null
+    let allLessons: any[] = []
+
+    courseModules.forEach(m => {
+      if (m.lessons) {
+        allLessons.push(...m.lessons)
+      }
+    })
+
+    const currentIndex = allLessons.findIndex(l => l.id === lessonId)
     
-    // Nest lessons into modules
-    const courseContent = modulesList.map((mod: any) => ({
-      ...mod,
-      lessons: lessonsList.filter((l: any) => l.module_id === mod.id)
-    }))
-    
-    // Also handle lessons without module?
-    const orphans = lessonsList.filter((l: any) => !l.module_id)
-    if (orphans.length > 0) {
-      courseContent.push({
-        id: "uncategorized",
-        title_en: "Other Lessons",
-        title_ar: "دروس أخرى",
-        lessons: orphans
-      })
+    if (currentIndex !== -1) {
+      currentLesson = allLessons[currentIndex]
+      prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null
+      nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null
+    } else {
+       if (allLessons.length > 0) {
+         currentLesson = allLessons[0]
+         nextLesson = allLessons.length > 1 ? allLessons[1] : null
+       }
     }
 
-    // 4. Current Lesson
-    const currentLesson = lessonsList.find((l: any) => l.id === lessonId)
-    if (!currentLesson) return { error: "Lesson not found", course, courseContent }
-
-    // 5. User Progress
-    const enrollment = await sql`
-      SELECT completed_lessons, progress FROM enrollments
-      WHERE user_id = ${userId} AND course_id = ${courseId}
-    `
-    const completedLessons = enrollment[0]?.completed_lessons || []
-    const progress = Number.parseInt(enrollment[0]?.progress ?? "0", 10) || 0
-    
-    // 6. Navigation
-    const sortedLessons = []
-    for (const mod of courseContent) {
-      sortedLessons.push(...mod.lessons)
-    }
-    
-    const currentIndex = sortedLessons.findIndex((l: any) => l.id === lessonId)
-    const prev = currentIndex > 0 ? sortedLessons[currentIndex - 1] : null
-    const next = currentIndex < sortedLessons.length - 1 ? sortedLessons[currentIndex + 1] : null
+    const userProgress = await db.query.enrollments.findFirst({
+      where: and(
+        eq(enrollments.userId, userId),
+        eq(enrollments.courseId, courseId)
+      )
+    })
 
     return {
       course,
-      courseContent,
+      courseContent: courseModules,
       currentLesson,
-      userProgress: { completedLessons, progress },
-      navigation: { prev, next }
+      userProgress,
+      navigation: {
+        prev: prevLesson,
+        next: nextLesson
+      }
     }
 
   } catch (error) {
@@ -201,1413 +748,432 @@ export async function getLearningData(userId: string, courseId: string, lessonId
   }
 }
 
-// Store
-export async function getAllStoreItems() {
+// Bookmarks
+export async function getUserBookmarks(userId: string) {
   try {
-    const items = await sql`
-      SELECT * FROM products
-      WHERE is_active = true
-      ORDER BY created_at DESC
-    `
-    return items
+    const userBookmarks = await db.query.bookmarks.findMany({
+      where: eq(bookmarks.userId, userId),
+      with: {
+        course: {
+          with: {
+            category: true,
+            instructor: true,
+          }
+        }
+      },
+      orderBy: [desc(bookmarks.createdAt)],
+    })
+    return userBookmarks
   } catch (error) {
-    console.error("[v0] Error fetching store items:", error)
+    console.error("[v0] Error fetching bookmarks:", error)
     return []
-  }
-}
-
-// Cart
-export async function addToCart(userId: string, itemId: string, type: 'course' | 'product') {
-  try {
-    // Check if cart exists
-    const cart = await sql`SELECT id FROM carts WHERE user_id = ${userId}`
-    let cartId
-    
-    if (cart.length === 0) {
-      const newCart = await sql`INSERT INTO carts (user_id) VALUES (${userId}) RETURNING id`
-      cartId = newCart[0].id
-    } else {
-      cartId = cart[0].id
-    }
-    
-    // Add item
-    if (type === 'course') {
-      await sql`
-        INSERT INTO cart_items (cart_id, course_id, quantity)
-        VALUES (${cartId}, ${itemId}, 1)
-        ON CONFLICT DO NOTHING
-      `
-    } else {
-       await sql`
-        INSERT INTO cart_items (cart_id, product_id, quantity)
-        VALUES (${cartId}, ${itemId}, 1)
-        ON CONFLICT DO NOTHING
-      `
-    }
-    return { success: true }
-  } catch (error) {
-    console.error("[v0] Error adding to cart:", error)
-    return { error: "Failed to add to cart" }
-  }
-}
-
-export async function getCartWithItems(userId: string) {
-  try {
-    const cart = await sql`SELECT id FROM carts WHERE user_id = ${userId}`
-    if (cart.length === 0) return null
-    
-    const cartId = cart[0].id
-    
-    const items = await sql`
-      SELECT 
-        ci.*,
-        c.title_en as course_title_en,
-        c.title_ar as course_title_ar,
-        c.price as course_price,
-        c.thumbnail_url as course_image,
-        p.name_en as product_name_en,
-        p.name_ar as product_name_ar,
-        p.price as product_price,
-        p.image_url as product_image
-      FROM cart_items ci
-      LEFT JOIN courses c ON ci.course_id = c.id
-      LEFT JOIN products p ON ci.product_id = p.id
-      WHERE ci.cart_id = ${cartId}
-    `
-    
-    return {
-      id: cartId,
-      items: items.map(item => ({
-        id: item.id,
-        courseId: item.course_id,
-        productId: item.product_id,
-        quantity: item.quantity,
-        titleEn: item.course_title_en || item.product_name_en,
-        titleAr: item.course_title_ar || item.product_name_ar,
-        price: item.course_price || item.product_price,
-        image: item.course_image || item.product_image,
-        type: item.course_id ? 'course' : 'product'
-      }))
-    }
-  } catch (error) {
-    console.error("[v0] Error fetching cart:", error)
-    return null
-  }
-}
-
-export async function clearCart(userId: string) {
-  try {
-    const cart = await sql`SELECT id FROM carts WHERE user_id = ${userId}`
-    if (cart.length > 0) {
-      await sql`DELETE FROM cart_items WHERE cart_id = ${cart[0].id}`
-    }
-    return true
-  } catch (error) {
-    console.error("[v0] Error clearing cart:", error)
-    return false
-  }
-}
-
-// Orders
-export async function createOrder(userId: string, data: any) {
-   try {
-    const { totalAmount, items } = data
-    
-    const order = await sql`
-      INSERT INTO orders (user_id, total_amount, status)
-      VALUES (${userId}, ${totalAmount}, 'paid')
-      RETURNING id
-    `
-    
-    for (const item of items) {
-      if (item.type === 'course') {
-         await sql`
-          INSERT INTO order_items (order_id, course_id, price, quantity)
-          VALUES (${order[0].id}, ${item.courseId}, ${item.price}, ${item.quantity})
-        `
-        // Enroll user
-        await createEnrollment(userId, item.courseId)
-      } else {
-         await sql`
-          INSERT INTO order_items (order_id, product_id, price, quantity)
-          VALUES (${order[0].id}, ${item.productId}, ${item.price}, ${item.quantity})
-        `
-      }
-    }
-    
-    await clearCart(userId)
-    return order[0]
-   } catch (error) {
-    console.error("[v0] Error creating order:", error)
-    return null
-   }
-}
-
-// Instructor
-export async function getInstructorCourses(instructorId: string) {
-  try {
-    const courses = await sql`
-      SELECT * FROM courses
-      WHERE instructor_id = ${instructorId}
-      ORDER BY created_at DESC
-    `
-    return courses
-  } catch (error) {
-    console.error("[v0] Error fetching instructor courses:", error)
-    return []
-  }
-}
-
-export async function getInstructorAnalytics(instructorId: string) {
-  try {
-    const totalStudents = await sql`
-      SELECT COUNT(DISTINCT e.user_id) as count
-      FROM enrollments e
-      JOIN courses c ON e.course_id = c.id
-      WHERE c.instructor_id = ${instructorId}
-    `
-    
-    const totalCourses = await sql`
-      SELECT COUNT(*) as count FROM courses WHERE instructor_id = ${instructorId}
-    `
-    
-    const totalReviews = await sql`
-      SELECT COUNT(*) as count 
-      FROM reviews r
-      JOIN courses c ON r.course_id = c.id
-      WHERE c.instructor_id = ${instructorId}
-    `
-
-    const averageRatingResult = await sql`
-      SELECT COALESCE(AVG(r.rating), 0) as avg
-      FROM reviews r
-      JOIN courses c ON r.course_id = c.id
-      WHERE c.instructor_id = ${instructorId} AND r.is_published = true
-    `
-    const averageRating = Math.round((Number(averageRatingResult[0]?.avg ?? 0) || 0) * 10) / 10
-    
-    const revenueResult = await sql`
-      SELECT COALESCE(SUM(oi.price), 0) as total
-      FROM order_items oi
-      JOIN orders o ON oi.order_id = o.id
-      JOIN courses c ON oi.course_id = c.id
-      WHERE c.instructor_id = ${instructorId}
-      AND o.status = 'paid'
-    `
-    const totalRevenue = Number(revenueResult[0]?.total ?? 0)
-
-    return {
-      totalStudents: parseInt(totalStudents[0].count),
-      totalCourses: parseInt(totalCourses[0].count),
-      totalReviews: parseInt(totalReviews[0].count),
-      totalRevenue,
-      averageRating
-    }
-  } catch (error) {
-    console.error("[v0] Error fetching analytics:", error)
-    return {
-      totalStudents: 0,
-      totalCourses: 0,
-      totalReviews: 0,
-      totalRevenue: 0,
-      averageRating: 0
-    }
-  }
-}
-
-export async function getInstructorCoursePerformance(instructorId: string) {
-  try {
-    const courses = await sql`
-      SELECT 
-        c.id,
-        c.title_en,
-        c.title_ar,
-        c.enrollment_count,
-        c.rating,
-        COALESCE(SUM(CASE WHEN o.status = 'paid' THEN oi.price ELSE 0 END), 0) as revenue
-      FROM courses c
-      LEFT JOIN order_items oi ON c.id = oi.course_id
-      LEFT JOIN orders o ON oi.order_id = o.id
-      WHERE c.instructor_id = ${instructorId}
-      GROUP BY c.id
-      ORDER BY revenue DESC, c.enrollment_count DESC
-      LIMIT 5
-    `
-    return courses
-  } catch (error) {
-    console.error("[v0] Error fetching course performance:", error)
-    return []
-  }
-}
-
-export async function getInstructorReviews(instructorId: string) {
-  try {
-    const reviews = await sql`
-      SELECT 
-        r.*, 
-        u.name as user_name, 
-        u.avatar_url, 
-        c.title_en as course_title_en,
-        c.title_ar as course_title_ar
-      FROM reviews r
-      JOIN users u ON r.user_id = u.id
-      JOIN courses c ON r.course_id = c.id
-      WHERE c.instructor_id = ${instructorId}
-      ORDER BY r.created_at DESC
-    `
-    return reviews
-  } catch (error) {
-    console.error("[v0] Error fetching reviews:", error)
-    return []
-  }
-}
-
-export async function getCourseById(id: string) {
-  try {
-    const courses = await sql`
-      SELECT 
-        c.*,
-        u.name as instructor_name,
-        u.bio as instructor_bio,
-        cat.name_en as category_name_en,
-        cat.name_ar as category_name_ar
-      FROM courses c
-      JOIN users u ON c.instructor_id = u.id
-      LEFT JOIN categories cat ON c.category_id = cat.id
-      WHERE c.id = ${id}
-      LIMIT 1
-    `
-
-    if (courses.length === 0) return null
-
-    // Get lessons for this course
-    const lessons = await sql`
-      SELECT * FROM lessons
-      WHERE course_id = ${id}
-      ORDER BY order_index ASC
-    `
-
-    return { ...courses[0], lessons }
-  } catch (error) {
-    console.error("[v0] Error fetching course:", error)
-    return null
-  }
-}
-
-export async function getCourseLessons(courseId: string) {
-  try {
-    const lessons = await sql`
-      SELECT * FROM lessons
-      WHERE course_id = ${courseId}
-      ORDER BY order_index ASC
-    `
-    return lessons
-  } catch (error) {
-    console.error("[v0] Error fetching lessons:", error)
-    return []
-  }
-}
-
-export async function getCourseModules(courseId: string) {
-  try {
-    const modules = await sql`
-      SELECT * FROM modules
-      WHERE course_id = ${courseId}
-      ORDER BY order_index ASC
-    `
-    return modules
-  } catch (error) {
-    console.error("[v0] Error fetching modules:", error)
-    return []
-  }
-}
-
-// Enrollments
-export async function getUserEnrollments(userId: string) {
-  try {
-    const enrollments = await sql`
-      SELECT 
-        e.*,
-        c.id as course_id,
-        c.title_en,
-        c.title_ar,
-        c.thumbnail_url,
-        c.difficulty,
-        u.name as instructor_name,
-        l.id as first_lesson_id,
-        l.title_en as first_lesson_title_en,
-        l.title_ar as first_lesson_title_ar
-      FROM enrollments e
-      JOIN courses c ON e.course_id = c.id
-      JOIN users u ON c.instructor_id = u.id
-      LEFT JOIN lessons l ON l.course_id = c.id AND l.order_index = 1
-      WHERE e.user_id = ${userId}
-      ORDER BY e.last_accessed_at DESC NULLS LAST
-    `
-    return enrollments
-  } catch (error) {
-    console.error("[v0] Error fetching enrollments:", error)
-    return []
-  }
-}
-
-export async function getEnrollment(userId: string, courseId: string) {
-  try {
-    const result = await sql`
-      SELECT * FROM enrollments
-      WHERE user_id = ${userId} AND course_id = ${courseId}
-      LIMIT 1
-    `
-    return result[0] || null
-  } catch (error) {
-    console.error("[v0] Error fetching enrollment:", error)
-    return null
-  }
-}
-
-export async function isUserEnrolled(userId: string, courseId: string) {
-  try {
-    const result = await sql`
-      SELECT 1 FROM enrollments 
-      WHERE user_id = ${userId} AND course_id = ${courseId}
-      LIMIT 1
-    `
-    return result.length > 0
-  } catch (error) {
-    console.error("[v0] Error checking enrollment:", error)
-    return false
-  }
-}
-
-export async function createEnrollment(userId: string, courseId: string) {
-  try {
-    const alreadyEnrolled = await isUserEnrolled(userId, courseId)
-    if (alreadyEnrolled) {
-      console.log("[v0] User already enrolled in course")
-      return { already_enrolled: true }
-    }
-
-    const result = await sql`
-      INSERT INTO enrollments (user_id, course_id, progress, completed_lessons)
-      VALUES (${userId}, ${courseId}, 0, '[]')
-      RETURNING *
-    `
-    return result[0]
-  } catch (error) {
-    console.error("[v0] Error creating enrollment:", error)
-    return null
-  }
-}
-
-export async function updateEnrollmentProgress(
-  userId: string,
-  courseId: string,
-  progress: number,
-  completedLessons: string[],
-) {
-  try {
-    await sql`
-      UPDATE enrollments
-      SET 
-        progress = ${progress},
-        completed_lessons = ${JSON.stringify(completedLessons)},
-        last_accessed_at = NOW()
-      WHERE user_id = ${userId} AND course_id = ${courseId}
-    `
-    return true
-  } catch (error) {
-    console.error("[v0] Error updating enrollment:", error)
-    return false
-  }
-}
-
-export async function getLastAccessedLesson(userId: string, courseId: string) {
-  try {
-    const result = await sql`
-      SELECT 
-        l.id,
-        l.title_en,
-        l.title_ar,
-        l.order_index
-      FROM lessons l
-      JOIN enrollments e ON e.course_id = l.course_id
-      WHERE e.user_id = ${userId} 
-        AND e.course_id = ${courseId}
-        AND l.id = ANY(string_to_array(e.completed_lessons, ',')::uuid[])
-      ORDER BY l.order_index DESC
-      LIMIT 1
-    `
-    return result[0] || null
-  } catch (error) {
-    console.error("[v0] Error fetching last accessed lesson:", error)
-    return null
-  }
-}
-
-// Orders
-export async function getUserOrders(userId: string) {
-  try {
-    const orders = await sql`
-      SELECT * FROM orders
-      WHERE user_id = ${userId}
-      ORDER BY created_at DESC
-    `
-    return orders
-  } catch (error) {
-    console.error("[v0] Error fetching orders:", error)
-    return []
-  }
-}
-
-export async function updateOrderStatus(orderId: string, status: string) {
-  try {
-    await sql`
-      UPDATE orders
-      SET 
-        status = ${status}::order_status,
-        updated_at = NOW()
-      WHERE id = ${orderId}
-    `
-    return true
-  } catch (error) {
-    console.error("[v0] Error updating order:", error)
-    return false
-  }
-}
-
-// Challenges
-export async function getAllChallenges() {
-  try {
-    const challenges = await sql`
-      SELECT 
-        ch.*,
-        cat.name_en as category_name_en,
-        cat.name_ar as category_name_ar
-      FROM challenges ch
-      LEFT JOIN categories cat ON ch.category_id = cat.id
-      WHERE ch.is_active = true
-      ORDER BY ch.created_at DESC
-    `
-    return challenges
-  } catch (error) {
-    console.error("[v0] Error fetching challenges:", error)
-    return []
-  }
-}
-
-export async function getChallengeById(id: string) {
-  try {
-    const result = await sql`
-      SELECT * FROM challenges
-      WHERE id = ${id}
-      LIMIT 1
-    `
-    return result[0] || null
-  } catch (error) {
-    console.error("[v0] Error fetching challenge:", error)
-    return null
-  }
-}
-
-export async function submitChallenge(
-  userId: string,
-  challengeId: string,
-  code: string,
-  score: number,
-  isPassed: boolean,
-) {
-  try {
-    const result = await sql`
-      INSERT INTO challenge_submissions (user_id, challenge_id, code, score, is_passed)
-      VALUES (${userId}, ${challengeId}, ${code}, ${score}, ${isPassed})
-      RETURNING *
-    `
-
-    // Update user points if passed
-    if (isPassed) {
-      const challenge = await getChallengeById(challengeId)
-      if (challenge) {
-        await sql`
-          UPDATE users
-          SET points = points + ${challenge.points}
-          WHERE id = ${userId}
-        `
-      }
-    }
-
-    return result[0]
-  } catch (error) {
-    console.error("[v0] Error submitting challenge:", error)
-    return null
-  }
-}
-
-// Contests
-export async function getAllContests() {
-  try {
-    const contests = await sql`
-      SELECT * FROM contests
-      ORDER BY start_date DESC
-    `
-    return contests
-  } catch (error) {
-    console.error("[v0] Error fetching contests:", error)
-    return []
-  }
-}
-
-export async function getContestById(id: string) {
-  try {
-    const result = await sql`
-      SELECT * FROM contests
-      WHERE id = ${id}
-      LIMIT 1
-    `
-    return result[0] || null
-  } catch (error) {
-    console.error("[v0] Error fetching contest:", error)
-    return null
-  }
-}
-
-export async function joinContest(userId: string, contestId: string) {
-  try {
-    const result = await sql`
-      INSERT INTO contest_participants (user_id, contest_id, score)
-      VALUES (${userId}, ${contestId}, 0)
-      ON CONFLICT (user_id, contest_id) DO NOTHING
-      RETURNING *
-    `
-
-    // Update participant count
-    if (result.length > 0) {
-      await sql`
-        UPDATE contests
-        SET participant_count = participant_count + 1
-        WHERE id = ${contestId}
-      `
-    }
-
-    return result[0] || null
-  } catch (error) {
-    console.error("[v0] Error joining contest:", error)
-    return null
   }
 }
 
 // Certificates
 export async function getUserCertificates(userId: string) {
+    try {
+        const userCertificates = await db.query.certificates.findMany({
+            where: eq(certificates.userId, userId),
+            with: {
+                course: true
+            },
+            orderBy: [desc(certificates.issuedAt)]
+        })
+        return userCertificates
+    } catch (error) {
+        console.error("Error fetching certificates:", error)
+        return []
+    }
+}
+
+// Reviews
+export async function getInstructorReviews(userId: string) {
   try {
-    const certificates = await sql`
-      SELECT 
-        c.*,
-        co.title_en as course_title_en,
-        co.title_ar as course_title_ar,
-        co.duration as course_duration,
-        u.name as instructor_name
-      FROM certificates c
-      JOIN courses co ON c.course_id = co.id
-      JOIN users u ON co.instructor_id = u.id
-      WHERE c.user_id = ${userId}
-      ORDER BY c.issued_at DESC
-    `
-    return certificates
+    const instructorCourses = await db.query.courses.findMany({
+      where: eq(courses.instructorId, userId),
+      columns: { id: true }
+    })
+    const courseIds = instructorCourses.map(c => c.id)
+    if (courseIds.length === 0) return []
+    const instructorReviews = await db.query.reviews.findMany({
+      where: inArray(reviews.courseId, courseIds),
+      with: {
+        user: true,
+        course: true
+      },
+      orderBy: [desc(reviews.createdAt)],
+    })
+    return instructorReviews.map(review => ({
+      id: review.id,
+      rating: review.rating,
+      comment: review.comment,
+      created_at: review.createdAt,
+      user_name: review.user.name,
+      user_avatar: review.user.avatarUrl,
+      course_title_en: review.course.titleEn,
+      course_title_ar: review.course.titleAr,
+    }))
   } catch (error) {
-    console.error("[v0] Error fetching certificates:", error)
+    console.error("[v0] Error fetching instructor reviews:", error)
     return []
   }
 }
 
-export async function getCertificateByNumber(certNumber: string) {
+// Contests
+export async function createNote(data: any) {
   try {
-    const result = await sql`
-      SELECT 
-        cert.*,
-        u.name as user_name,
-        c.title_en as course_title_en,
-        c.title_ar as course_title_ar,
-        c.duration as course_duration,
-        i.name as instructor_name
-      FROM certificates cert
-      JOIN users u ON cert.user_id = u.id
-      LEFT JOIN courses c ON cert.course_id = c.id
-      LEFT JOIN users i ON c.instructor_id = i.id
-      WHERE cert.certificate_number = ${certNumber}
-      AND cert.status = 'issued'
-      LIMIT 1
-    `
-    return result[0] || null
+    const [note] = await db.insert(notes).values(data).returning()
+    return note
   } catch (error) {
-    console.error("[v0] Error fetching certificate:", error)
+    console.error("Error creating note:", error)
     return null
   }
 }
 
-// Categories
-export async function getAllCategories() {
+export async function deleteNote(id: string) {
   try {
-    const categories = await sql`
-      SELECT * FROM categories
-      ORDER BY name_en ASC
-    `
-    return categories
+    await db.delete(notes).where(eq(notes.id, id))
+    return { success: true }
   } catch (error) {
-    console.error("[v0] Error fetching categories:", error)
-    return []
+    console.error("Error deleting note:", error)
+    return { success: false, error: "Failed to delete note" }
   }
 }
 
-export async function createCategory(data: any) {
-  try {
-    const result = await sql`
-      INSERT INTO categories (
-        name_en, name_ar, slug, description_en, description_ar, icon_url
-      ) VALUES (
-        ${data.nameEn}, ${data.nameAr}, ${data.slug}, ${data.descriptionEn}, ${data.descriptionAr}, ${data.iconUrl}
-      )
-      RETURNING *
-    `
-    return result[0]
-  } catch (error) {
-    console.error("[v0] Error creating category:", error)
-    return null
-  }
-}
-
-export async function updateCategory(id: string, data: any) {
-  try {
-    const result = await sql`
-      UPDATE categories SET
-        name_en = ${data.nameEn},
-        name_ar = ${data.nameAr},
-        slug = ${data.slug},
-        description_en = ${data.descriptionEn},
-        description_ar = ${data.descriptionAr},
-        icon_url = ${data.iconUrl}
-      WHERE id = ${id}
-      RETURNING *
-    `
-    return result[0]
-  } catch (error) {
-    console.error("[v0] Error updating category:", error)
-    return null
-  }
-}
-
-export async function deleteCategory(id: string) {
-  try {
-    await sql`DELETE FROM categories WHERE id = ${id}`
-    return true
-  } catch (error) {
-    console.error("[v0] Error deleting category:", error)
-    return false
-  }
-}
-
-export async function getCategoryById(id: string) {
-  try {
-    const result = await sql`
-      SELECT * FROM categories
-      WHERE id = ${id}
-      LIMIT 1
-    `
-    return result[0] || null
-  } catch (error) {
-    console.error("[v0] Error fetching category:", error)
-    return null
-  }
-}
-
-// Statistics
-export async function getPlatformStats() {
-  try {
-    const stats = await sql`
-      SELECT 
-        (SELECT COUNT(*) FROM users WHERE role = 'student') as student_count,
-        (SELECT COUNT(*) FROM courses WHERE is_published = true) as course_count,
-        (SELECT COUNT(*) FROM enrollments) as enrollment_count,
-        (SELECT COUNT(*) FROM certificates WHERE status = 'issued') as certificate_count,
-        (SELECT COUNT(*) FROM challenges WHERE is_active = true) as challenge_count,
-        (SELECT COUNT(*) FROM contests) as contest_count
-    `
-    return stats[0]
-  } catch (error) {
-    console.error("[v0] Error fetching stats:", error)
-    return null
-  }
-}
-
-// V3 Cohorts queries
 export async function getAllCohorts() {
   try {
-    const cohorts = await sql`
-      SELECT 
-        c.*,
-        u.name as creator_name,
-        COUNT(DISTINCT cm.id) FILTER (WHERE cm.status = 'active') as active_members,
-        COUNT(DISTINCT cm.id) FILTER (WHERE cm.status = 'waitlist') as waitlist_members
-      FROM cohorts c
-      JOIN users u ON c.created_by = u.id
-      LEFT JOIN cohort_members cm ON c.id = cm.cohort_id
-      GROUP BY c.id, u.name
-      ORDER BY c.created_at DESC
-    `
-    return cohorts
+    return await db.query.cohorts.findMany({
+      orderBy: [desc(cohorts.createdAt)],
+      with: {
+        creator: true
+      }
+    })
   } catch (error) {
-    console.error("[v0] Error fetching cohorts:", error)
+    console.error("Error fetching cohorts:", error)
     return []
   }
 }
 
-export async function getCohortById(id: string) {
+export async function getAllContests() {
+  return getContests()
+}
+
+export async function getAllMentors() {
+  return getMentors()
+}
+
+export async function getContests() {
   try {
-    const result = await sql`
-      SELECT 
-        c.*,
-        u.name as creator_name,
-        u.email as creator_email
-      FROM cohorts c
-      JOIN users u ON c.created_by = u.id
-      WHERE c.id = ${id}
-      LIMIT 1
-    `
+    return await db.query.contests.findMany({
+      orderBy: [desc(contests.startDate)],
+    })
+  } catch (error) {
+    console.error("Error fetching contests:", error)
+    return []
+  }
+}
 
-    if (result.length === 0) return null
+export async function getContestParticipants(contestId: string) {
+  try {
+    return await db.query.contestParticipants.findMany({
+      where: eq(contestParticipants.contestId, contestId),
+      with: {
+        user: true,
+      },
+    })
+  } catch (error) {
+    console.error("Error fetching contest participants:", error)
+    return []
+  }
+}
 
-    // Get courses
-    const courses = await sql`
-      SELECT 
-        cc.*,
-        co.title_en,
-        co.title_ar,
-        co.thumbnail_url,
-        co.difficulty
-      FROM cohort_courses cc
-      JOIN courses co ON cc.course_id = co.id
-      WHERE cc.cohort_id = ${id}
-      ORDER BY cc.order_index ASC
-    `
-
-    // Get members
-    const members = await sql`
-      SELECT 
-        cm.*,
-        u.name,
-        u.email,
-        u.avatar_url
-      FROM cohort_members cm
-      JOIN users u ON cm.user_id = u.id
-      WHERE cm.cohort_id = ${id}
-      ORDER BY cm.joined_at DESC
-    `
-
-    // Get schedule
-    const schedule = await sql`
-      SELECT *
-      FROM cohort_schedule
-      WHERE cohort_id = ${id}
-      ORDER BY starts_at ASC
-    `
-
-    // Get announcements
-    const announcements = await sql`
-      SELECT 
-        ca.*,
-        u.name as author_name,
-        u.avatar_url as author_avatar
-      FROM cohort_announcements ca
-      JOIN users u ON ca.created_by = u.id
-      WHERE ca.cohort_id = ${id}
-      ORDER BY ca.pinned DESC, ca.created_at DESC
-    `
-
-    return {
-      ...result[0],
-      courses,
-      members,
-      schedule,
-      announcements,
+export async function getContestById(id: string) {
+    try {
+        return await db.query.contests.findFirst({
+            where: eq(contests.id, id)
+        })
+    } catch (error) {
+        console.error("Error fetching contest:", error)
+        return null
     }
-  } catch (error) {
-    console.error("[v0] Error fetching cohort:", error)
-    return null
-  }
 }
 
-export async function getUserCohorts(userId: string) {
-  try {
-    const cohorts = await sql`
-      SELECT 
-        c.*,
-        cm.role as user_role,
-        cm.status as user_status,
-        u.name as creator_name
-      FROM cohorts c
-      JOIN cohort_members cm ON c.id = cm.cohort_id
-      JOIN users u ON c.created_by = u.id
-      WHERE cm.user_id = ${userId}
-      ORDER BY c.starts_at DESC
-    `
-    return cohorts
-  } catch (error) {
-    console.error("[v0] Error fetching user cohorts:", error)
-    return []
-  }
+export async function joinContest(userId: string, contestId: string) {
+    try {
+        await db.insert(contestParticipants).values({
+            userId,
+            contestId,
+            score: 0
+        })
+        return { success: true }
+    } catch (error) {
+        console.error("Error joining contest:", error)
+        return { success: false, error: "Failed to join contest" }
+    }
 }
 
+// Cohorts
 export async function joinCohort(userId: string, cohortId: string) {
   try {
-    // Check if cohort is full
-    const cohort = await sql`
-      SELECT 
-        c.*,
-        COUNT(cm.id) FILTER (WHERE cm.status = 'active') as active_count
-      FROM cohorts c
-      LEFT JOIN cohort_members cm ON c.id = cm.cohort_id
-      WHERE c.id = ${cohortId}
-      GROUP BY c.id
-    `
-
-    if (cohort.length === 0) return { success: false, error: "Cohort not found" }
-
-    const isFull = cohort[0].active_count >= cohort[0].capacity
-    const status = isFull ? "waitlist" : "active"
-
-    const result = await sql`
-      INSERT INTO cohort_members (cohort_id, user_id, role, status)
-      VALUES (${cohortId}, ${userId}, 'student', ${status}::cohort_member_status)
-      ON CONFLICT (cohort_id, user_id) DO NOTHING
-      RETURNING *
-    `
-
-    return { success: true, status, member: result[0] }
+    const cohort = await db.query.cohorts.findFirst({
+      where: eq(cohorts.id, cohortId),
+    })
+    if (!cohort) {
+      return { success: false, error: "Cohort not found" }
+    }
+    if (cohort.status === "ended") {
+      return { success: false, error: "Cohort has ended" }
+    }
+    const existingMember = await db.query.cohortMembers.findFirst({
+      where: and(eq(cohortMembers.cohortId, cohortId), eq(cohortMembers.userId, userId))
+    })
+    if (existingMember) {
+      return { success: false, error: "Already a member of this cohort" }
+    }
+    const memberCount = await db
+      .select({ count: count() })
+      .from(cohortMembers)
+      .where(eq(cohortMembers.cohortId, cohortId))
+      .then(res => res[0].count)
+    let status: "active" | "waitlist" | "removed" = "active"
+    if (memberCount >= cohort.capacity) {
+      status = "waitlist"
+    }
+    await db.insert(cohortMembers).values({
+      cohortId,
+      userId,
+      role: "student",
+      status,
+    })
+    return { success: true, status }
   } catch (error) {
     console.error("[v0] Error joining cohort:", error)
     return { success: false, error: "Failed to join cohort" }
   }
 }
 
-export async function createCohortAnnouncement(
-  cohortId: number,
-  createdBy: number,
-  titleEn: string,
-  titleAr: string,
-  bodyEn: string,
-  bodyAr: string,
-  pinned = false,
-) {
+export async function getProducts() {
   try {
-    const result = await sql`
-      INSERT INTO cohort_announcements 
-        (cohort_id, created_by, title_en, title_ar, body_en, body_ar, pinned)
-      VALUES 
-        (${cohortId}, ${createdBy}, ${titleEn}, ${titleAr}, ${bodyEn}, ${bodyAr}, ${pinned})
-      RETURNING *
-    `
-    return result[0]
+    return await db.query.products.findMany({
+      where: eq(products.isActive, true),
+      orderBy: [desc(products.createdAt)],
+    })
   } catch (error) {
-    console.error("[v0] Error creating announcement:", error)
+    console.error("Error fetching products:", error)
+    return []
+  }
+}
+
+export async function getProductById(id: string) {
+  try {
+    return await db.query.products.findFirst({
+      where: eq(products.id, id),
+    })
+  } catch (error) {
+    console.error("Error fetching product:", error)
     return null
   }
 }
 
-// V3 Mentorship queries
-export async function getAllMentors() {
+export async function getMentors() {
   try {
-    const mentors = await sql`
-      SELECT 
-        m.*,
-        u.name,
-        u.email,
-        u.avatar_url,
-        COUNT(DISTINCT b.id) FILTER (WHERE b.status = 'completed') as completed_sessions
-      FROM mentors m
-      JOIN users u ON m.user_id = u.id
-      LEFT JOIN bookings b ON m.id = b.mentor_id
-      WHERE m.is_active = true
-      GROUP BY m.id, u.name, u.email, u.avatar_url
-      ORDER BY m.rating DESC, m.total_sessions DESC
-    `
-    return mentors
+    return await db.query.mentors.findMany({
+      where: eq(mentors.isActive, true),
+      with: {
+        user: true,
+      },
+    })
   } catch (error) {
-    console.error("[v0] Error fetching mentors:", error)
+    console.error("Error fetching mentors:", error)
     return []
   }
 }
 
 export async function getMentorById(id: string) {
   try {
-    const result = await sql`
-      SELECT 
-        m.*,
-        u.name,
-        u.email,
-        u.avatar_url,
-        u.bio as user_bio
-      FROM mentors m
-      JOIN users u ON m.user_id = u.id
-      WHERE m.id = ${id}
-      LIMIT 1
-    `
-
-    if (result.length === 0) return null
-
-    // Get availability
-    const availability = await sql`
-      SELECT * FROM mentor_availability
-      WHERE mentor_id = ${id}
-      ORDER BY weekday ASC, start_time ASC
-    `
-
-    // Get reviews
-    const reviews = await sql`
-      SELECT 
-        br.*,
-        b.topic,
-        b.start_at,
-        u.name as student_name,
-        u.avatar_url as student_avatar
-      FROM booking_reviews br
-      JOIN bookings b ON br.booking_id = b.id
-      JOIN users u ON b.student_id = u.id
-      WHERE b.mentor_id = ${id}
-      ORDER BY br.created_at DESC
-      LIMIT 10
-    `
-
-    return {
-      ...result[0],
-      availability,
-      reviews,
-    }
+    return await db.query.mentors.findFirst({
+      where: eq(mentors.id, id),
+      with: {
+        user: true,
+      },
+    })
   } catch (error) {
-    console.error("[v0] Error fetching mentor:", error)
+    console.error("Error fetching mentor:", error)
     return null
   }
 }
 
-export async function getUserBookings(userId: string, role: "student" | "mentor" = "student") {
+export async function getCohortById(id: string) {
   try {
-    const bookings = await sql`
-      SELECT 
-        b.*,
-        ${role === "student" ? sql`m.user_id as mentor_user_id, u_mentor.name as mentor_name, u_mentor.avatar_url as mentor_avatar` : sql`u_student.name as student_name, u_student.avatar_url as student_avatar`}
-      FROM bookings b
-      ${role === "student" ? sql`JOIN mentors m ON b.mentor_id = m.id JOIN users u_mentor ON m.user_id = u_mentor.id` : sql`JOIN users u_student ON b.student_id = u_student.id`}
-      WHERE ${role === "student" ? sql`b.student_id = ${userId}` : sql`b.mentor_id = (SELECT id FROM mentors WHERE user_id = ${userId})`}
-      ORDER BY b.start_at DESC
-    `
-    return bookings
-  } catch (error) {
-    console.error("[v0] Error fetching bookings:", error)
-    return []
-  }
-}
-
-export async function createBooking(
-  mentorId: string,
-  studentId: string,
-  startAt: Date,
-  endAt: Date,
-  topic: string,
-  notes?: string,
-) {
-  try {
-    const result = await sql`
-      INSERT INTO bookings (mentor_id, student_id, start_at, end_at, topic, notes, status)
-      VALUES (${mentorId}, ${studentId}, ${startAt.toISOString()}, ${endAt.toISOString()}, ${topic}, ${notes || null}, 'requested')
-      RETURNING *
-    `
-    return result[0]
-  } catch (error) {
-    console.error("[v0] Error creating booking:", error)
-    return null
-  }
-}
-
-export async function updateBookingStatus(bookingId: string, status: string, meetingUrl?: string) {
-  try {
-    await sql`
-      UPDATE bookings
-      SET 
-        status = ${status}::booking_status,
-        meeting_url = ${meetingUrl || null},
-        updated_at = NOW()
-      WHERE id = ${bookingId}
-    `
-    return true
-  } catch (error) {
-    console.error("[v0] Error updating booking:", error)
-    return false
-  }
-}
-
-export async function createBookingReview(bookingId: string, rating: number, feedbackEn?: string, feedbackAr?: string) {
-  try {
-    const result = await sql`
-      INSERT INTO booking_reviews (booking_id, rating, feedback_en, feedback_ar)
-      VALUES (${bookingId}, ${rating}, ${feedbackEn || null}, ${feedbackAr || null})
-      RETURNING *
-    `
-
-    // Update mentor rating
-    await sql`
-      UPDATE mentors m
-      SET 
-        rating = (
-          SELECT AVG(br.rating)
-          FROM booking_reviews br
-          JOIN bookings b ON br.booking_id = b.id
-          WHERE b.mentor_id = m.id
-        ),
-        total_sessions = total_sessions + 1
-      WHERE id = (SELECT mentor_id FROM bookings WHERE id = ${bookingId})
-    `
-
-    return result[0]
-  } catch (error) {
-    console.error("[v0] Error creating review:", error)
-    return null
-  }
-}
-
-// Users
-export async function getInstructors() {
-  try {
-    const instructors = await sql`
-      SELECT id, name, email, avatar_url
-      FROM users
-      WHERE role IN ('instructor', 'admin')
-      ORDER BY name ASC
-    `
-    return instructors
-  } catch (error) {
-    console.error("[v0] Error fetching instructors:", error)
-    return []
-  }
-}
-
-// Student Dashboard
-export async function getStudentDashboardData(userId: string) {
-  try {
-    const enrolledCoursesCount = await sql`
-      SELECT COUNT(*) as count FROM enrollments WHERE user_id = ${userId} AND status = 'active'
-    `
-    const completedCourses = await sql`
-      SELECT COUNT(*) as count FROM enrollments WHERE user_id = ${userId} AND status = 'completed'
-    `
-    const certificates = await sql`
-      SELECT COUNT(*) as count FROM certificates WHERE user_id = ${userId}
-    `
-    const totalPoints = await sql`
-      SELECT points FROM users WHERE id = ${userId}
-    `
-
-    // Get enrolled courses for dashboard list
-    const enrolledCourses = await sql`
-      SELECT 
-        e.id, 
-        e.course_id as "courseId", 
-        e.progress, 
-        c.title_en as "courseTitleEn", 
-        c.title_ar as "courseTitleAr",
-        c.thumbnail_url as "thumbnailUrl",
-        u.name as "instructorName"
-      FROM enrollments e
-      JOIN courses c ON e.course_id = c.id
-      LEFT JOIN users u ON c.instructor_id = u.id
-      WHERE e.user_id = ${userId}
-      ORDER BY e.last_accessed_at DESC
-      LIMIT 5
-    `
-    
-    const formattedEnrolledCourses = enrolledCourses.map(e => ({
-      id: e.id,
-      courseId: e.courseId,
-      progress: e.progress,
-      course: {
-        titleEn: e.courseTitleEn,
-        titleAr: e.courseTitleAr,
-        thumbnailUrl: e.thumbnailUrl,
-        instructor: {
-          name: e.instructorName
+    return await db.query.cohorts.findFirst({
+      where: eq(cohorts.id, id),
+      with: {
+        courses: {
+          with: {
+            course: true
+          }
+        },
+        members: {
+            with: {
+                user: true
+            }
         }
       }
-    }))
-
-    // Get last activity from progress table
-    const lastProgress = await sql`
-        SELECT p.*, l.title_en, l.title_ar, l.course_id, c.title_en as course_title_en, c.title_ar as course_title_ar
-        FROM progress p
-        JOIN lessons l ON p.lesson_id = l.id
-        JOIN courses c ON l.course_id = c.id
-        WHERE p.user_id = ${userId}
-        ORDER BY p.last_accessed DESC NULLS LAST
-        LIMIT 1
-    `
-
-    let lastActivity = null
-    if (lastProgress.length > 0) {
-        const lp = lastProgress[0]
-        const enrollment = await sql`SELECT progress FROM enrollments WHERE user_id = ${userId} AND course_id = ${lp.course_id}`
-        
-        lastActivity = {
-            courseId: lp.course_id,
-            lessonId: lp.lesson_id,
-            courseTitleEn: lp.course_title_en,
-            courseTitleAr: lp.course_title_ar,
-            lessonTitleEn: lp.title_en,
-            lessonTitleAr: lp.title_ar,
-            progress: enrollment[0]?.progress || 0,
-            courseTitle: lp.course_title_en, // fallback
-            lessonTitle: lp.title_en // fallback
-        }
-    }
-
-    return {
-      stats: {
-        activeCourses: Number(enrolledCoursesCount[0]?.count || 0),
-        completedCourses: Number(completedCourses[0]?.count || 0),
-        certificates: Number(certificates[0]?.count || 0),
-        totalPoints: Number(totalPoints[0]?.points || 0),
-      },
-      lastActivity,
-      enrolledCourses: formattedEnrolledCourses 
-    }
-  } catch (error) {
-    console.error("[Query] getStudentDashboardData error:", error)
-    return {
-      stats: { activeCourses: 0, completedCourses: 0, certificates: 0, totalPoints: 0 },
-      lastActivity: null,
-      enrolledCourses: []
-    }
-  }
-}
-
-export async function getStudentCourses(userId: string) {
-  try {
-    const rows = await sql`
-      SELECT 
-        e.id as enrollment_id,
-        e.progress,
-        e.status as enrollment_status,
-        e.last_accessed_at,
-        c.id as course_id,
-        c.title_en,
-        c.title_ar,
-        c.thumbnail_url,
-        c.slug,
-        u.name as instructor_name,
-        cat.name_en as category_name_en,
-        cat.name_ar as category_name_ar
-      FROM enrollments e
-      JOIN courses c ON e.course_id = c.id
-      JOIN users u ON c.instructor_id = u.id
-      LEFT JOIN categories cat ON c.category_id = cat.id
-      WHERE e.user_id = ${userId}
-      ORDER BY e.last_accessed_at DESC
-    `
-    return rows.map((r: any) => ({
-      id: r.enrollment_id,
-      courseId: r.course_id,
-      progress: r.progress,
-      status: r.enrollment_status,
-      lastAccessedAt: r.last_accessed_at,
-      course: {
-        id: r.course_id,
-        titleEn: r.title_en,
-        titleAr: r.title_ar,
-        thumbnailUrl: r.thumbnail_url,
-        slug: r.slug,
-        category: {
-          nameEn: r.category_name_en,
-          nameAr: r.category_name_ar,
-        },
-        instructor: {
-          name: r.instructor_name,
-        },
-      },
-    }))
-  } catch (error) {
-    console.error("[v0] Error fetching student courses:", error)
-    return []
-  }
-}
-
-export async function getUserProfile(userId: string) {
-  try {
-    const cols = await getUsersColumns()
-
-    const selectCols: any = {
-      id: users.id,
-      email: users.email,
-      name: users.name,
-      role: users.role,
-      avatarUrl: users.avatarUrl,
-      bio: users.bio,
-      headline: users.headline,
-      websiteUrl: users.websiteUrl,
-      twitterUrl: users.twitterUrl,
-      linkedinUrl: users.linkedinUrl,
-      points: users.points,
-      level: users.level,
-      isActive: users.isActive,
-      createdAt: users.createdAt,
-      updatedAt: users.updatedAt,
-    }
-
-    if (cols.has("phone_number")) {
-      selectCols.phoneNumber = users.phoneNumber
-    }
-
-    const rows = await db.select(selectCols).from(users).where(eq(users.id, userId)).limit(1)
-    return rows[0] ?? null
-  } catch (error) {
-    console.error("[v0] Error fetching user profile:", error)
-    return null
-  }
-}
-
-export async function updateUserProfile(userId: string, data: {
-  name?: string
-  bio?: string
-  headline?: string
-  websiteUrl?: string
-  twitterUrl?: string
-  linkedinUrl?: string
-  avatarUrl?: string
-  phoneNumber?: string | null
-}) {
-  try {
-    const cols = await getUsersColumns()
-    const updateData: any = {
-      ...data,
-      updatedAt: new Date(),
-    }
-
-    if ("phoneNumber" in updateData && !cols.has("phone_number")) {
-      delete updateData.phoneNumber
-    }
-
-    const returnCols: any = {
-      id: users.id,
-      email: users.email,
-      name: users.name,
-      role: users.role,
-      avatarUrl: users.avatarUrl,
-      bio: users.bio,
-      headline: users.headline,
-      websiteUrl: users.websiteUrl,
-      twitterUrl: users.twitterUrl,
-      linkedinUrl: users.linkedinUrl,
-      points: users.points,
-      level: users.level,
-      isActive: users.isActive,
-      createdAt: users.createdAt,
-      updatedAt: users.updatedAt,
-    }
-
-    if (cols.has("phone_number")) {
-      returnCols.phoneNumber = users.phoneNumber
-    }
-
-    const updatedUser = await db
-      .update(users)
-      .set(updateData)
-      .where(eq(users.id, userId))
-      .returning(returnCols)
-    
-    return updatedUser[0]
-  } catch (error) {
-    console.error("[v0] Error updating user profile:", error)
-    return null
-  }
-}
-
-export async function getUserNotes(userId: string) {
-  try {
-    const userNotes = await db
-      .select({
-        id: notes.id,
-        content: notes.content,
-        timestamp: notes.timestamp,
-        createdAt: notes.createdAt,
-        lessonId: notes.lessonId,
-        lessonTitleEn: lessons.titleEn,
-        lessonTitleAr: lessons.titleAr,
-        courseId: lessons.courseId,
-        courseTitleEn: courses.titleEn,
-        courseTitleAr: courses.titleAr,
-      })
-      .from(notes)
-      .leftJoin(lessons, eq(notes.lessonId, lessons.id))
-      .leftJoin(courses, eq(lessons.courseId, courses.id))
-      .where(eq(notes.userId, userId))
-      .orderBy(desc(notes.createdAt));
-      
-    return userNotes;
-  } catch (error) {
-    console.error("[v0] Error fetching user notes:", error);
-    return [];
-  }
-}
-
-export async function getUserLessonNotes(userId: string, lessonId: string) {
-  try {
-    const lessonNotes = await db
-      .select({
-        id: notes.id,
-        content: notes.content,
-        timestamp: notes.timestamp,
-        createdAt: notes.createdAt,
-      })
-      .from(notes)
-      .where(and(eq(notes.userId, userId), eq(notes.lessonId, lessonId)))
-      .orderBy(desc(notes.createdAt));
-      
-    return lessonNotes;
-  } catch (error) {
-    console.error("[v0] Error fetching lesson notes:", error);
-    return [];
-  }
-}
-
-export async function createNote(userId: string, lessonId: string, content: string, timestamp?: number) {
-  try {
-    const [newNote] = await db.insert(notes).values({
-      userId,
-      lessonId,
-      content,
-      timestamp,
-    }).returning();
-    return newNote;
-  } catch (error) {
-    console.error("[v0] Error creating note:", error);
-    return null;
-  }
-}
-
-export async function deleteNote(noteId: string, userId: string) {
-    try {
-        await db.delete(notes).where(and(eq(notes.id, noteId), eq(notes.userId, userId)));
-        return true;
-    } catch (error) {
-        console.error("[v0] Error deleting note:", error);
-        return false;
-    }
-}
-
-export async function checkEnrollmentStatus(userId: string, courseId: string) {
-  try {
-    const enrollment = await db.query.enrollments.findFirst({
-      where: and(
-        eq(enrollments.userId, userId),
-        eq(enrollments.courseId, courseId)
-      )
     })
-    return !!enrollment
   } catch (error) {
-    console.error("[Query] checkEnrollmentStatus error:", error)
+    console.error("Error fetching cohort:", error)
+    return null
+  }
+}
+
+// Orders
+export async function getUserOrders(userId: string) {
+    try {
+        return await db.query.orders.findMany({
+            where: eq(orders.userId, userId),
+            orderBy: [desc(orders.createdAt)],
+            with: {
+                items: {
+                    with: {
+                        course: true,
+                        product: true
+                    }
+                }
+            }
+        })
+    } catch (error) {
+        console.error("Error fetching orders:", error)
+        return []
+    }
+}
+
+// Bookings
+export async function createBooking(data: any) {
+    try {
+        await db.insert(bookings).values(data)
+        return { success: true }
+    } catch (error) {
+        console.error("Error creating booking:", error)
+        return { success: false }
+    }
+}
+
+export async function getUserBookings(userId: string, role: string) {
+    try {
+        if (role === "student") {
+            return await db.query.bookings.findMany({
+                where: eq(bookings.studentId, userId),
+                with: { mentor: { with: { user: true } } },
+                orderBy: [desc(bookings.startAt)]
+            })
+        } else {
+             // For mentor, need to find mentorId first
+             const mentor = await db.query.mentors.findFirst({
+                 where: eq(mentors.userId, userId)
+             })
+             if (!mentor) return []
+             return await db.query.bookings.findMany({
+                 where: eq(bookings.mentorId, mentor.id),
+                 with: { student: true },
+                 orderBy: [desc(bookings.startAt)]
+             })
+        }
+    } catch (error) {
+        console.error("Error fetching bookings:", error)
+        return []
+    }
+}
+
+export async function updateBookingStatus(bookingId: string, status: any) {
+    try {
+        await db.update(bookings).set({ status }).where(eq(bookings.id, bookingId))
+        return { success: true }
+    } catch (error) {
+        console.error("Error updating booking:", error)
+        return { success: false }
+    }
+}
+
+// Platform Stats
+export async function getPlatformStats() {
+  try {
+    const studentCount = await db
+      .select({ count: count() })
+      .from(users)
+      .where(eq(users.role, "student"))
+      .then((res) => res[0].count)
+
+    const courseCount = await db
+      .select({ count: count() })
+      .from(courses)
+      .then((res) => res[0].count)
+
+    const enrollmentCount = await db
+      .select({ count: count() })
+      .from(enrollments)
+      .then((res) => res[0].count)
+
+    const certificateCount = await db
+      .select({ count: count() })
+      .from(certificates)
+      .then((res) => res[0].count)
+      
+    const challengeCount = await db
+      .select({ count: count() })
+      .from(challenges)
+      .then((res) => res[0].count)
+
+    const contestCount = await db
+      .select({ count: count() })
+      .from(contests)
+      .then((res) => res[0].count)
+
+    return {
+      student_count: studentCount,
+      course_count: courseCount,
+      enrollment_count: enrollmentCount,
+      certificate_count: certificateCount,
+      challenge_count: challengeCount,
+      contest_count: contestCount,
+    }
+  } catch (error) {
+    console.error("Error fetching platform stats:", error)
+    return null
+  }
+}
+
+// Bookmarks Logic
+export async function isBookmarked(userId: string, courseId: string) {
+  try {
+    const bookmark = await db.query.bookmarks.findFirst({
+      where: and(eq(bookmarks.userId, userId), eq(bookmarks.courseId, courseId)),
+    })
+    return !!bookmark
+  } catch (error) {
+    console.error("Error checking bookmark status:", error)
     return false
+  }
+}
+
+export async function toggleBookmark(userId: string, courseId: string) {
+  try {
+    const existing = await db.query.bookmarks.findFirst({
+      where: and(eq(bookmarks.userId, userId), eq(bookmarks.courseId, courseId)),
+    })
+
+    if (existing) {
+      await db.delete(bookmarks).where(eq(bookmarks.id, existing.id))
+      return { bookmarked: false }
+    } else {
+      await db.insert(bookmarks).values({
+        userId,
+        courseId,
+      })
+      return { bookmarked: true }
+    }
+  } catch (error) {
+    console.error("Error toggling bookmark:", error)
+    throw error
   }
 }

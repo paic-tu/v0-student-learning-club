@@ -56,13 +56,13 @@ export default function HomePage() {
               </p>
 
               <div className="flex gap-4 justify-center flex-wrap pt-4">
-                <Link href="/courses">
+                <Link href={`/${language}/courses`}>
                   <Button size="lg" className="font-semibold hover-lift hover-glow text-lg px-8">
                     <Target className="h-5 w-5 mr-2" />
                     {t("startLearning", language)}
                   </Button>
                 </Link>
-                <Link href="/courses">
+                <Link href={`/${language}/courses`}>
                   <Button
                     size="lg"
                     variant="outline"

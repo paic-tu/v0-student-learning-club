@@ -1,5 +1,7 @@
 import { requirePermission } from "@/lib/rbac/require-permission"
-import { neon } from "@neondatabase/serverless"
+import { db } from "@/lib/db"
+import { users, enrollments, orders, certificates, challengeSubmissions } from "@/lib/db/schema"
+import { eq, count, and } from "drizzle-orm"
 import { notFound, redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,48 +10,42 @@ import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { UserEditForm } from "@/components/admin/user-edit-form"
 
-const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
-
-export default async function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
+export default async function UserDetailPage({ params }: { params: Promise<{ id: string; lang: string }> }) {
+  const { id, lang } = await params
 
   if (id === "new") {
-    redirect("/admin/users/new")
+    redirect(`/${lang}/admin/users/new`)
   }
 
   await requirePermission("users:read")
 
   let userId: string = id
   
-  // Basic UUID validation could be added here if needed
   if (!userId || userId.length < 10) { 
     notFound()
   }
 
-  const users = await sql`
-    SELECT * FROM users WHERE id = ${userId} LIMIT 1
-  `
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId)
+  })
 
-  if (users.length === 0) {
+  if (!user) {
     notFound()
   }
 
-  const user = users[0]
-
   // Get user stats
-  const stats = await sql`
-    SELECT 
-      (SELECT COUNT(*) FROM enrollments WHERE user_id = ${userId}) as enrollment_count,
-      (SELECT COUNT(*) FROM orders WHERE user_id = ${userId}) as order_count,
-      (SELECT COUNT(*) FROM certificates WHERE user_id = ${userId} AND status = 'issued') as certificate_count,
-      (SELECT COUNT(*) FROM challenge_submissions WHERE user_id = ${userId} AND is_passed = true) as challenge_count
-  `
+  const [enrollmentStats, orderStats, certificateStats, challengeStats] = await Promise.all([
+    db.select({ count: count() }).from(enrollments).where(eq(enrollments.userId, userId)),
+    db.select({ count: count() }).from(orders).where(eq(orders.userId, userId)),
+    db.select({ count: count() }).from(certificates).where(and(eq(certificates.userId, userId), eq(certificates.status, 'issued'))),
+    db.select({ count: count() }).from(challengeSubmissions).where(and(eq(challengeSubmissions.userId, userId), eq(challengeSubmissions.isPassed, true)))
+  ])
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/admin/users">
+          <Link href={`/${lang}/admin/users`}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -68,7 +64,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
             <CardTitle className="text-sm font-medium">Enrollments</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats[0]?.enrollment_count || 0}</div>
+            <div className="text-2xl font-bold">{enrollmentStats[0]?.count || 0}</div>
           </CardContent>
         </Card>
 
@@ -77,7 +73,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
             <CardTitle className="text-sm font-medium">Orders</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats[0]?.order_count || 0}</div>
+            <div className="text-2xl font-bold">{orderStats[0]?.count || 0}</div>
           </CardContent>
         </Card>
 
@@ -86,7 +82,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
             <CardTitle className="text-sm font-medium">Certificates</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats[0]?.certificate_count || 0}</div>
+            <div className="text-2xl font-bold">{certificateStats[0]?.count || 0}</div>
           </CardContent>
         </Card>
 
@@ -95,9 +91,10 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
             <CardTitle className="text-sm font-medium">Challenges Solved</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats[0]?.challenge_count || 0}</div>
+            <div className="text-2xl font-bold">{challengeStats[0]?.count || 0}</div>
           </CardContent>
         </Card>
+
       </div>
 
       <Card>

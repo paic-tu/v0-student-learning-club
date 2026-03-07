@@ -40,10 +40,10 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
             </DialogDescription>
           </DialogHeader>
           <div className="flex gap-2">
-            <Link href="/auth/login" className="flex-1">
+            <Link href={`/${language}/auth/login`} className="flex-1">
               <Button className="w-full">{t("login", language)}</Button>
             </Link>
-            <Link href="/auth/register" className="flex-1">
+            <Link href={`/${language}/auth/register`} className="flex-1">
               <Button variant="outline" className="w-full bg-transparent">
                 {t("register", language)}
               </Button>

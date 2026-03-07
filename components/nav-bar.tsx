@@ -136,7 +136,7 @@ export function NavBar() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Link href="/auth/login">
+            <Link href={`/${language}/auth/login`}>
               <Button size="sm">{t("login", language)}</Button>
             </Link>
           )}

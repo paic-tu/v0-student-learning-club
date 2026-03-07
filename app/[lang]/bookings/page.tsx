@@ -21,7 +21,7 @@ export default function BookingsPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push("/auth/login")
+      router.push(`/${language}/auth/login`)
       return
     }
     fetchBookings()

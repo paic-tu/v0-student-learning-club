@@ -1,5 +1,7 @@
 import { requirePermission } from "@/lib/rbac/require-permission"
-import { neon } from "@neondatabase/serverless"
+import { db } from "@/lib/db"
+import { certificates, users, courses } from "@/lib/db/schema"
+import { eq, desc, count } from "drizzle-orm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -8,30 +10,39 @@ import { Search, Award } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 
-const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
-
 export default async function CertificatesManagementPage() {
   await requirePermission("certificates:read")
 
-  const certificates = await sql`
-    SELECT 
-      cert.*,
-      u.name as user_name,
-      u.email as user_email,
-      c.title_en as course_title
-    FROM certificates cert
-    JOIN users u ON cert.user_id = u.id
-    LEFT JOIN courses c ON cert.course_id = c.id
-    ORDER BY cert.issued_at DESC
-    LIMIT 100
-  `
+  const certificatesData = await db.query.certificates.findMany({
+    with: {
+      user: {
+        columns: {
+          name: true,
+          email: true
+        }
+      },
+      course: {
+        columns: {
+          titleEn: true
+        }
+      }
+    },
+    orderBy: [desc(certificates.issuedAt)],
+    limit: 100
+  })
 
-  const stats = await sql`
-    SELECT 
-      COUNT(*) FILTER (WHERE status = 'issued') as issued_count,
-      COUNT(*) FILTER (WHERE status = 'revoked') as revoked_count
-    FROM certificates
-  `
+  const [issuedStats, revokedStats] = await Promise.all([
+    db.select({ count: count() }).from(certificates).where(eq(certificates.status, 'issued')),
+    db.select({ count: count() }).from(certificates).where(eq(certificates.status, 'revoked'))
+  ])
+
+  // Flatten for display
+  const certificatesList = certificatesData.map(cert => ({
+    ...cert,
+    user_name: cert.user?.name,
+    user_email: cert.user?.email,
+    course_title: cert.course?.titleEn
+  }))
 
   return (
     <div className="space-y-6">
@@ -47,7 +58,7 @@ export default async function CertificatesManagementPage() {
             <Award className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats[0]?.issued_count || 0}</div>
+            <div className="text-2xl font-bold">{issuedStats[0]?.count || 0}</div>
           </CardContent>
         </Card>
 
@@ -56,7 +67,7 @@ export default async function CertificatesManagementPage() {
             <CardTitle className="text-sm font-medium">Revoked Certificates</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats[0]?.revoked_count || 0}</div>
+            <div className="text-2xl font-bold">{revokedStats[0]?.count || 0}</div>
           </CardContent>
         </Card>
       </div>
@@ -72,7 +83,7 @@ export default async function CertificatesManagementPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Certificates ({certificates.length})</CardTitle>
+          <CardTitle>All Certificates ({certificatesList.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -88,7 +99,7 @@ export default async function CertificatesManagementPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {certificates.map((cert: any) => (
+              {certificatesList.map((cert: any) => (
                 <TableRow key={cert.id}>
                   <TableCell className="font-mono text-sm">{cert.certificate_number}</TableCell>
                   <TableCell>

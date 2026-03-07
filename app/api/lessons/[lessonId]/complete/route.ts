@@ -1,9 +1,9 @@
-import { neon } from "@neondatabase/serverless"
+import { db } from "@/lib/db"
 import { getCurrentUser } from "@/lib/auth"
 import { NextResponse } from "next/server"
 import { z } from "zod"
-
-const sql = neon(process.env.DATABASE_URL!)
+import { enrollments, lessons, courses, certificates } from "@/lib/db/schema"
+import { and, eq, count } from "drizzle-orm"
 
 const CompleteSchema = z.object({
   courseId: z.string().min(1),
@@ -27,30 +27,21 @@ export async function POST(request: Request, props: { params: Promise<{ lessonId
     }
 
     // Get current enrollment
-    const enrollment = await sql`
-      SELECT completed_lessons, progress FROM enrollments
-      WHERE user_id = ${user.id} AND course_id = ${courseId}
-      LIMIT 1
-    `
+    const enrollment = await db.query.enrollments.findFirst({
+      where: and(
+        eq(enrollments.userId, user.id),
+        eq(enrollments.courseId, courseId)
+      ),
+      columns: {
+        completedLessons: true,
+      }
+    })
 
-    if (enrollment.length === 0) {
+    if (!enrollment) {
       return NextResponse.json({ error: "Enrollment not found" }, { status: 404 })
     }
 
-    let completedLessons: string[] = []
-    try {
-      // In Postgres, JSONB array comes as object/array, but here it might be stored as string or JSON
-      // If it's stored as JSONB in DB, neon driver returns it as object/array directly usually.
-      // But let's handle both cases.
-      const raw = enrollment[0].completed_lessons
-      if (typeof raw === 'string') {
-        completedLessons = JSON.parse(raw)
-      } else if (Array.isArray(raw)) {
-        completedLessons = raw
-      }
-    } catch {
-      completedLessons = []
-    }
+    let completedLessons: string[] = enrollment.completedLessons || []
 
     // Add or remove lesson from completed list
     if (complete && !completedLessons.includes(lessonId)) {
@@ -60,47 +51,55 @@ export async function POST(request: Request, props: { params: Promise<{ lessonId
     }
 
     // Get total lessons in course
-    const totalLessonsResult = await sql`
-      SELECT COUNT(*) as count FROM lessons WHERE course_id = ${courseId}
-    `
+    const totalLessonsResult = await db
+      .select({ count: count() })
+      .from(lessons)
+      .where(eq(lessons.courseId, courseId))
 
     const totalLessons = Number(totalLessonsResult[0]?.count || 1)
     const progressPct = Math.round((completedLessons.length / totalLessons) * 100)
 
-    // Update enrollment
-    await sql`
-      UPDATE enrollments
-      SET 
-        completed_lessons = ${JSON.stringify(completedLessons)},
-        progress = ${progressPct},
-        last_accessed_at = NOW(),
-        updated_at = NOW()
-      WHERE user_id = ${user.id} AND course_id = ${courseId}
-    `
+    // Update enrollment and check certificate
+    await db.transaction(async (tx) => {
+      await tx.update(enrollments)
+        .set({
+          completedLessons: completedLessons,
+          progress: progressPct,
+          lastAccessedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(and(
+          eq(enrollments.userId, user.id),
+          eq(enrollments.courseId, courseId)
+        ))
 
-    // Auto-issue certificate if 100% complete
-    if (progressPct === 100 && complete) {
-      const course = await sql`
-        SELECT title_en, title_ar FROM courses WHERE id = ${courseId}
-      `
+      // Auto-issue certificate if 100% complete
+      if (progressPct === 100 && complete) {
+        const course = await tx.query.courses.findFirst({
+          where: eq(courses.id, courseId),
+          columns: {
+            titleEn: true,
+            titleAr: true,
+          }
+        })
 
-      if (course.length > 0) {
-        const certNumber = `CERT-${Date.now()}-${user.id}-${courseId}`
-        await sql`
-          INSERT INTO certificates (user_id, course_id, certificate_number, title_en, title_ar, status, issued_at)
-          VALUES (
-            ${user.id},
-            ${courseId},
-            ${certNumber},
-            ${course[0].title_en},
-            ${course[0].title_ar},
-            'issued',
-            NOW()
-          )
-          ON CONFLICT (user_id, course_id) DO NOTHING
-        `
+        if (course) {
+          const certNumber = `CERT-${Date.now()}-${user.id}-${courseId}`
+          
+          await tx.insert(certificates)
+            .values({
+              userId: user.id,
+              courseId: courseId,
+              certificateNumber: certNumber,
+              titleEn: course.titleEn,
+              titleAr: course.titleAr,
+              status: "issued",
+              issuedAt: new Date(),
+            })
+            .onConflictDoNothing()
+        }
       }
-    }
+    })
 
     return NextResponse.json({
       success: true,

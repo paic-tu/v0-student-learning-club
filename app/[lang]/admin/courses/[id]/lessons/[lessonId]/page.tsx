@@ -1,19 +1,23 @@
 import { Suspense } from "react"
-import { neon } from "@neondatabase/serverless"
+import { db } from "@/lib/db"
+import { lessons, courses } from "@/lib/db/schema"
+import { eq, asc } from "drizzle-orm"
 import { notFound, redirect } from "next/navigation"
 import { PageHeader } from "@/components/admin/page-header"
 import { LessonForm } from "@/components/admin/lesson-form"
 import { requireAdmin } from "@/lib/rbac/require-permission"
 
-const sql = neon(process.env.DATABASE_URL!)
-
 async function getCourses() {
   try {
-    const result = await sql`
-      SELECT id, title_en as "titleEn", title_ar as "titleAr", is_published as "isPublished"
-      FROM courses
-      ORDER BY title_en ASC
-    `
+    const result = await db.query.courses.findMany({
+      columns: {
+        id: true,
+        titleEn: true,
+        titleAr: true,
+        isPublished: true,
+      },
+      orderBy: [asc(courses.titleEn)],
+    })
     return result
   } catch (error) {
     console.error("[v0] Error fetching courses:", error)
@@ -23,20 +27,20 @@ async function getCourses() {
 
 async function getLesson(id: string) {
   try {
-    const result = await sql`
-      SELECT * FROM lessons WHERE id = ${id} LIMIT 1
-    `
-    return result[0] || null
+    const result = await db.query.lessons.findFirst({
+      where: eq(lessons.id, id),
+    })
+    return result || null
   } catch (error) {
     console.error("[v0] Error fetching lesson:", error)
     return null
   }
 }
 
-export default async function EditCourseLessonPage(props: { params: Promise<{ id: string; lessonId: string }> }) {
+export default async function EditCourseLessonPage(props: { params: Promise<{ lang: string; id: string; lessonId: string }> }) {
   const params = await props.params
   await requireAdmin()
-  const { id: courseId, lessonId } = params
+  const { lang, id: courseId, lessonId } = params
 
   if (!courseId || !lessonId) {
     notFound()
@@ -57,12 +61,12 @@ export default async function EditCourseLessonPage(props: { params: Promise<{ id
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Edit Lesson: ${lesson.title_en}`}
+        title={`Edit Lesson: ${lesson.titleEn || lesson.titleAr || "Untitled"}`}
         description="Update lesson content and settings"
         breadcrumbs={[
-          { label: "Admin", href: "/admin" },
-          { label: "Courses", href: "/admin/courses" },
-          { label: currentCourse?.titleEn || "Course", href: `/admin/courses/${courseId}` },
+          { label: "Admin", href: `/${lang}/admin` },
+          { label: "Courses", href: `/${lang}/admin/courses` },
+          { label: currentCourse?.titleEn || "Course", href: `/${lang}/admin/courses/${courseId}` },
           { label: "Edit Lesson" },
         ]}
       />

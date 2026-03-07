@@ -27,8 +27,8 @@ export default async function MyCoursesPage({ params }: { params: Promise<{ lang
           <Link href={`/${lang}/student/browse`}>{isAr ? "تصفح المزيد" : "Browse More"}</Link>
         </Button>
       </div>
-
-      {courses.length > 0 ? (
+      
+      {courses?.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {courses.map((enrollment: any) => (
             <Card key={enrollment.id} className="overflow-hidden hover:shadow-lg transition-shadow">

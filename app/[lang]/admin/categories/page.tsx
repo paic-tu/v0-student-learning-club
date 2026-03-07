@@ -1,6 +1,8 @@
 
 import { requirePermission } from "@/lib/rbac/require-permission"
-import { neon } from "@neondatabase/serverless"
+import { db } from "@/lib/db"
+import { categories } from "@/lib/db/schema"
+import { desc } from "drizzle-orm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -9,21 +11,29 @@ import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import Image from "next/image"
 
-const sql = neon(process.env.DATABASE_URL!)
-
 async function getCategories() {
-  const categories = await sql`
-    SELECT * FROM categories
-    ORDER BY created_at DESC
-  `
-  return categories
+  const result = await db
+    .select({
+      id: categories.id,
+      name_en: categories.nameEn,
+      name_ar: categories.nameAr,
+      slug: categories.slug,
+      description_en: categories.descriptionEn,
+      description_ar: categories.descriptionAr,
+      icon_url: categories.iconUrl,
+      created_at: categories.createdAt,
+    })
+    .from(categories)
+    .orderBy(desc(categories.createdAt))
+  
+  return result
 }
 
 export default async function CategoriesPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params
   await requirePermission("courses:write") // Assuming categories management requires course write permission or similar admin permission
 
-  const categories = await getCategories()
+  const categoriesData = await getCategories()
 
   return (
     <div className="space-y-6">
@@ -57,7 +67,7 @@ export default async function CategoriesPage({ params }: { params: Promise<{ lan
 
       <Card>
         <CardHeader>
-          <CardTitle>All Categories ({categories.length})</CardTitle>
+          <CardTitle>All Categories ({categoriesData.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -72,7 +82,7 @@ export default async function CategoriesPage({ params }: { params: Promise<{ lan
               </TableRow>
             </TableHeader>
             <TableBody>
-              {categories.map((category: any) => (
+              {categoriesData.map((category) => (
                 <TableRow key={category.id}>
                   <TableCell>
                     {category.icon_url ? (

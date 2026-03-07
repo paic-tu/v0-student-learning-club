@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm"
 import { logAudit, type AuditResource } from "@/lib/audit/audit-logger"
 
 const updateStatusSchema = z.object({
-  status: z.enum(["pending", "completed", "cancelled"]),
+  status: z.enum(["pending", "paid", "shipped", "delivered", "cancelled"]),
 })
 
 export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {

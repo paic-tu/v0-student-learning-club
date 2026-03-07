@@ -10,8 +10,10 @@ import { runAllChecks, type HealthCheck } from "@/lib/db/health-checks"
 import { CheckCircle, XCircle, AlertCircle } from "lucide-react"
 import { signIn, signOut } from "next-auth/react"
 import Link from "next/link"
+import { useParams } from "next/navigation"
 
 export default function HealthPage() {
+  const { lang } = useParams() as { lang: string }
   const { user } = useAuth()
   const { toast } = useToast()
   const [checks, setChecks] = useState<any>(null)
@@ -209,12 +211,12 @@ export default function HealthPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Link href="/courses">
+                <Link href={`/${lang}/courses`}>
                   <Button variant="outline" className="w-full text-sm bg-transparent">
                     Courses
                   </Button>
                 </Link>
-                <Link href="/admin">
+                <Link href={`/${lang}/admin`}>
                   <Button variant="outline" className="w-full text-sm bg-transparent">
                     Admin Panel
                   </Button>

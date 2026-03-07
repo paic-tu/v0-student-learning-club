@@ -1,5 +1,7 @@
 import { requirePermission } from "@/lib/rbac/require-permission"
-import { neon } from "@neondatabase/serverless"
+import { db } from "@/lib/db"
+import { contests } from "@/lib/db/schema"
+import { desc } from "drizzle-orm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -8,15 +10,14 @@ import { Plus, Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 
-const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
-
-export default async function ContestsManagementPage() {
+export default async function ContestsManagementPage(props: { params: Promise<{ lang: string }> }) {
+  const params = await props.params
+  const { lang } = params
   await requirePermission("contests:read")
 
-  const contests = await sql`
-    SELECT * FROM contests
-    ORDER BY start_date DESC
-  `
+  const contestsData = await db.query.contests.findMany({
+    orderBy: [desc(contests.startDate)]
+  })
 
   return (
     <div className="space-y-6">
@@ -26,7 +27,7 @@ export default async function ContestsManagementPage() {
           <p className="text-muted-foreground">Manage coding competitions</p>
         </div>
         <Button asChild>
-          <Link href="/admin/contests/new">
+          <Link href={`/${lang}/admin/contests/new`}>
             <Plus className="mr-2 h-4 w-4" />
             Create Contest
           </Link>
@@ -44,7 +45,7 @@ export default async function ContestsManagementPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Contests ({contests.length})</CardTitle>
+          <CardTitle>All Contests ({contestsData.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -60,14 +61,14 @@ export default async function ContestsManagementPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {contests.map((contest: any) => (
+              {contestsData.map((contest) => (
                 <TableRow key={contest.id}>
                   <TableCell className="font-medium">{contest.id}</TableCell>
-                  <TableCell>{contest.title_en}</TableCell>
-                  <TableCell>{new Date(contest.start_date).toLocaleDateString()}</TableCell>
-                  <TableCell>{new Date(contest.end_date).toLocaleDateString()}</TableCell>
+                  <TableCell>{contest.titleEn}</TableCell>
+                  <TableCell>{new Date(contest.startDate).toLocaleDateString()}</TableCell>
+                  <TableCell>{new Date(contest.endDate).toLocaleDateString()}</TableCell>
                   <TableCell>
-                    {contest.participant_count} / {contest.max_participants || "∞"}
+                    {contest.participantCount} / {contest.maxParticipants || "∞"}
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -84,7 +85,7 @@ export default async function ContestsManagementPage() {
                   </TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/admin/contests/${contest.id}`}>Edit</Link>
+                      <Link href={`/${lang}/admin/contests/${contest.id}`}>Edit</Link>
                     </Button>
                   </TableCell>
                 </TableRow>

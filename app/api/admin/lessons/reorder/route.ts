@@ -4,6 +4,7 @@ import { z } from "zod"
 import { db } from "@/lib/db"
 import { lessons } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
+import { logAudit, type AuditResource } from "@/lib/audit/audit-logger"
 
 const reorderSchema = z.object({
   items: z.array(
@@ -21,11 +22,16 @@ export async function PUT(req: NextRequest) {
     const body = await req.json()
     const { items } = reorderSchema.parse(body)
 
-    // Update all items in a transaction-like manner
-    // Since neon/drizzle doesn't support easy transactions in this setup, 
-    // we'll run them in parallel.
-    // Ideally use db.transaction() if available.
-    
+    if (items.length === 0) {
+      return NextResponse.json({ success: true })
+    }
+
+    // Get course ID for audit log (from first lesson)
+    const firstLesson = await db.query.lessons.findFirst({
+      where: eq(lessons.id, items[0].id),
+      columns: { courseId: true },
+    })
+
     await Promise.all(
       items.map((item) =>
         db
@@ -34,6 +40,19 @@ export async function PUT(req: NextRequest) {
           .where(eq(lessons.id, item.id))
       )
     )
+
+    if (firstLesson?.courseId) {
+      await logAudit({
+        action: "update",
+        resource: "course" as AuditResource,
+        resourceId: firstLesson.courseId,
+        changes: {
+          action: "reorder_lessons",
+          count: items.length,
+          items: items,
+        },
+      })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

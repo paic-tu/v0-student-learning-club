@@ -1,5 +1,7 @@
 import { requirePermission } from "@/lib/rbac/require-permission"
-import { neon } from "@neondatabase/serverless"
+import { db } from "@/lib/db"
+import { users } from "@/lib/db/schema"
+import { desc } from "drizzle-orm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -8,24 +10,24 @@ import { Plus, Search, Filter } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 
-const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
-
-export default async function UsersManagementPage() {
+export default async function UsersManagementPage(props: { params: Promise<{ lang: string }> }) {
+  const params = await props.params
+  const { lang } = params
   await requirePermission("users:read")
 
-  const users = await sql`
-    SELECT 
-      id, 
-      email, 
-      name, 
-      role, 
-      points, 
-      level, 
-      created_at
-    FROM users
-    ORDER BY created_at DESC
-    LIMIT 100
-  `
+  const usersData = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      name: users.name,
+      role: users.role,
+      points: users.points,
+      level: users.level,
+      created_at: users.createdAt,
+    })
+    .from(users)
+    .orderBy(desc(users.createdAt))
+    .limit(100)
 
   return (
     <div className="space-y-6">
@@ -35,7 +37,7 @@ export default async function UsersManagementPage() {
           <p className="text-muted-foreground">Manage user accounts and permissions</p>
         </div>
         <Button asChild>
-          <Link href="/admin/users/new">
+          <Link href={`/${lang}/admin/users/new`}>
             <Plus className="mr-2 h-4 w-4" />
             Add User
           </Link>
@@ -59,7 +61,7 @@ export default async function UsersManagementPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Users ({users.length})</CardTitle>
+          <CardTitle>All Users ({usersData.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -76,7 +78,7 @@ export default async function UsersManagementPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user: any) => (
+              {usersData.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.id}</TableCell>
                   <TableCell>{user.name}</TableCell>
@@ -89,7 +91,7 @@ export default async function UsersManagementPage() {
                   <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/admin/users/${user.id}`}>Edit</Link>
+                      <Link href={`/${lang}/admin/users/${user.id}`}>Edit</Link>
                     </Button>
                   </TableCell>
                 </TableRow>

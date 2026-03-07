@@ -1,10 +1,10 @@
 import { auth } from "@/lib/auth"
 import { notFound, redirect } from "next/navigation"
 import { InstructorLessonForm } from "@/components/instructor/lesson-form"
-import { neon } from "@neondatabase/serverless"
+import { db } from "@/lib/db"
+import { courses, lessons } from "@/lib/db/schema"
+import { eq, and } from "drizzle-orm"
 import { getCourseModules } from "@/lib/db/queries"
-
-const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
 
 export default async function EditInstructorLessonPage({ params }: { params: Promise<{ lang: string, courseId: string, lessonId: string }> }) {
   const { lang, courseId, lessonId } = await params
@@ -15,28 +15,30 @@ export default async function EditInstructorLessonPage({ params }: { params: Pro
   }
 
   // Verify course ownership
-  const courses = await sql`
-    SELECT id FROM courses 
-    WHERE id = ${courseId} AND instructor_id = ${session.user.id}
-    LIMIT 1
-  `
+  const course = await db.query.courses.findFirst({
+    where: and(
+      eq(courses.id, courseId),
+      eq(courses.instructorId, session.user.id)
+    ),
+    columns: { id: true }
+  })
 
-  if (courses.length === 0) {
+  if (!course) {
     notFound()
   }
 
   // Fetch lesson
-  const lessons = await sql`
-    SELECT * FROM lessons
-    WHERE id = ${lessonId} AND course_id = ${courseId}
-    LIMIT 1
-  `
+  const lesson = await db.query.lessons.findFirst({
+    where: and(
+      eq(lessons.id, lessonId),
+      eq(lessons.courseId, courseId)
+    )
+  })
 
-  if (lessons.length === 0) {
+  if (!lesson) {
     notFound()
   }
 
-  const lesson = lessons[0]
   const modules = await getCourseModules(courseId)
 
   return (

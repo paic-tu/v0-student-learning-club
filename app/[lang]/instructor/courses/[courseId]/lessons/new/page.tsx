@@ -1,10 +1,10 @@
 import { auth } from "@/lib/auth"
 import { notFound, redirect } from "next/navigation"
 import { InstructorLessonForm } from "@/components/instructor/lesson-form"
-import { neon } from "@neondatabase/serverless"
+import { db } from "@/lib/db"
+import { courses } from "@/lib/db/schema"
+import { eq, and } from "drizzle-orm"
 import { getCourseModules } from "@/lib/db/queries"
-
-const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
 
 export default async function NewInstructorLessonPage({ 
   params, 
@@ -22,13 +22,15 @@ export default async function NewInstructorLessonPage({
   }
 
   // Verify course ownership
-  const courses = await sql`
-    SELECT id FROM courses 
-    WHERE id = ${courseId} AND instructor_id = ${session.user.id}
-    LIMIT 1
-  `
+  const course = await db.query.courses.findFirst({
+    where: and(
+      eq(courses.id, courseId),
+      eq(courses.instructorId, session.user.id)
+    ),
+    columns: { id: true }
+  })
 
-  if (courses.length === 0) {
+  if (!course) {
     notFound()
   }
 

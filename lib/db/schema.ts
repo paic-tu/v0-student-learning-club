@@ -22,6 +22,11 @@ export const orderStatusEnum = pgEnum("order_status", ["pending", "paid", "shipp
 export const certificateStatusEnum = pgEnum("certificate_status", ["pending", "issued", "revoked"])
 export const contestStatusEnum = pgEnum("contest_status", ["upcoming", "active", "completed"])
 export const challengeTypeEnum = pgEnum("challenge_type", ["quiz", "coding", "project"])
+export const cohortStatusEnum = pgEnum("cohort_status", ["draft", "open", "running", "ended"])
+export const cohortMemberRoleEnum = pgEnum("cohort_member_role", ["student", "mentor", "instructor"])
+export const cohortMemberStatusEnum = pgEnum("cohort_member_status", ["active", "waitlist", "removed"])
+export const scheduleTypeEnum = pgEnum("schedule_type", ["live", "deadline", "exam", "workshop"])
+export const bookingStatusEnum = pgEnum("booking_status", ["requested", "confirmed", "completed", "cancelled"])
 
 // Users table
 export const users = pgTable("users", {
@@ -368,6 +373,140 @@ export const contestParticipants = pgTable("contest_participants", {
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
 })
 
+// Cohorts System Tables
+export const cohorts = pgTable("cohorts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  titleEn: varchar("title_en", { length: 255 }).notNull(),
+  titleAr: varchar("title_ar", { length: 255 }).notNull(),
+  descriptionEn: text("description_en"),
+  descriptionAr: text("description_ar"),
+  thumbnailUrl: text("thumbnail_url"),
+  startsAt: timestamp("starts_at").notNull(),
+  endsAt: timestamp("ends_at").notNull(),
+  capacity: integer("capacity").notNull().default(30),
+  status: cohortStatusEnum("status").notNull().default("draft"),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+export const cohortCourses = pgTable("cohort_courses", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  cohortId: uuid("cohort_id")
+    .notNull()
+    .references(() => cohorts.id, { onDelete: "cascade" }),
+  courseId: uuid("course_id")
+    .notNull()
+    .references(() => courses.id, { onDelete: "cascade" }),
+  orderIndex: integer("order_index").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+
+export const cohortMembers = pgTable("cohort_members", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  cohortId: uuid("cohort_id")
+    .notNull()
+    .references(() => cohorts.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  role: cohortMemberRoleEnum("role").notNull().default("student"),
+  status: cohortMemberStatusEnum("status").notNull().default("active"),
+  joinedAt: timestamp("joined_at").notNull().defaultNow(),
+})
+
+export const cohortSchedule = pgTable("cohort_schedule", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  cohortId: uuid("cohort_id")
+    .notNull()
+    .references(() => cohorts.id, { onDelete: "cascade" }),
+  titleEn: varchar("title_en", { length: 255 }).notNull(),
+  titleAr: varchar("title_ar", { length: 255 }).notNull(),
+  startsAt: timestamp("starts_at").notNull(),
+  endsAt: timestamp("ends_at").notNull(),
+  type: scheduleTypeEnum("type").notNull(),
+  locationUrl: text("location_url"),
+  notesEn: text("notes_en"),
+  notesAr: text("notes_ar"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+
+export const cohortAnnouncements = pgTable("cohort_announcements", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  cohortId: uuid("cohort_id")
+    .notNull()
+    .references(() => cohorts.id, { onDelete: "cascade" }),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => users.id),
+  titleEn: varchar("title_en", { length: 255 }).notNull(),
+  titleAr: varchar("title_ar", { length: 255 }).notNull(),
+  bodyEn: text("body_en").notNull(),
+  bodyAr: text("body_ar").notNull(),
+  pinned: boolean("pinned").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+
+// Mentorship System Tables
+export const mentors = pgTable("mentors", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  bioEn: text("bio_en"),
+  bioAr: text("bio_ar"),
+  skills: jsonb("skills").default([]),
+  hourlyRate: decimal("hourly_rate", { precision: 10, scale: 2 }),
+  isActive: boolean("is_active").notNull().default(true),
+  rating: decimal("rating", { precision: 3, scale: 2 }).default("0"),
+  totalSessions: integer("total_sessions").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+export const mentorAvailability = pgTable("mentor_availability", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  mentorId: uuid("mentor_id")
+    .notNull()
+    .references(() => mentors.id, { onDelete: "cascade" }),
+  weekday: integer("weekday").notNull(), // 0-6
+  startTime: varchar("start_time", { length: 10 }).notNull(),
+  endTime: varchar("end_time", { length: 10 }).notNull(),
+  timezone: varchar("timezone", { length: 50 }).notNull().default("Asia/Riyadh"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+
+export const bookings = pgTable("bookings", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  mentorId: uuid("mentor_id")
+    .notNull()
+    .references(() => mentors.id, { onDelete: "cascade" }),
+  studentId: uuid("student_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  startAt: timestamp("start_at").notNull(),
+  endAt: timestamp("end_at").notNull(),
+  status: bookingStatusEnum("status").notNull().default("requested"),
+  topic: varchar("topic", { length: 255 }).notNull(),
+  notes: text("notes"),
+  meetingUrl: text("meeting_url"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+export const bookingReviews = pgTable("booking_reviews", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  bookingId: uuid("booking_id")
+    .notNull()
+    .references(() => bookings.id, { onDelete: "cascade" }),
+  rating: integer("rating").notNull(), // 1-5
+  feedbackEn: text("feedback_en"),
+  feedbackAr: text("feedback_ar"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+
 // Audit Logs table
 export const auditLogs = pgTable("audit_logs", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -382,7 +521,7 @@ export const auditLogs = pgTable("audit_logs", {
 })
 
 // Relations
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ many, one }) => ({
   sessions: many(sessions),
   enrollments: many(enrollments),
   orders: many(orders),
@@ -394,6 +533,10 @@ export const usersRelations = relations(users, ({ many }) => ({
   reviews: many(reviews),
   bookmarks: many(bookmarks),
   notes: many(notes),
+  createdCohorts: many(cohorts),
+  cohortMemberships: many(cohortMembers),
+  mentorProfile: one(mentors, { fields: [users.id], references: [mentors.userId] }),
+  studentBookings: many(bookings),
 }))
 
 export const coursesRelations = relations(courses, ({ one, many }) => ({
@@ -410,6 +553,7 @@ export const coursesRelations = relations(courses, ({ one, many }) => ({
   enrollments: many(enrollments),
   certificates: many(certificates),
   reviews: many(reviews),
+  cohortCourses: many(cohortCourses),
 }))
 
 export const modulesRelations = relations(modules, ({ one, many }) => ({
@@ -482,6 +626,15 @@ export const cartItemsRelations = relations(cartItems, ({ one }) => ({
   product: one(products, { fields: [cartItems.productId], references: [products.id] }),
 }))
 
+export const productsRelations = relations(products, ({ one, many }) => ({
+  category: one(categories, {
+    fields: [products.categoryId],
+    references: [categories.id],
+  }),
+  cartItems: many(cartItems),
+  orderItems: many(orderItems),
+}))
+
 export const ordersRelations = relations(orders, ({ one, many }) => ({
   user: one(users, {
     fields: [orders.userId],
@@ -511,4 +664,56 @@ export const challengesRelations = relations(challenges, ({ one, many }) => ({
     references: [categories.id],
   }),
   submissions: many(challengeSubmissions),
+}) )
+
+export const certificatesRelations = relations(certificates, ({ one }) => ({
+  user: one(users, { fields: [certificates.userId], references: [users.id] }),
+  course: one(courses, { fields: [certificates.courseId], references: [courses.id] }),
+}))
+
+export const cohortsRelations = relations(cohorts, ({ one, many }) => ({
+  creator: one(users, { fields: [cohorts.createdBy], references: [users.id] }),
+  members: many(cohortMembers),
+  courses: many(cohortCourses),
+  schedule: many(cohortSchedule),
+  announcements: many(cohortAnnouncements),
+}))
+
+export const cohortMembersRelations = relations(cohortMembers, ({ one }) => ({
+  cohort: one(cohorts, { fields: [cohortMembers.cohortId], references: [cohorts.id] }),
+  user: one(users, { fields: [cohortMembers.userId], references: [users.id] }),
+}))
+
+export const cohortCoursesRelations = relations(cohortCourses, ({ one }) => ({
+  cohort: one(cohorts, { fields: [cohortCourses.cohortId], references: [cohorts.id] }),
+  course: one(courses, { fields: [cohortCourses.courseId], references: [courses.id] }),
+}))
+
+export const cohortScheduleRelations = relations(cohortSchedule, ({ one }) => ({
+  cohort: one(cohorts, { fields: [cohortSchedule.cohortId], references: [cohorts.id] }),
+}))
+
+export const cohortAnnouncementsRelations = relations(cohortAnnouncements, ({ one }) => ({
+  cohort: one(cohorts, { fields: [cohortAnnouncements.cohortId], references: [cohorts.id] }),
+  author: one(users, { fields: [cohortAnnouncements.createdBy], references: [users.id] }),
+}))
+
+export const mentorsRelations = relations(mentors, ({ one, many }) => ({
+  user: one(users, { fields: [mentors.userId], references: [users.id] }),
+  availability: many(mentorAvailability),
+  bookings: many(bookings),
+}))
+
+export const mentorAvailabilityRelations = relations(mentorAvailability, ({ one }) => ({
+  mentor: one(mentors, { fields: [mentorAvailability.mentorId], references: [mentors.id] }),
+}))
+
+export const bookingsRelations = relations(bookings, ({ one, many }) => ({
+  mentor: one(mentors, { fields: [bookings.mentorId], references: [mentors.id] }),
+  student: one(users, { fields: [bookings.studentId], references: [users.id] }),
+  review: one(bookingReviews, { fields: [bookings.id], references: [bookingReviews.bookingId] }), // 1:1 relation usually but schema has booking_id unique
+}))
+
+export const bookingReviewsRelations = relations(bookingReviews, ({ one }) => ({
+  booking: one(bookings, { fields: [bookingReviews.bookingId], references: [bookings.id] }),
 }))

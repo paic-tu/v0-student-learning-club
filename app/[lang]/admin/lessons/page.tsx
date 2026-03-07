@@ -1,33 +1,41 @@
 import { Suspense } from "react"
-import { neon } from "@neondatabase/serverless"
+import { db } from "@/lib/db"
+import { lessons, courses } from "@/lib/db/schema"
+import { eq, desc, sql } from "drizzle-orm"
 import { PageHeader } from "@/components/admin/page-header"
 import { LessonsTable } from "@/components/admin/lessons-table"
 import { Plus } from "lucide-react"
 import { requireAdmin } from "@/lib/rbac/require-permission"
 
-const sql = neon(process.env.DATABASE_URL!)
-
 async function getLessons() {
   try {
-    const result = await sql`
-      SELECT 
-        l.id,
-        l.title_en as "titleEn",
-        l.title_ar as "titleAr",
-        COALESCE(l.slug, LOWER(REGEXP_REPLACE(l.title_en, '[^a-zA-Z0-9]+', '-', 'g'))) as slug,
-        l.course_id as "courseId",
-        c.title_en as "courseTitleEn",
-        COALESCE(l.status, CASE WHEN c.is_published THEN 'published' ELSE 'draft' END) as status,
-        COALESCE(l.type, 'video') as "contentType",
-        l.order_index as "orderIndex",
-        COALESCE(l.duration_minutes, 0) as duration,
-        COALESCE(l.is_preview, false) as "freePreview",
-        COALESCE(l.updated_at, l.created_at) as "updatedAt"
-      FROM lessons l
-      LEFT JOIN courses c ON l.course_id = c.id
-      ORDER BY COALESCE(l.updated_at, l.created_at) DESC
-    `
-    return result
+    const result = await db
+      .select({
+        id: lessons.id,
+        titleEn: lessons.titleEn,
+        titleAr: lessons.titleAr,
+        slug: sql<string>`COALESCE(${lessons.slug}, LOWER(REGEXP_REPLACE(${lessons.titleEn}, '[^a-zA-Z0-9]+', '-', 'g')))`,
+        courseId: lessons.courseId,
+        courseTitleEn: courses.titleEn,
+        status: sql<string>`COALESCE(${lessons.status}, CASE WHEN ${courses.isPublished} THEN 'published' ELSE 'draft' END)`,
+        contentType: lessons.type,
+        orderIndex: lessons.orderIndex,
+        durationMinutes: lessons.durationMinutes,
+        freePreview: lessons.isPreview,
+        createdAt: lessons.createdAt,
+        updatedAt: lessons.updatedAt,
+      })
+      .from(lessons)
+      .leftJoin(courses, eq(lessons.courseId, courses.id))
+      .orderBy(desc(sql`COALESCE(${lessons.updatedAt}, ${lessons.createdAt})`))
+
+    return result.map(lesson => ({
+      ...lesson,
+      contentType: lesson.contentType || 'video',
+      duration: lesson.durationMinutes || 0,
+      freePreview: lesson.freePreview || false,
+      updatedAt: lesson.updatedAt || lesson.createdAt
+    }))
   } catch (error) {
     console.error("[v0] Error fetching lessons:", error)
     // Return empty array on error to prevent page crash

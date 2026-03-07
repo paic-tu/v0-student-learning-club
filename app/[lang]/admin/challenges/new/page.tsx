@@ -1,18 +1,21 @@
 import { Suspense } from "react"
-import { neon } from "@neondatabase/serverless"
+import { db } from "@/lib/db"
+import { categories } from "@/lib/db/schema"
+import { asc } from "drizzle-orm"
 import { PageHeader } from "@/components/admin/page-header"
 import { ChallengeForm } from "@/components/admin/challenge-form"
 import { requirePermission } from "@/lib/rbac/require-permission"
 
-const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
-
 async function getCategories() {
   try {
-    const result = await sql`
-      SELECT id, name_en as "nameEn", name_ar as "nameAr"
-      FROM categories
-      ORDER BY name_en ASC
-    `
+    const result = await db.query.categories.findMany({
+      columns: {
+        id: true,
+        nameEn: true,
+        nameAr: true,
+      },
+      orderBy: [asc(categories.nameEn)],
+    })
     return result
   } catch (error) {
     console.error("[v0] Error fetching categories:", error)
@@ -22,7 +25,7 @@ async function getCategories() {
 
 export default async function NewChallengePage() {
   await requirePermission("challenges:write")
-  const categories = await getCategories()
+  const categoriesData = await getCategories()
 
   return (
     <div>
@@ -37,7 +40,7 @@ export default async function NewChallengePage() {
       />
 
       <Suspense fallback={<div>Loading form...</div>}>
-        <ChallengeForm categories={categories as any} />
+        <ChallengeForm categories={categoriesData as any} />
       </Suspense>
     </div>
   )

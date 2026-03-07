@@ -1,5 +1,7 @@
 import { requirePermission } from "@/lib/rbac/require-permission"
-import { neon } from "@neondatabase/serverless"
+import { db } from "@/lib/db"
+import { products, categories, orders } from "@/lib/db/schema"
+import { eq, desc, sum, count } from "drizzle-orm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -8,27 +10,25 @@ import { Plus, Search, Filter, DollarSign } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 
-const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
-
-export default async function StoreManagementPage() {
+export default async function StoreManagementPage(props: { params: Promise<{ lang: string }> }) {
+  const params = await props.params
+  const { lang } = params
   await requirePermission("store:read")
 
-  const items = await sql`
-    SELECT 
-      p.*,
-      cat.name_en as category_name
-    FROM products p
-    LEFT JOIN categories cat ON p.category_id = cat.id
-    ORDER BY p.created_at DESC
-  `
-
-  const stats = await sql`
-    SELECT 
-      SUM(total_amount::numeric) as total_revenue,
-      COUNT(*) as total_orders
-    FROM orders
-    WHERE status = 'completed'
-  `
+  const [items, stats] = await Promise.all([
+    db.query.products.findMany({
+      with: {
+        category: true
+      },
+      orderBy: [desc(products.createdAt)]
+    }),
+    db.select({
+      totalRevenue: sum(orders.totalAmount),
+      totalOrders: count()
+    })
+    .from(orders)
+    .where(eq(orders.status, 'completed'))
+  ])
 
   return (
     <div className="space-y-6">
@@ -38,7 +38,7 @@ export default async function StoreManagementPage() {
           <p className="text-muted-foreground">Manage products and inventory</p>
         </div>
         <Button asChild>
-          <Link href="/admin/store/new">
+          <Link href={`/${lang}/admin/store/new`}>
             <Plus className="mr-2 h-4 w-4" />
             Add Product
           </Link>
@@ -52,7 +52,7 @@ export default async function StoreManagementPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats[0]?.total_revenue || 0}</div>
+            <div className="text-2xl font-bold">${stats[0]?.totalRevenue || 0}</div>
             <p className="text-xs text-muted-foreground">From completed orders</p>
           </CardContent>
         </Card>
@@ -62,7 +62,7 @@ export default async function StoreManagementPage() {
             <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats[0]?.total_orders || 0}</div>
+            <div className="text-2xl font-bold">{stats[0]?.totalOrders || 0}</div>
             <p className="text-xs text-muted-foreground">All time</p>
           </CardContent>
         </Card>
@@ -95,29 +95,27 @@ export default async function StoreManagementPage() {
                 <TableHead>Name (EN)</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Price</TableHead>
-                <TableHead>Points</TableHead>
                 <TableHead>Stock</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((item: any) => (
+              {items.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.id}</TableCell>
-                  <TableCell>{item.name_en}</TableCell>
-                  <TableCell>{item.category_name || "None"}</TableCell>
+                  <TableCell className="font-medium text-xs font-mono">{item.id.substring(0, 8)}...</TableCell>
+                  <TableCell>{item.nameEn}</TableCell>
+                  <TableCell>{item.category?.nameEn || "None"}</TableCell>
                   <TableCell>${item.price}</TableCell>
-                  <TableCell>{item.points_cost || "-"}</TableCell>
-                  <TableCell>{item.stock}</TableCell>
+                  <TableCell>{item.stockQuantity}</TableCell>
                   <TableCell>
-                    <Badge variant={item.is_active ? "default" : "secondary"}>
-                      {item.is_active ? "Active" : "Inactive"}
+                    <Badge variant={item.isActive ? "default" : "secondary"}>
+                      {item.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/admin/store/${item.id}`}>Edit</Link>
+                      <Link href={`/${lang}/admin/store/${item.id}`}>Edit</Link>
                     </Button>
                   </TableCell>
                 </TableRow>

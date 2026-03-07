@@ -13,6 +13,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { FormLayout } from "@/components/admin/form-layout"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
+import { contests } from "@/lib/db/schema"
+import { InferSelectModel } from "drizzle-orm"
 
 const contestSchema = z.object({
   titleEn: z.string().min(1, "English title is required"),
@@ -20,47 +22,60 @@ const contestSchema = z.object({
   descriptionEn: z.string().min(10, "English description required"),
   descriptionAr: z.string().min(10, "Arabic description required"),
   status: z.enum(["upcoming", "active", "completed"]),
-  startDate: z.string().datetime().optional(),
-  endDate: z.string().datetime().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
   prizePool: z.string().optional(),
   maxParticipants: z.number().int().min(0).optional(),
 })
 
 type ContestFormData = z.infer<typeof contestSchema>
+type Contest = InferSelectModel<typeof contests>
 
-export function ContestForm() {
+interface ContestFormProps {
+  initialData?: Contest
+}
+
+export function ContestForm({ initialData }: ContestFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
   const form = useForm<ContestFormData>({
     resolver: zodResolver(contestSchema),
     defaultValues: {
-      titleEn: "",
-      titleAr: "",
-      descriptionEn: "",
-      descriptionAr: "",
-      status: "upcoming",
-      prizePool: "",
-      maxParticipants: 500,
+      titleEn: initialData?.titleEn || "",
+      titleAr: initialData?.titleAr || "",
+      descriptionEn: initialData?.descriptionEn || "",
+      descriptionAr: initialData?.descriptionAr || "",
+      status: (initialData?.status as "upcoming" | "active" | "completed") || "upcoming",
+      prizePool: initialData?.prizePool || "",
+      maxParticipants: initialData?.maxParticipants || 500,
+      startDate: initialData?.startDate ? new Date(initialData.startDate).toISOString() : undefined,
+      endDate: initialData?.endDate ? new Date(initialData.endDate).toISOString() : undefined,
     },
   })
 
   async function onSubmit(data: ContestFormData) {
     setIsLoading(true)
     try {
-      const response = await fetch("/api/admin/contests", {
-        method: "POST",
+      const url = initialData 
+        ? `/api/admin/contests/${initialData.id}`
+        : "/api/admin/contests"
+      
+      const method = initialData ? "PUT" : "POST"
+
+      const response = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       })
 
-      if (!response.ok) throw new Error("Failed to create contest")
+      if (!response.ok) throw new Error(initialData ? "Failed to update contest" : "Failed to create contest")
 
-      toast.success("Contest created successfully")
+      toast.success(initialData ? "Contest updated successfully" : "Contest created successfully")
       router.push("/admin/contests")
       router.refresh()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create contest")
+      toast.error(error instanceof Error ? error.message : "Something went wrong")
     } finally {
       setIsLoading(false)
     }
@@ -69,7 +84,10 @@ export function ContestForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormLayout title="Contest Information" description="Create a new contest">
+        <FormLayout 
+          title={initialData ? "Edit Contest" : "Contest Information"} 
+          description={initialData ? "Update contest details" : "Create a new contest"}
+        >
           <div className="grid gap-4 md:grid-cols-2">
             <FormField
               control={form.control}
@@ -190,7 +208,7 @@ export function ContestForm() {
         <div className="flex gap-4">
           <Button type="submit" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Create Contest
+            {initialData ? "Update Contest" : "Create Contest"}
           </Button>
           <Button type="button" variant="outline" onClick={() => router.back()} disabled={isLoading}>
             Cancel

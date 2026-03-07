@@ -6,7 +6,8 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "eslint .",
-    "start": "next start"
+    "start": "next start",
+    "test:auth": "npx tsx scripts/test-auth-flow.ts"
   },
   "dependencies": {
     "@auth/core": "^0.34.3",

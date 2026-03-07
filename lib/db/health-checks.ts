@@ -1,8 +1,6 @@
 "use server"
 
-import { neon } from "@neondatabase/serverless"
-
-const sql = neon(process.env.DATABASE_URL!)
+import { client } from "@/lib/db"
 
 export interface HealthCheck {
   name: string
@@ -31,10 +29,10 @@ export async function checkEnvironment(): Promise<HealthCheck> {
 export async function checkDatabase(): Promise<HealthCheck> {
   try {
     // Test connection
-    await sql`SELECT 1`
+    await client`SELECT 1`
 
     // Check schema tables
-    const tables = await sql`
+    const tables = await client`
       SELECT table_name FROM information_schema.tables
       WHERE table_schema = 'public'
       ORDER BY table_name
@@ -45,17 +43,24 @@ export async function checkDatabase(): Promise<HealthCheck> {
     const allPresent = requiredTables.every((t) => tableNames.includes(t))
 
     if (!allPresent) {
+      // Find missing tables
+      const missing = requiredTables.filter((t) => !tableNames.includes(t))
+      
+      // If we found some tables but not all, it's a FAIL
+      // But if tableNames is empty, maybe the query format is different in Neon/Postgres?
+      // standard information_schema should work.
+      
       return {
         name: "Database Schema",
         status: "FAIL",
-        details: `Missing tables: ${requiredTables.filter((t) => !tableNames.includes(t)).join(", ")}`,
+        details: `Missing tables: ${missing.join(", ")}`,
         timestamp: new Date().toISOString(),
       }
     }
 
     // Check sample data
-    const courseCount = await sql`SELECT COUNT(*) as count FROM courses`
-    const userCount = await sql`SELECT COUNT(*) as count FROM users`
+    const courseCount = await client`SELECT COUNT(*) as count FROM courses`
+    const userCount = await client`SELECT COUNT(*) as count FROM users`
 
     return {
       name: "Database",
@@ -76,7 +81,7 @@ export async function checkDatabase(): Promise<HealthCheck> {
 export async function checkAuth(): Promise<HealthCheck> {
   try {
     // Check if sessions table has data
-    const sessions = await sql`SELECT COUNT(*) as count FROM sessions`
+    const sessions = await client`SELECT COUNT(*) as count FROM sessions`
 
     return {
       name: "Authentication",
@@ -97,13 +102,13 @@ export async function checkAuth(): Promise<HealthCheck> {
 export async function checkCoreFlows(): Promise<HealthCheck> {
   try {
     // Check enrollments
-    const enrollments = await sql`SELECT COUNT(*) as count FROM enrollments`
+    const enrollments = await db.execute(sql`SELECT COUNT(*) as count FROM enrollments`)
 
     // Check orders
-    const orders = await sql`SELECT COUNT(*) as count FROM orders`
+    const orders = await db.execute(sql`SELECT COUNT(*) as count FROM orders`)
 
     // Check certificates
-    const certificates = await sql`SELECT COUNT(*) as count FROM certificates`
+    const certificates = await db.execute(sql`SELECT COUNT(*) as count FROM certificates`)
 
     const details = `Enrollments: ${enrollments[0].count} | Orders: ${orders[0].count} | Certificates: ${certificates[0].count}`
 
@@ -125,8 +130,8 @@ export async function checkCoreFlows(): Promise<HealthCheck> {
 
 export async function checkChallenges(): Promise<HealthCheck> {
   try {
-    const challenges = await sql`SELECT COUNT(*) as count FROM challenges`
-    const submissions = await sql`SELECT COUNT(*) as count FROM challenge_submissions`
+    const challenges = await db.execute(sql`SELECT COUNT(*) as count FROM challenges`)
+    const submissions = await db.execute(sql`SELECT COUNT(*) as count FROM challenge_submissions`)
 
     return {
       name: "Challenges",

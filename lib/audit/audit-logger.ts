@@ -5,11 +5,11 @@
 
 "use server"
 
-import { neon } from "@neondatabase/serverless"
+import { db } from "@/lib/db"
+import { auditLogs, users } from "@/lib/db/schema"
 import { getCurrentUser } from "@/lib/auth"
 import { headers } from "next/headers"
-
-const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
+import { desc, eq, and } from "drizzle-orm"
 
 export type AuditAction =
   | "create"
@@ -43,10 +43,13 @@ interface AuditLogData {
   action: AuditAction
   resource: AuditResource
   resourceId?: string
+  userId?: string // Optional override for the user performing the action
   changes?: {
     before?: any
     after?: any
+    [key: string]: any // Allow flexible structure
   }
+  details?: any // Legacy support/alias for changes
 }
 
 /**
@@ -54,33 +57,24 @@ interface AuditLogData {
  */
 export async function logAudit(data: AuditLogData): Promise<void> {
   try {
-    const user = await getCurrentUser()
+    const user = data.userId ? { id: data.userId, email: "system" } : await getCurrentUser()
     const headersList = await headers()
     const ipAddress = headersList.get("x-forwarded-for") || headersList.get("x-real-ip") || "unknown"
     const userAgent = headersList.get("user-agent") || "unknown"
 
-    await sql`
-      INSERT INTO audit_logs (
-        user_id,
-        action,
-        resource,
-        resource_id,
-        changes,
-        ip_address,
-        user_agent
-      )
-      VALUES (
-        ${user?.id || null},
-        ${data.action},
-        ${data.resource},
-        ${data.resourceId || null},
-        ${JSON.stringify(data.changes || {})},
-        ${ipAddress},
-        ${userAgent}
-      )
-    `
+    const changes = data.changes || data.details || {}
 
-    console.log(`[Audit] ${user?.email || "Unknown"} performed ${data.action} on ${data.resource}`)
+    await db.insert(auditLogs).values({
+      userId: user?.id || null,
+      action: data.action,
+      resource: data.resource,
+      resourceId: data.resourceId ? data.resourceId : null,
+      changes: changes,
+      ipAddress: ipAddress,
+      userAgent: userAgent,
+    })
+
+    console.log(`[Audit] ${user?.email || user?.id || "Unknown"} performed ${data.action} on ${data.resource}`)
   } catch (error) {
     console.error("[Audit] Failed to log audit event:", error)
     // Don't throw - audit logging failures shouldn't break the main operation
@@ -89,7 +83,6 @@ export async function logAudit(data: AuditLogData): Promise<void> {
 
 /**
  * Get audit logs with filters
- * Fixed SQL syntax to use template literals instead of function call
  */
 export async function getAuditLogs(options: {
   userId?: string
@@ -99,72 +92,36 @@ export async function getAuditLogs(options: {
   offset?: number
 }) {
   try {
-    const { userId, resource, action, limit = 50, offset = 0 } = options
+    const filters = []
+    
+    if (options.userId) filters.push(eq(auditLogs.userId, options.userId))
+    if (options.resource) filters.push(eq(auditLogs.resource, options.resource))
+    if (options.action) filters.push(eq(auditLogs.action, options.action))
 
-    // Build query with template literals for proper Neon support
-    let query = sql`
-      SELECT 
-        al.*,
-        u.email as user_email,
-        u.name as user_name
-      FROM audit_logs al
-      LEFT JOIN users u ON al.user_id = u.id
-      WHERE 1=1
-    `
+    const logs = await db
+      .select({
+        id: auditLogs.id,
+        action: auditLogs.action,
+        resource: auditLogs.resource,
+        resourceId: auditLogs.resourceId,
+        changes: auditLogs.changes,
+        ipAddress: auditLogs.ipAddress,
+        userAgent: auditLogs.userAgent,
+        createdAt: auditLogs.createdAt,
+        user_email: users.email,
+        user_name: users.name,
+      })
+      .from(auditLogs)
+      .leftJoin(users, eq(auditLogs.userId, users.id))
+      .where(and(...filters))
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(options.limit || 50)
+      .offset(options.offset || 0)
 
-    // Apply filters if provided
-    if (userId) {
-      query = sql`
-        SELECT 
-          al.*,
-          u.email as user_email,
-          u.name as user_name
-        FROM audit_logs al
-        LEFT JOIN users u ON al.user_id = u.id
-        WHERE al.user_id = ${userId}
-      `
-    }
-
-    if (resource) {
-      query = sql`
-        SELECT 
-          al.*,
-          u.email as user_email,
-          u.name as user_name
-        FROM audit_logs al
-        LEFT JOIN users u ON al.user_id = u.id
-        WHERE al.resource = ${resource}
-      `
-    }
-
-    if (action) {
-      query = sql`
-        SELECT 
-          al.*,
-          u.email as user_email,
-          u.name as user_name
-        FROM audit_logs al
-        LEFT JOIN users u ON al.user_id = u.id
-        WHERE al.action = ${action}
-      `
-    }
-
-    // Get all logs ordered by date, apply limit/offset client-side for simplicity
-    const result = await sql`
-      SELECT 
-        al.*,
-        u.email as user_email,
-        u.name as user_name
-      FROM audit_logs al
-      LEFT JOIN users u ON al.user_id = u.id
-      ORDER BY al.created_at DESC
-      LIMIT ${limit}
-      OFFSET ${offset}
-    `
-
-    return result
+    return logs
   } catch (error) {
     console.error("[Audit] Failed to fetch audit logs:", error)
     return []
   }
 }
+

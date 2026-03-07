@@ -1,10 +1,9 @@
 import { getCurrentUser } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { neon } from "@neondatabase/serverless"
+import { db } from "@/lib/db"
+import { sql } from "drizzle-orm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-
-const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
 
 type DiagnosticResult = {
   name: string
@@ -23,7 +22,7 @@ export default async function DiagnosticsPage() {
 
   // Test 1: DB Connectivity
   try {
-    await sql`SELECT 1`
+    await db.execute(sql`SELECT 1`)
     results.push({ name: "Database Connectivity", passed: true, message: "Connected successfully" })
   } catch (error) {
     results.push({
@@ -48,12 +47,8 @@ export default async function DiagnosticsPage() {
   const tables = ["courses", "lessons", "users", "categories", "enrollments"]
   for (const table of tables) {
     try {
-      // Direct query for each table to avoid dynamic table name issues in tagged template
-      if (table === "courses") await sql`SELECT COUNT(*) FROM courses LIMIT 1`
-      else if (table === "lessons") await sql`SELECT COUNT(*) FROM lessons LIMIT 1`
-      else if (table === "users") await sql`SELECT COUNT(*) FROM users LIMIT 1`
-      else if (table === "categories") await sql`SELECT COUNT(*) FROM categories LIMIT 1`
-      else if (table === "enrollments") await sql`SELECT COUNT(*) FROM enrollments LIMIT 1`
+      // Use sql.raw for dynamic table names in diagnostics - be careful with user input (safe here as list is hardcoded)
+      await db.execute(sql.raw(`SELECT COUNT(*) FROM "${table}" LIMIT 1`))
       
       results.push({ name: `Table: ${table}`, passed: true, message: "Exists" })
     } catch (error) {

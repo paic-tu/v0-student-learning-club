@@ -1,5 +1,7 @@
 import { requirePermission } from "@/lib/rbac/require-permission"
-import { neon } from "@neondatabase/serverless"
+import { db } from "@/lib/db"
+import { courses, users, categories, lessons, enrollments } from "@/lib/db/schema"
+import { eq, desc, sql } from "drizzle-orm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -8,23 +10,26 @@ import { Plus, Search, Filter } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 
-const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
-
-export default async function CoursesManagementPage() {
+export default async function CoursesManagementPage(props: { params: Promise<{ lang: string }> }) {
+  const params = await props.params
+  const { lang } = params
   await requirePermission("courses:read")
 
-  const courses = await sql`
-    SELECT 
-      c.*,
-      u.name as instructor_name,
-      cat.name_en as category_name,
-      (SELECT COUNT(*) FROM lessons WHERE course_id = c.id) as lesson_count,
-      (SELECT COUNT(*) FROM enrollments WHERE course_id = c.id) as enrollment_count
-    FROM courses c
-    JOIN users u ON c.instructor_id = u.id
-    LEFT JOIN categories cat ON c.category_id = cat.id
-    ORDER BY c.created_at DESC
-  `
+  const coursesData = await db
+    .select({
+      id: courses.id,
+      title_en: courses.titleEn,
+      instructor_name: users.name,
+      category_name: categories.nameEn,
+      is_published: courses.isPublished,
+      created_at: courses.createdAt,
+      lesson_count: sql<number>`(SELECT COUNT(*) FROM ${lessons} WHERE ${lessons.courseId} = ${courses.id})`,
+      enrollment_count: sql<number>`(SELECT COUNT(*) FROM ${enrollments} WHERE ${enrollments.courseId} = ${courses.id})`,
+    })
+    .from(courses)
+    .innerJoin(users, eq(courses.instructorId, users.id))
+    .leftJoin(categories, eq(courses.categoryId, categories.id))
+    .orderBy(desc(courses.createdAt))
 
   return (
     <div className="space-y-6">
@@ -34,7 +39,7 @@ export default async function CoursesManagementPage() {
           <p className="text-muted-foreground">Manage courses and curriculum</p>
         </div>
         <Button asChild>
-          <Link href="/admin/courses/new">
+          <Link href={`/${lang}/admin/courses/new`}>
             <Plus className="mr-2 h-4 w-4" />
             Create Course
           </Link>
@@ -58,7 +63,7 @@ export default async function CoursesManagementPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Courses ({courses.length})</CardTitle>
+          <CardTitle>All Courses ({coursesData.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -75,14 +80,14 @@ export default async function CoursesManagementPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {courses.map((course: any) => (
+              {coursesData.map((course) => (
                 <TableRow key={course.id}>
                   <TableCell className="font-medium">{course.id}</TableCell>
                   <TableCell>{course.title_en}</TableCell>
                   <TableCell>{course.instructor_name}</TableCell>
                   <TableCell>{course.category_name || "None"}</TableCell>
-                  <TableCell>{course.lesson_count}</TableCell>
-                  <TableCell>{course.enrollment_count}</TableCell>
+                  <TableCell>{Number(course.lesson_count)}</TableCell>
+                  <TableCell>{Number(course.enrollment_count)}</TableCell>
                   <TableCell>
                     <Badge variant={course.is_published ? "default" : "secondary"}>
                       {course.is_published ? "Published" : "Draft"}
@@ -90,7 +95,7 @@ export default async function CoursesManagementPage() {
                   </TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/admin/courses/${course.id}`}>Edit</Link>
+                      <Link href={`/${lang}/admin/courses/${course.id}`}>Edit</Link>
                     </Button>
                   </TableCell>
                 </TableRow>

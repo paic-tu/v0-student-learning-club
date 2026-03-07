@@ -1,5 +1,7 @@
 import { requirePermission } from "@/lib/rbac/require-permission"
-import { neon } from "@neondatabase/serverless"
+import { db } from "@/lib/db"
+import { challenges, categories, challengeSubmissions } from "@/lib/db/schema"
+import { desc, sql, eq } from "drizzle-orm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -8,20 +10,20 @@ import { Plus, Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 
-const sql = neon(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!)
-
-export default async function ChallengesManagementPage() {
+export default async function ChallengesManagementPage(props: { params: Promise<{ lang: string }> }) {
+  const params = await props.params
+  const { lang } = params
   await requirePermission("challenges:read")
 
-  const challenges = await sql`
-    SELECT 
-      ch.*,
-      cat.name_en as category_name,
-      (SELECT COUNT(*) FROM challenge_submissions WHERE challenge_id = ch.id) as submission_count
-    FROM challenges ch
-    LEFT JOIN categories cat ON ch.category_id = cat.id
-    ORDER BY ch.created_at DESC
-  `
+  const challengesData = await db.query.challenges.findMany({
+    with: {
+      category: true
+    },
+    extras: {
+      submissionCount: sql<number>`(SELECT COUNT(*) FROM ${challengeSubmissions} WHERE ${challengeSubmissions.challengeId} = ${challenges.id})`.as('submission_count')
+    },
+    orderBy: [desc(challenges.createdAt)]
+  })
 
   return (
     <div className="space-y-6">
@@ -31,7 +33,7 @@ export default async function ChallengesManagementPage() {
           <p className="text-muted-foreground">Manage coding challenges and problems</p>
         </div>
         <Button asChild>
-          <Link href="/admin/challenges/new">
+          <Link href={`/${lang}/admin/challenges/new`}>
             <Plus className="mr-2 h-4 w-4" />
             Create Challenge
           </Link>
@@ -49,7 +51,7 @@ export default async function ChallengesManagementPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Challenges ({challenges.length})</CardTitle>
+          <CardTitle>All Challenges ({challengesData.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -66,10 +68,10 @@ export default async function ChallengesManagementPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {challenges.map((challenge: any) => (
+              {challengesData.map((challenge) => (
                 <TableRow key={challenge.id}>
                   <TableCell className="font-medium">{challenge.id}</TableCell>
-                  <TableCell>{challenge.title_en}</TableCell>
+                  <TableCell>{challenge.titleEn}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{challenge.type}</Badge>
                   </TableCell>
@@ -87,15 +89,15 @@ export default async function ChallengesManagementPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>{challenge.points}</TableCell>
-                  <TableCell>{challenge.submission_count}</TableCell>
+                  <TableCell>{challenge.submissionCount}</TableCell>
                   <TableCell>
-                    <Badge variant={challenge.is_active ? "default" : "secondary"}>
-                      {challenge.is_active ? "Active" : "Inactive"}
+                    <Badge variant={challenge.isActive ? "default" : "secondary"}>
+                      {challenge.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/admin/challenges/${challenge.id}`}>Edit</Link>
+                      <Link href={`/${lang}/admin/challenges/${challenge.id}`}>Edit</Link>
                     </Button>
                   </TableCell>
                 </TableRow>

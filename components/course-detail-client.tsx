@@ -136,7 +136,7 @@ export function CourseDetailClient({ course, initialBookmarked, initialEnrolled 
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink href="/courses">{t("courses", language)}</BreadcrumbLink>
+                <BreadcrumbLink href={`/${language}/courses`}>{t("courses", language)}</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator>
                 <ChevronRight className="h-4 w-4" />

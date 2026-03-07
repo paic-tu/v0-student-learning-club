@@ -1,8 +1,9 @@
 import { hash } from "bcryptjs"
 
 async function seed() {
-  // Set env var before importing db
-  process.env.DATABASE_URL = "postgresql://neondb_owner:npg_wQIfhX8gvT9e@ep-falling-cloud-a424l6xo-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require";
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL environment variable is not set");
+  }
   
   const { db } = await import("../lib/db/index");
   const { users, categories, courses } = await import("../lib/db/schema");

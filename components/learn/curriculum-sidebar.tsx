@@ -45,13 +45,13 @@ export function CurriculumSidebar({ course, currentLessonId, lang }: CurriculumS
                 <div className="text-left">
                   <div className="font-medium text-sm">{isAr ? module.titleAr : module.titleEn}</div>
                   <div className="text-xs text-muted-foreground font-normal mt-0.5">
-                    {module.lessons.length} {isAr ? "دروس" : "Lessons"}
+                    {module.lessons?.length || 0} {isAr ? "دروس" : "Lessons"}
                   </div>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="pb-0">
                 <div className="flex flex-col">
-                  {module.lessons.map((lesson: any) => {
+                  {module.lessons?.map((lesson: any) => {
                     const Icon = getIcon(lesson.type)
                     const isActive = lesson.id === currentLessonId
                     const isCompleted = lesson.progress?.[0]?.isCompleted

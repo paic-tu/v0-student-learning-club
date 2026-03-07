@@ -1,24 +1,31 @@
 "use server"
 
-import { neon } from "@neondatabase/serverless"
-
-const databaseUrl = process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL!
-const sql = neon(databaseUrl)
+import { db } from "@/lib/db"
+import { users, contestParticipants } from "@/lib/db/schema"
+import { eq, desc, asc } from "drizzle-orm"
 
 export async function getContestParticipants(contestId: number) {
   console.log("[Action] getContestParticipants started", { contestId })
   try {
-    const parts = await sql`
-      SELECT 
-        cp.*,
-        u.name,
-        u.avatar_url
-      FROM contest_participants cp
-      JOIN users u ON cp.user_id = u.id
-      WHERE cp.contest_id = ${contestId}
-      ORDER BY cp.score DESC, cp.joined_at ASC
-    `
-    return parts
+    const participants = await db.query.contestParticipants.findMany({
+      where: eq(contestParticipants.contestId, contestId),
+      with: {
+        user: {
+          columns: {
+            name: true,
+            avatarUrl: true
+          }
+        }
+      },
+      orderBy: [desc(contestParticipants.score), asc(contestParticipants.joinedAt)]
+    })
+    
+    // Flatten result to match previous return shape
+    return participants.map(p => ({
+      ...p,
+      name: p.user.name,
+      avatar_url: p.user.avatarUrl
+    }))
   } catch (error) {
     console.error("[Action] getContestParticipants error:", error)
     return []
@@ -29,20 +36,24 @@ export async function getLeaderboard() {
   console.log("[Action] getLeaderboard started")
   try {
     // Get top users by points
-    const users = await sql`
-      SELECT 
-        id, 
-        name, 
-        email, 
-        points, 
-        level,
-        avatar_url
-      FROM users
-      WHERE role = 'student'
-      ORDER BY points DESC
-      LIMIT 50
-    `
-    return users
+    const topUsers = await db.query.users.findMany({
+      where: eq(users.role, 'student'),
+      columns: {
+        id: true,
+        name: true,
+        email: true,
+        points: true,
+        level: true,
+        avatarUrl: true
+      },
+      orderBy: [desc(users.points)],
+      limit: 50
+    })
+
+    return topUsers.map(u => ({
+      ...u,
+      avatar_url: u.avatarUrl
+    }))
   } catch (error) {
     console.error("[Action] getLeaderboard error:", error)
     return []
