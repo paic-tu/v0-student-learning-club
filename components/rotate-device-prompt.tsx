@@ -9,8 +9,8 @@ export function RotateDevicePrompt() {
   const pathname = usePathname()
 
   useEffect(() => {
-    // 1. Check persistence
-    if (typeof window !== "undefined" && localStorage.getItem("hasSeenRotatePrompt") === "true") {
+    // 1. Check persistence (Session based)
+    if (typeof window !== "undefined" && sessionStorage.getItem("hasSeenRotatePrompt_v3") === "true") {
       return
     }
 
@@ -28,16 +28,15 @@ export function RotateDevicePrompt() {
       const isPortrait = window.matchMedia("(orientation: portrait)").matches
       
       if (isSmallScreen && isPortrait) {
-        // Only show if we haven't seen it yet
-        if (localStorage.getItem("hasSeenRotatePrompt") !== "true") {
+        // Only show if we haven't seen it yet in this session
+        if (sessionStorage.getItem("hasSeenRotatePrompt_v3") !== "true") {
           setShowPrompt(true)
         }
       } else {
         // If we rotate to landscape (or are on big screen), hide it
-        // And if it was previously shown (or we just want to ensure it doesn't come back), mark as seen
         if (isSmallScreen && !isPortrait) {
              // User rotated to landscape -> Mark as seen so it doesn't return
-             localStorage.setItem("hasSeenRotatePrompt", "true")
+             sessionStorage.setItem("hasSeenRotatePrompt_v3", "true")
         }
         setShowPrompt(false)
       }
@@ -61,7 +60,7 @@ export function RotateDevicePrompt() {
     if (showPrompt) {
       const timer = setTimeout(() => {
         setShowPrompt(false)
-        localStorage.setItem("hasSeenRotatePrompt", "true")
+        sessionStorage.setItem("hasSeenRotatePrompt_v3", "true")
       }, 5000)
       return () => clearTimeout(timer)
     }
