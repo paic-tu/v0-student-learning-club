@@ -80,6 +80,7 @@ export function CartClient({ initialCart }: CartClientProps) {
           title: language === "ar" ? "تم الطلب بنجاح" : "Order Placed",
           description: language === "ar" ? "تم إنشاء طلبك وتفعيل الدورات" : "Your order has been placed and courses activated",
         })
+        router.refresh()
         router.push(`/${language}/student/dashboard`)
       } else {
         toast({

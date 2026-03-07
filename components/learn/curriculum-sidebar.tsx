@@ -29,7 +29,7 @@ export function CurriculumSidebar({ course, currentLessonId, lang }: CurriculumS
   }
 
   return (
-    <div className="flex flex-col h-full border-r bg-background w-80 shrink-0 hidden md:flex">
+    <div dir={isAr ? "rtl" : "ltr"} className="flex flex-col h-full border-e bg-background w-80 shrink-0 hidden md:flex">
       <div className="p-4 border-b">
         <h2 className="font-semibold line-clamp-2">{isAr ? course.titleAr : course.titleEn}</h2>
         <p className="text-xs text-muted-foreground mt-1">
@@ -42,7 +42,7 @@ export function CurriculumSidebar({ course, currentLessonId, lang }: CurriculumS
           {course.modules.map((module: any) => (
             <AccordionItem key={module.id} value={module.id}>
               <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50">
-                <div className="text-left">
+                <div className="text-start w-full">
                   <div className="font-medium text-sm">{isAr ? module.titleAr : module.titleEn}</div>
                   <div className="text-xs text-muted-foreground font-normal mt-0.5">
                     {module.lessons?.length || 0} {isAr ? "دروس" : "Lessons"}
@@ -61,7 +61,7 @@ export function CurriculumSidebar({ course, currentLessonId, lang }: CurriculumS
                         key={lesson.id}
                         href={`/${lang}/student/learn/${course.id}/${lesson.id}`}
                         className={cn(
-                          "flex items-center gap-3 px-6 py-3 text-sm transition-colors border-l-2 border-transparent",
+                          "flex items-center gap-3 px-6 py-3 text-sm transition-colors border-s-4 border-transparent",
                           isActive 
                             ? "bg-primary/10 border-primary text-primary font-medium" 
                             : "hover:bg-muted text-muted-foreground hover:text-foreground"
@@ -72,7 +72,7 @@ export function CurriculumSidebar({ course, currentLessonId, lang }: CurriculumS
                         ) : (
                           <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
                         )}
-                        <span className="line-clamp-1 flex-1">
+                        <span className="line-clamp-1 flex-1 text-start">
                           {isAr ? lesson.titleAr : lesson.titleEn}
                         </span>
                         {lesson.durationMinutes && (

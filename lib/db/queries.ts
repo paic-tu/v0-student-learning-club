@@ -872,9 +872,14 @@ export async function getInstructorReviews(userId: string) {
 }
 
 // Contests
-export async function createNote(data: any) {
+export async function createNote(userId: string, lessonId: string, content: string, timestamp?: number) {
   try {
-    const [note] = await db.insert(notes).values(data).returning()
+    const [note] = await db.insert(notes).values({
+      userId,
+      lessonId,
+      content,
+      timestamp,
+    }).returning()
     return note
   } catch (error) {
     console.error("Error creating note:", error)
@@ -882,9 +887,9 @@ export async function createNote(data: any) {
   }
 }
 
-export async function deleteNote(id: string) {
+export async function deleteNote(id: string, userId: string) {
   try {
-    await db.delete(notes).where(eq(notes.id, id))
+    await db.delete(notes).where(and(eq(notes.id, id), eq(notes.userId, userId)))
     return { success: true }
   } catch (error) {
     console.error("Error deleting note:", error)

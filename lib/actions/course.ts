@@ -43,6 +43,10 @@ export async function enrollAction(courseId: string) {
 
     revalidatePath(`/courses/${courseId}`)
     revalidatePath(`/student/dashboard`)
+    revalidatePath(`/ar/student/dashboard`)
+    revalidatePath(`/en/student/dashboard`)
+    revalidatePath(`/ar/student/my-courses`)
+    revalidatePath(`/en/student/my-courses`)
     
     return { success: true }
   } catch (error) {

@@ -229,7 +229,10 @@ export async function checkoutAction() {
 
         revalidatePath("/cart")
         revalidatePath("/student/dashboard")
-        revalidatePath("/student/my-courses")
+        revalidatePath("/ar/student/dashboard")
+        revalidatePath("/en/student/dashboard")
+        revalidatePath("/ar/student/my-courses")
+        revalidatePath("/en/student/my-courses")
         return { success: true, orderId: order.id }
     } catch (error) {
         console.error("[Action] checkoutAction error:", error)

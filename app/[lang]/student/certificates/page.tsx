@@ -155,6 +155,8 @@ export default async function CertificatesPage({ params }: { params: Promise<{ l
                     month: 'long',
                     day: 'numeric'
                   })}
+                  courseId={item.courseId}
+                  certificateNumber={item.certificateNumber}
                   className="w-full"
                 />
               </CardFooter>

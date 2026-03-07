@@ -1,45 +1,48 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { writeFile, mkdir } from "fs/promises"
-import path from "path"
-import { getCurrentUser } from "@/lib/auth"
-import { canManageLessons } from "@/lib/rbac/permissions"
+import { join } from "path"
+import { nanoid } from "nanoid"
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser()
-    if (!user || !canManageLessons(user.role as any)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
-    }
-
     const formData = await request.formData()
     const file = formData.get("file") as File
 
     if (!file) {
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 })
+      return NextResponse.json(
+        { error: "No file provided" },
+        { status: 400 }
+      )
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer())
-    const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "")}`
-    
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
+
     // Ensure uploads directory exists
-    const uploadDir = path.join(process.cwd(), "public/uploads")
+    const uploadsDir = join(process.cwd(), "public", "uploads")
     try {
-        await mkdir(uploadDir, { recursive: true })
-    } catch (e) {
-        // Ignore error if directory exists
+      await mkdir(uploadsDir, { recursive: true })
+    } catch (error) {
+      // Directory likely exists
     }
 
-    const filepath = path.join(uploadDir, filename)
+    // Generate unique filename
+    const ext = file.name.split(".").pop() || "jpg"
+    const filename = `${nanoid()}.${ext}`
+    const filepath = join(uploadsDir, filename)
 
+    // Write file
     await writeFile(filepath, buffer)
 
-    return NextResponse.json({ 
-        url: `/uploads/${filename}`,
-        filename: filename,
-        success: true
-    })
+    // Return public URL
+    const url = `/uploads/${filename}`
+
+    return NextResponse.json({ url })
   } catch (error) {
     console.error("Error uploading file:", error)
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
   }
 }

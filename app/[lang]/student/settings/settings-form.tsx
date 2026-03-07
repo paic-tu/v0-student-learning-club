@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
+import { ImageUpload } from "@/components/image-upload"
 import {
   Form,
   FormControl,
@@ -29,6 +30,7 @@ const profileFormSchema = z.object({
   role: z.string(),
   userId: z.string(),
   avatarUrl: z.string().optional().or(z.literal("")),
+  coverUrl: z.string().optional().or(z.literal("")),
   bio: z.string().max(500).optional(),
   headline: z.string().optional().or(z.literal("")),
   phoneLocal: z.string().optional().or(z.literal("")),
@@ -76,6 +78,7 @@ export function SettingsForm({ user, lang }: SettingsFormProps) {
     role: user?.role || "",
     userId: user?.id || "",
     avatarUrl: user?.avatarUrl || "",
+    coverUrl: user?.coverUrl || "",
     bio: user?.bio || "",
     headline: user?.headline || "",
     phoneLocal: phoneLocalDefault,
@@ -99,6 +102,7 @@ export function SettingsForm({ user, lang }: SettingsFormProps) {
       const result = await updateUserProfile(user.id, {
         name: data.name,
         avatarUrl: data.avatarUrl || undefined,
+        coverUrl: data.coverUrl || undefined,
         bio: data.bio,
         headline: data.headline || undefined,
         phoneNumber,
@@ -197,6 +201,48 @@ export function SettingsForm({ user, lang }: SettingsFormProps) {
 
         <div className="space-y-4">
           <h3 className="text-lg font-medium">{isAr ? "الملف الشخصي" : "Profile"}</h3>
+          
+          <div className="grid gap-6 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="avatarUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{isAr ? "الصورة الشخصية" : "Profile Picture"}</FormLabel>
+                  <FormControl>
+                    <ImageUpload 
+                      value={field.value || ""} 
+                      onChange={field.onChange}
+                      shape="round"
+                      aspect={1}
+                      label={isAr ? "تحميل صورة" : "Upload Image"}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="coverUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{isAr ? "صورة الغلاف" : "Cover Image"}</FormLabel>
+                  <FormControl>
+                    <ImageUpload 
+                      value={field.value || ""} 
+                      onChange={field.onChange}
+                      shape="rect"
+                      aspect={16/9}
+                      label={isAr ? "تحميل غلاف" : "Upload Cover"}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
         <FormField
           control={form.control}
           name="name"
@@ -213,19 +259,7 @@ export function SettingsForm({ user, lang }: SettingsFormProps) {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="avatarUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{isAr ? "رابط الصورة" : "Avatar URL"}</FormLabel>
-              <FormControl>
-                <Input placeholder="https://..." {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Removed old avatarUrl field */}
         <FormField
           control={form.control}
           name="bio"

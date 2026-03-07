@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import Image from "next/image"
 import { 
   Mail, 
   Calendar, 
@@ -62,10 +63,20 @@ export default async function ProfilePage({ params }: { params: Promise<{ lang: 
     <div className="container py-8 space-y-8">
       {/* Header Section */}
       <div className="relative mb-12">
-        <div className="h-32 w-full bg-gradient-to-r from-primary/20 to-primary/5 rounded-t-xl" />
+        <div className="relative h-48 w-full rounded-t-xl overflow-hidden bg-gradient-to-r from-primary/20 to-primary/5">
+          {(user as any).coverUrl && (
+            <Image 
+              src={(user as any).coverUrl} 
+              alt="Cover" 
+              fill 
+              className="object-cover"
+              priority
+            />
+          )}
+        </div>
         <div className="absolute -bottom-10 left-8 flex items-end gap-6">
           <Avatar className="w-24 h-24 border-4 border-background shadow-lg">
-            <AvatarImage src={user.image || user.avatarUrl || "/default-avatar.svg"} alt={user.name} />
+            <AvatarImage src={(user as any).avatarUrl || user.image || "/default-avatar.svg"} alt={user.name} />
             <AvatarFallback className="text-2xl">{getInitials(user.name)}</AvatarFallback>
           </Avatar>
           <div className="mb-2">

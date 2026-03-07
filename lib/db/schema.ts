@@ -36,12 +36,16 @@ export const users = pgTable("users", {
   name: varchar("name", { length: 255 }).notNull(),
   role: roleEnum("role").notNull().default("student"),
   avatarUrl: text("avatar_url"),
+  coverUrl: text("cover_url"),
   bio: text("bio"),
   headline: varchar("headline", { length: 255 }), // Instructor title
   websiteUrl: text("website_url"),
   twitterUrl: text("twitter_url"),
   linkedinUrl: text("linkedin_url"),
   phoneNumber: varchar("phone_number", { length: 32 }),
+  // Legacy/External columns (kept to avoid data loss during push)
+  phone: varchar("phone", { length: 256 }),
+  preferences: jsonb("preferences"),
   points: integer("points").notNull().default(0),
   level: integer("level").notNull().default(1),
   isActive: boolean("is_active").notNull().default(true),
@@ -197,7 +201,8 @@ export const reviews = pgTable("reviews", {
   courseId: uuid("course_id")
     .notNull()
     .references(() => courses.id, { onDelete: "cascade" }),
-  rating: integer("rating").notNull(), // 1-5
+  rating: integer("rating").notNull(), // 1-5 (Course Rating)
+  instructorRating: integer("instructor_rating").default(0), // 1-5 (Instructor Rating)
   comment: text("comment"),
   isPublished: boolean("is_published").default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),

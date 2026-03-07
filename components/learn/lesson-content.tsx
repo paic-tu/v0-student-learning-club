@@ -12,6 +12,107 @@ import { formatDistanceToNow } from "date-fns"
 import { arSA, enUS } from "date-fns/locale"
 import ReactMarkdown from "react-markdown"
 
+const formatTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+interface NotesSectionProps {
+  isAr: boolean
+  newNote: string
+  setNewNote: (val: string) => void
+  isSubmitting: boolean
+  onAddNote: () => void
+  videoRef: React.RefObject<HTMLVideoElement>
+  notes: any[]
+  onDeleteNote: (id: string) => void
+  onSeek: (timestamp: number) => void
+}
+
+function NotesSection({
+  isAr,
+  newNote,
+  setNewNote,
+  isSubmitting,
+  onAddNote,
+  videoRef,
+  notes,
+  onDeleteNote,
+  onSeek
+}: NotesSectionProps) {
+  return (
+    <div className="space-y-6 py-4">
+      <div className="space-y-4">
+        <Textarea
+          placeholder={isAr ? "أضف ملاحظة جديدة..." : "Add a new note..."}
+          value={newNote}
+          onChange={(e) => setNewNote(e.target.value)}
+          rows={3}
+          className="text-start"
+        />
+        <div className="flex justify-between items-center">
+          <Button 
+            onClick={onAddNote} 
+            disabled={!newNote.trim() || isSubmitting}
+          >
+            {isSubmitting ? (isAr ? "جاري الحفظ..." : "Saving...") : (isAr ? "حفظ الملاحظة" : "Save Note")}
+          </Button>
+          {videoRef?.current && (
+            <Badge variant="outline" className="text-xs">
+              {isAr ? "الوقت الحالي: " : "Current time: "}
+              {formatTime(videoRef.current.currentTime)}
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {notes.length === 0 ? (
+          <p className="text-center text-muted-foreground py-8">
+            {isAr ? "لا توجد ملاحظات حتى الآن." : "No notes yet."}
+          </p>
+        ) : (
+          notes.map((note) => (
+            <div key={note.id} className="border rounded-lg p-4 space-y-2 bg-card">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-2">
+                  {note.timestamp !== null && note.timestamp !== undefined && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs font-mono bg-muted hover:bg-muted/80"
+                      onClick={() => onSeek(note.timestamp)}
+                    >
+                      <Clock className="h-3 w-3 me-1" />
+                      {formatTime(note.timestamp)}
+                    </Button>
+                  )}
+                  <span className="text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(note.createdAt), { 
+                      addSuffix: true,
+                      locale: isAr ? arSA : enUS 
+                    })}
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                  onClick={() => onDeleteNote(note.id)}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+              <p className="whitespace-pre-wrap text-sm text-start">{note.content}</p>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+
 interface LessonContentProps {
   lesson: any
   lang: string
@@ -61,88 +162,12 @@ export function LessonContent({ lesson, lang, userId, initialNotes = [] }: Lesso
     }
   }
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-
   const seekTo = (timestamp: number) => {
     if (videoRef.current) {
       videoRef.current.currentTime = timestamp
       videoRef.current.play()
     }
   }
-
-  const NotesSection = () => (
-    <div className="space-y-6 py-4">
-      <div className="space-y-4">
-        <Textarea
-          placeholder={isAr ? "أضف ملاحظة جديدة..." : "Add a new note..."}
-          value={newNote}
-          onChange={(e) => setNewNote(e.target.value)}
-          rows={3}
-        />
-        <div className="flex justify-between items-center">
-          <Button 
-            onClick={handleAddNote} 
-            disabled={!newNote.trim() || isSubmitting}
-          >
-            {isSubmitting ? (isAr ? "جاري الحفظ..." : "Saving...") : (isAr ? "حفظ الملاحظة" : "Save Note")}
-          </Button>
-          {videoRef.current && (
-            <Badge variant="outline" className="text-xs">
-              {isAr ? "الوقت الحالي: " : "Current time: "}
-              {formatTime(videoRef.current.currentTime)}
-            </Badge>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        {notes.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">
-            {isAr ? "لا توجد ملاحظات حتى الآن." : "No notes yet."}
-          </p>
-        ) : (
-          notes.map((note) => (
-            <div key={note.id} className="border rounded-lg p-4 space-y-2 bg-card">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-2">
-                  {note.timestamp !== null && note.timestamp !== undefined && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-xs font-mono bg-muted hover:bg-muted/80"
-                      onClick={() => seekTo(note.timestamp)}
-                    >
-                      <Clock className="h-3 w-3 mr-1" />
-                      {formatTime(note.timestamp)}
-                    </Button>
-                  )}
-                  <span className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(note.createdAt), { 
-                      addSuffix: true,
-                      locale: isAr ? arSA : enUS 
-                    })}
-                  </span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                  onClick={() => handleDeleteNote(note.id)}
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
-              <p className="whitespace-pre-wrap text-sm">{note.content}</p>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  )
 
   if (lesson.type === "video") {
     return (
@@ -166,13 +191,13 @@ export function LessonContent({ lesson, lang, userId, initialNotes = [] }: Lesso
           )}
         </div>
         
-        <Tabs defaultValue="overview" className="w-full">
+        <Tabs defaultValue="overview" className="w-full" dir={isAr ? "rtl" : "ltr"}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="overview">{isAr ? "نظرة عامة" : "Overview"}</TabsTrigger>
             <TabsTrigger value="notes">{isAr ? "الملاحظات" : "Notes"}</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="overview" className="mt-6">
+          <TabsContent value="overview" className="mt-6 text-start">
             <h1 className="text-2xl font-bold mb-2">{isAr ? lesson.titleAr : lesson.titleEn}</h1>
             <div className="prose dark:prose-invert max-w-none mb-6">
               <p>{isAr ? lesson.descriptionAr : lesson.descriptionEn}</p>
@@ -185,7 +210,17 @@ export function LessonContent({ lesson, lang, userId, initialNotes = [] }: Lesso
           </TabsContent>
           
           <TabsContent value="notes">
-            <NotesSection />
+            <NotesSection 
+              isAr={isAr}
+              newNote={newNote}
+              setNewNote={setNewNote}
+              isSubmitting={isSubmitting}
+              onAddNote={handleAddNote}
+              videoRef={videoRef}
+              notes={notes}
+              onDeleteNote={handleDeleteNote}
+              onSeek={seekTo}
+            />
           </TabsContent>
         </Tabs>
       </div>
@@ -194,10 +229,10 @@ export function LessonContent({ lesson, lang, userId, initialNotes = [] }: Lesso
 
   if (lesson.type === "article" || lesson.type === "quiz" || lesson.type === "resource" || lesson.type === "assignment") {
     return (
-      <Card className="p-8">
+      <Card className="p-8 text-start" dir={isAr ? "rtl" : "ltr"}>
         <div className="flex items-center gap-2 mb-6">
           <Badge variant="outline" className="capitalize">
-            <FileText className="h-3 w-3 mr-1" />
+            <FileText className="h-3 w-3 me-1" />
             {lesson.type}
           </Badge>
           <span className="text-sm text-muted-foreground">{lesson.durationMinutes} min</span>
@@ -218,7 +253,17 @@ export function LessonContent({ lesson, lang, userId, initialNotes = [] }: Lesso
           </TabsContent>
           
           <TabsContent value="notes">
-            <NotesSection />
+            <NotesSection 
+              isAr={isAr}
+              newNote={newNote}
+              setNewNote={setNewNote}
+              isSubmitting={isSubmitting}
+              onAddNote={handleAddNote}
+              videoRef={videoRef}
+              notes={notes}
+              onDeleteNote={handleDeleteNote}
+              onSeek={seekTo}
+            />
           </TabsContent>
         </Tabs>
       </Card>

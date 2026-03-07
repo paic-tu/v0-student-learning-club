@@ -77,7 +77,7 @@ export default async function LearningPage({
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div dir={isAr ? "rtl" : "ltr"} className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar - Desktop */}
       <CurriculumSidebar 
         course={sidebarCourse} 
@@ -96,7 +96,7 @@ export default async function LearningPage({
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-80">
+              <SheetContent side={isAr ? "right" : "left"} className="p-0 w-80">
                 <CurriculumSidebar 
                   course={sidebarCourse} 
                   currentLessonId={currentLessonAny.id} 
@@ -121,7 +121,7 @@ export default async function LearningPage({
                 courseName={isAr ? courseAny.title_ar : courseAny.title_en}
                 instructorName={courseAny.instructor_name || "Mohsen Alghamdi"}
                 completionDate={new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                className="mr-2"
+                className="me-2"
               />
             )}
 
@@ -133,12 +133,12 @@ export default async function LearningPage({
             >
               {prevLessonId ? (
                 <Link href={`/${lang}/student/learn/${courseAny.id}/${prevLessonId}`}>
-                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  {isAr ? <ChevronRight className="h-4 w-4 ms-1" /> : <ChevronLeft className="h-4 w-4 me-1" />}
                   {isAr ? "السابق" : "Previous"}
                 </Link>
               ) : (
-                <span>
-                  <ChevronLeft className="h-4 w-4 mr-1" />
+                <span className="flex items-center">
+                  {isAr ? <ChevronRight className="h-4 w-4 ms-1" /> : <ChevronLeft className="h-4 w-4 me-1" />}
                   {isAr ? "السابق" : "Previous"}
                 </span>
               )}
@@ -160,12 +160,12 @@ export default async function LearningPage({
               {nextLessonId ? (
                 <Link href={`/${lang}/student/learn/${courseAny.id}/${nextLessonId}`}>
                   {isAr ? "التالي" : "Next"}
-                  <ChevronRight className="h-4 w-4 ml-1" />
+                  {isAr ? <ChevronLeft className="h-4 w-4 me-1" /> : <ChevronRight className="h-4 w-4 ms-1" />}
                 </Link>
               ) : (
-                <span>
+                <span className="flex items-center">
                   {isAr ? "التالي" : "Next"}
-                  <ChevronRight className="h-4 w-4 ml-1" />
+                  {isAr ? <ChevronLeft className="h-4 w-4 me-1" /> : <ChevronRight className="h-4 w-4 ms-1" />}
                 </span>
               )}
             </Button>

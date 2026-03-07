@@ -4,14 +4,28 @@ import { useState } from "react"
 import { PDFDocument, rgb, StandardFonts, type PDFFont } from "pdf-lib"
 import fontkit from "@pdf-lib/fontkit"
 import { Button } from "@/components/ui/button"
-import { Loader2, Download } from "lucide-react"
+import { Loader2, Download, Check, LayoutTemplate } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
+import { getOrCreateCertificate } from "@/lib/actions/certificate"
 
 interface CertificateTemplateProps {
   studentName: string
   courseName: string
   instructorName: string
   completionDate: string
+  courseId: string
+  certificateNumber?: string | null
   className?: string
 }
 
@@ -20,10 +34,15 @@ export function CertificateDownloadButton({
   courseName,
   instructorName,
   completionDate,
+  courseId,
+  certificateNumber: initialCertificateNumber,
   className,
 }: CertificateTemplateProps) {
   const { language } = useLanguage()
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
+  const [selectedDesign, setSelectedDesign] = useState("design-1")
+  const isAr = language === "ar"
 
   const safeStudentName = studentName || "Student Name"
   const safeCourseName = courseName || "Course Name"
@@ -32,18 +51,27 @@ export function CertificateDownloadButton({
     try {
       setIsGenerating(true)
 
+      // 0. Get or create certificate number from server
+      let certNum = initialCertificateNumber
+      if (!certNum) {
+        try {
+          const result = await getOrCreateCertificate(courseId)
+          certNum = result.certificateNumber
+        } catch (err) {
+          console.error("Failed to fetch certificate number", err)
+          // Fallback if server action fails (should not happen in normal flow)
+          certNum = "NEON-PENDING"
+        }
+      }
+
       // 1. Create a new PDF document
       const pdfDoc = await PDFDocument.create()
       if (fontkit) {
         pdfDoc.registerFontkit(fontkit)
-        console.log("Fontkit registered")
-      } else {
-        console.warn("Fontkit not found, custom fonts may fail")
       }
 
       // 2. Load the SVG background
-      // We render the SVG to a canvas first to convert it to PNG
-      const svgUrl = "/certificates/neon-certificate.svg"
+      const svgUrl = `/certificates/${selectedDesign}.svg`
       const img = new Image()
       img.src = svgUrl
       await new Promise((resolve, reject) => {
@@ -52,7 +80,6 @@ export function CertificateDownloadButton({
       })
 
       const canvas = document.createElement("canvas")
-      // Use the intrinsic size of the SVG
       canvas.width = img.width
       canvas.height = img.height
       const ctx = canvas.getContext("2d")
@@ -63,14 +90,11 @@ export function CertificateDownloadButton({
       const pngBytes = await fetch(pngDataUrl).then((res) => res.arrayBuffer())
       const embeddedImage = await pdfDoc.embedPng(pngBytes)
 
-      // 3. Add a page with the dimensions of the SVG (converted to points if needed, or A4)
-      // SVG viewBox is 0 0 842.25 595.5 (Landscape A4)
-      // We'll use standard A4 Landscape size
+      // 3. Add a page
       const width = 842.25
       const height = 595.5
       const page = pdfDoc.addPage([width, height])
 
-      // Draw the background image
       page.drawImage(embeddedImage, {
         x: 0,
         y: 0,
@@ -78,92 +102,114 @@ export function CertificateDownloadButton({
         height,
       })
 
-      // 4. Load Custom Font (Cormorant Garamond Regular)
-      // Load from local public folder
+      // 4. Load Custom Font (Arimo if available, otherwise Helvetica/Times)
       let font: PDFFont
+      let arimoFont: PDFFont | undefined
+      
       try {
-        console.log("Attempting to load custom font...")
-        // Add cache buster to ensure fresh fetch
-        const fontUrl = `/fonts/CormorantGaramond-Regular.ttf?v=${Date.now()}`
-        const fontBytes = await fetch(fontUrl).then((res) => {
-          if (!res.ok) throw new Error(`Failed to load font: ${res.status} ${res.statusText}`)
-          return res.arrayBuffer()
-        })
-        font = await pdfDoc.embedFont(fontBytes)
-        console.log("Custom font loaded successfully")
+         // Try to load Arimo or fallback to Cormorant/Times
+         // Since user specifically asked for Arimo for the number, let's try to load it if present
+         // Otherwise we use StandardFonts
+         
+         // Load main font for names (Cormorant Garamond as before)
+         const fontUrl = `/fonts/CormorantGaramond-Regular.ttf?v=${Date.now()}`
+         const fontBytes = await fetch(fontUrl).then((res) => res.arrayBuffer())
+         font = await pdfDoc.embedFont(fontBytes)
       } catch (e) {
-        console.error("Failed to load custom font, falling back to Times Roman", e)
-        // Fallback to a Serif font (Times Roman) which is closer to Garamond than Helvetica
         font = await pdfDoc.embedFont(StandardFonts.TimesRoman)
       }
 
+      // Try to load Arimo for the number specifically if possible, or use Helvetica
+      try {
+         // We don't have Arimo locally yet, so we use Helvetica as a clean sans-serif fallback
+         // which is very similar to Arimo.
+         arimoFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
+      } catch (e) {
+         arimoFont = font
+      }
+
       // 5. Draw Text
-      // Dimensions provided by user (in cm):
-      // Student Name: x=4.96, y=9.2, w=21.68, h=1.54
-      // Course Name: x=6.82, y=12.48, w=19.82, h=1.41
-      
       const cmToPt = 28.3465
       
-      // Helper function to draw text in a box with Left alignment
-      // NOTE: Strictly adheres to user provided coordinates for X and Y
       const drawTextInBox = (
         text: string,
         boxX_cm: number,
         boxY_cm: number,
         boxW_cm: number,
         boxH_cm: number,
-        fontSize: number
+        fontSize: number,
+        fontToUse: PDFFont,
+        align: 'left' | 'center' | 'right' = 'left'
       ) => {
-        const textHeight = font.heightAtSize(fontSize)
-        const textWidth = font.widthOfTextAtSize(text, fontSize)
-
-        // Horizontal Position (Left Aligned)
-        // Strictly use the provided X coordinate
+        const textWidth = fontToUse.widthOfTextAtSize(text, fontSize)
+        const textHeight = fontToUse.heightAtSize(fontSize)
+        
         const boxX_pt = boxX_cm * cmToPt
-        const x = boxX_pt
+        const boxW_pt = boxW_cm * cmToPt
+        
+        let x = boxX_pt
+        if (align === 'center') {
+          x = boxX_pt + (boxW_pt - textWidth) / 2
+        } else if (align === 'right') {
+          x = boxX_pt + boxW_pt - textWidth
+        }
 
-        // Calculate vertical center (approximate for baseline)
-        // PDF Y starts from bottom
         const boxY_pt_from_top = boxY_cm * cmToPt
         const boxH_pt = boxH_cm * cmToPt
         const boxCenterY_from_top = boxY_pt_from_top + (boxH_pt / 2)
         
-        // PDF Y = PageHeight - BoxCenterY - (TextHeight / 2) + Adjustment
         const y = height - boxCenterY_from_top - (textHeight / 2) + (fontSize / 3) 
 
         page.drawText(text, {
           x,
           y,
           size: fontSize,
-          font,
-          color: rgb(0, 0, 0), // Black color
+          font: fontToUse,
+          color: rgb(0, 0, 0),
         })
       }
 
       // Student Name
       drawTextInBox(
         safeStudentName,
-        3.0, // Nudged slightly right from 2.5 to 3.0
-        8.5, // Decreased by one line (moved up approx 1cm) from 9.5
+        3.0,
+        9.2,
         21.68,
         1.54,
-        30 // Font size
+        30,
+        font,
+        'left'
       )
 
       // Course Name
       drawTextInBox(
         safeCourseName,
-        3.0, // Nudged slightly right from 2.5 to 3.0
+        3.0,
         12.48,
         19.82,
         1.41,
-        24 // Font size
+        24,
+        font,
+        'left'
       )
 
+      // Certificate Number
+      // User specified: width 7.33 height 0.59 x = 22.02 y = 19.17 Font Arimo size 14.1
+      if (certNum) {
+        drawTextInBox(
+          certNum,
+          22.02,
+          19.17,
+          7.33,
+          0.59,
+          14.1,
+          arimoFont || font,
+          'center'
+        )
+      }
+
       const bytes = await pdfDoc.save()
-      const pdfArrayBuffer = new ArrayBuffer(bytes.byteLength)
-      new Uint8Array(pdfArrayBuffer).set(bytes)
-      const blob = new Blob([pdfArrayBuffer], { type: "application/pdf" })
+      const blob = new Blob([bytes], { type: "application/pdf" })
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
@@ -172,6 +218,7 @@ export function CertificateDownloadButton({
       a.click()
       a.remove()
       URL.revokeObjectURL(url)
+      setIsOpen(false)
     } catch (error) {
       console.error("Failed to generate certificate:", error)
     } finally {
@@ -180,23 +227,84 @@ export function CertificateDownloadButton({
   }
 
   return (
-    <>
-      <Button 
-        onClick={handleDownload} 
-        disabled={isGenerating}
-        className={className}
-        variant="outline"
-        size="sm"
-      >
-        {isGenerating ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button 
+          className={className}
+          variant="outline"
+          size="sm"
+        >
           <Download className="h-4 w-4" />
-        )}
-        <span className="ml-2 hidden sm:inline">
-          {isGenerating ? (language === "ar" ? "جاري التحميل..." : "Generating...") : (language === "ar" ? "تحميل الشهادة" : "Download Certificate")}
-        </span>
-      </Button>
-    </>
+          <span className="ms-2 hidden sm:inline">
+            {isAr ? "تحميل الشهادة" : "Download Certificate"}
+          </span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>{isAr ? "اختر تصميم الشهادة" : "Choose Certificate Design"}</DialogTitle>
+          <DialogDescription>
+            {isAr 
+              ? "اختر التصميم الذي تفضله لشهادتك من الخيارات أدناه." 
+              : "Select the design you prefer for your certificate from the options below."}
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="grid gap-4 py-4">
+          <RadioGroup 
+            value={selectedDesign} 
+            onValueChange={setSelectedDesign}
+            className="grid grid-cols-1 md:grid-cols-3 gap-4"
+          >
+            {[1, 2, 3].map((num) => (
+              <div key={num}>
+                <RadioGroupItem
+                  value={`design-${num}`}
+                  id={`design-${num}`}
+                  className="peer sr-only"
+                />
+                <Label
+                  htmlFor={`design-${num}`}
+                  className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all h-full"
+                >
+                  <div className="relative w-full aspect-[1.41] bg-muted mb-2 rounded overflow-hidden border">
+                     {/* Preview Image - using the SVG itself */}
+                     <img 
+                       src={`/certificates/design-${num}.svg`} 
+                       alt={`Design ${num}`}
+                       className="object-cover w-full h-full"
+                     />
+                     {selectedDesign === `design-${num}` && (
+                       <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-0.5">
+                         <Check className="w-3 h-3" />
+                       </div>
+                     )}
+                  </div>
+                  <span className="text-sm font-medium">
+                    {isAr ? `تصميم ${num}` : `Design ${num}`}
+                  </span>
+                </Label>
+              </div>
+            ))}
+          </RadioGroup>
+        </div>
+
+        <DialogFooter>
+          <Button onClick={handleDownload} disabled={isGenerating} className="w-full sm:w-auto">
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {isAr ? "جاري التحميل..." : "Generating..."}
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                {isAr ? "تحميل PDF" : "Download PDF"}
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

@@ -65,7 +65,7 @@ export function StudentNav({ isCollapsed }: { isCollapsed?: boolean }) {
   ]
 
   return (
-    <nav className="flex-1 space-y-1 overflow-y-auto p-4">
+    <nav className="flex-1 overflow-y-auto py-4">
       {menuItems.map((item) => {
         const Icon = item.icon
         const isActive = pathWithoutLocale === item.href || pathWithoutLocale.startsWith(item.href + "/")
@@ -76,15 +76,15 @@ export function StudentNav({ isCollapsed }: { isCollapsed?: boolean }) {
             key={item.href}
             href={hrefWithLocale}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              "flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors border-s-4 border-transparent",
               isActive
-                ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-400"
+                ? "bg-primary/10 border-primary text-primary"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              isCollapsed && "justify-center px-2"
+              isCollapsed && "justify-center px-2 border-s-0"
             )}
             title={isCollapsed ? item.label : undefined}
           >
-            <Icon className="h-5 w-5" />
+            <Icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
             {!isCollapsed && <span>{item.label}</span>}
           </Link>
         )

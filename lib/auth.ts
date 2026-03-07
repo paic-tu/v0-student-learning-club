@@ -5,6 +5,7 @@ import { users } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
+import { authConfig } from "@/lib/auth.config"
 
 if (!process.env.AUTH_SECRET && process.env.NEXTAUTH_SECRET) {
   process.env.AUTH_SECRET = process.env.NEXTAUTH_SECRET
@@ -36,8 +37,7 @@ export interface User {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
-  trustHost: true,
+  ...authConfig,
   providers: [
     Credentials({
       credentials: {
@@ -88,31 +88,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  session: {
-    strategy: "jwt",
-  },
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        console.log("[Auth] JWT callback - user logged in:", user.id, "role:", user.role)
-        token.id = user.id
-        token.role = user.role || "student" // Ensure role is set
-      }
-      return token
-    },
-    async session({ session, token }) {
-      if (token && session.user) {
-        console.log("[Auth] Session callback - token:", token.sub, "role:", token.role)
-        session.user.id = token.id as string
-        session.user.role = (token.role as string) || "student"
-      }
-      return session
-    },
-  },
-  pages: {
-    signIn: "/auth/login",
-    error: "/auth/login",
-  },
 })
 
 export const getCurrentUser = async () => {

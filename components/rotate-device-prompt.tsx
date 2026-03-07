@@ -1,22 +1,46 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { usePathname } from "next/navigation"
 import { Smartphone } from "lucide-react"
 
 export function RotateDevicePrompt() {
   const [showPrompt, setShowPrompt] = useState(false)
+  const pathname = usePathname()
 
   useEffect(() => {
+    // 1. Check persistence
+    if (typeof window !== "undefined" && localStorage.getItem("hasSeenRotatePrompt") === "true") {
+      return
+    }
+
+    // 2. Check path - only show on dashboard
+    if (!pathname?.includes("dashboard")) {
+      setShowPrompt(false)
+      return
+    }
+
     const checkOrientation = () => {
       // Check if it's a mobile device (touch capable and small screen)
-      // We use 768px as standard tablet/mobile breakpoint
       const isSmallScreen = window.matchMedia("(max-width: 768px)").matches
       
       // Check if in portrait mode
       const isPortrait = window.matchMedia("(orientation: portrait)").matches
       
-      // Only show if small screen AND portrait
-      setShowPrompt(isSmallScreen && isPortrait)
+      if (isSmallScreen && isPortrait) {
+        // Only show if we haven't seen it yet
+        if (localStorage.getItem("hasSeenRotatePrompt") !== "true") {
+          setShowPrompt(true)
+        }
+      } else {
+        // If we rotate to landscape (or are on big screen), hide it
+        // And if it was previously shown (or we just want to ensure it doesn't come back), mark as seen
+        if (isSmallScreen && !isPortrait) {
+             // User rotated to landscape -> Mark as seen so it doesn't return
+             localStorage.setItem("hasSeenRotatePrompt", "true")
+        }
+        setShowPrompt(false)
+      }
     }
 
     // Initial check
@@ -24,15 +48,24 @@ export function RotateDevicePrompt() {
 
     // Listen for resize/orientation changes
     window.addEventListener("resize", checkOrientation)
-    
-    // Some devices fire this
     window.addEventListener("orientationchange", checkOrientation)
 
     return () => {
       window.removeEventListener("resize", checkOrientation)
       window.removeEventListener("orientationchange", checkOrientation)
     }
-  }, [])
+  }, [pathname])
+
+  // Timer to auto-hide after 2 seconds
+  useEffect(() => {
+    if (showPrompt) {
+      const timer = setTimeout(() => {
+        setShowPrompt(false)
+        localStorage.setItem("hasSeenRotatePrompt", "true")
+      }, 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [showPrompt])
 
   if (!showPrompt) return null
 

@@ -1,5 +1,8 @@
-import { auth } from "@/lib/auth"
+import NextAuth from "next-auth"
+import { authConfig } from "@/lib/auth.config"
 import { NextResponse } from "next/server"
+
+const { auth } = NextAuth(authConfig)
 
 const locales = ["ar", "en"]
 const defaultLocale = "ar"
@@ -102,17 +105,10 @@ export default auth((req) => {
   }
 
   if (pathWithoutLocale.startsWith(STUDENT_PORTAL)) {
-     if (userRole !== "student" && userRole !== "admin") {
-        if (userRole === "instructor") return NextResponse.redirect(new URL(`/${locale}/instructor/dashboard`, req.url))
-        return NextResponse.redirect(new URL(`/${locale}/access-denied`, req.url))
-     }
+    if (userRole !== "student" && userRole !== "admin" && userRole !== "instructor") {
+       return NextResponse.redirect(new URL(`/${locale}/access-denied`, req.url))
+    }
   }
-
-  // 4. Portal Redirects (if accessing root or shared paths, maybe redirect to dashboard?)
-  // For now, let them access other protected pages if they exist outside portals (like /profile if it's shared).
-  // But user listed /student/profile, /instructor/profile.
-  // If there are shared routes, we need to decide.
-  
 })
 
 export const config = {

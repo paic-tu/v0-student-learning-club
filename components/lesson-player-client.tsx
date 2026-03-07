@@ -8,7 +8,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { useLanguage } from "@/lib/language-context"
 import { t } from "@/lib/i18n"
 import { completeLessonAction } from "@/lib/actions"
-import { Check, CheckCircle, Circle, Menu, ChevronLeft, ChevronRight } from "lucide-react"
+import { RatingModal } from "@/components/rating-modal"
+import { Check, CheckCircle, Circle, Menu, ChevronLeft, ChevronRight, Star } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 
@@ -28,6 +29,7 @@ export function LessonPlayerClient({
   const { toast } = useToast()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [completing, setCompleting] = useState(false)
+  const [showRatingModal, setShowRatingModal] = useState(false)
 
   const isCompleted = completedLessonIds.includes(lesson.id)
 
@@ -50,6 +52,7 @@ export function LessonPlayerClient({
           title: "Lesson Completed",
           description: "Great job! Keep going."
         })
+        setShowRatingModal(true)
         router.refresh()
       }
     } catch (error) {
@@ -169,6 +172,20 @@ export function LessonPlayerClient({
                  </Link>
                ) : <div />}
             </div>
+
+            <div className="flex justify-center pb-8">
+              <Button variant="outline" onClick={() => setShowRatingModal(true)}>
+                <Star className="w-4 h-4 mr-2" />
+                {language === "ar" ? "تقييم الدورة" : "Rate Course"}
+              </Button>
+            </div>
+
+            <RatingModal 
+              isOpen={showRatingModal} 
+              onClose={() => setShowRatingModal(false)}
+              courseId={course.id}
+              courseTitle={language === "ar" ? course.title_ar : course.title_en}
+            />
           </div>
         </ScrollArea>
       </main>
