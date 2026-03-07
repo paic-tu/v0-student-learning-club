@@ -118,20 +118,20 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
 
   return (
     <div className="flex flex-col h-full bg-background w-full">
-      <div className="p-3 border-b flex items-center gap-3 sticky top-0 bg-background/95 backdrop-blur z-10 shadow-sm">
+      <div className="h-16 px-4 border-b flex items-center gap-3 sticky top-0 bg-background/95 backdrop-blur z-10 shadow-sm">
         {onBack && (
-          <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden -ml-2">
+          <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden -ml-2 shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </Button>
         )}
-        <Avatar className="h-9 w-9 border">
+        <Avatar className="h-9 w-9 border shrink-0">
             <AvatarImage src={recipientImage || "/placeholder-user.jpg"} />
             <AvatarFallback>{recipientName?.[0]}</AvatarFallback>
         </Avatar>
-        <div className="flex flex-col">
-          <h2 className="font-semibold text-sm leading-none">{recipientName || "Chat"}</h2>
+        <div className="flex flex-col overflow-hidden">
+          <h2 className="font-semibold text-sm leading-none truncate">{recipientName || "Chat"}</h2>
           {typingUsers.length > 0 && (
-            <span className="text-[10px] text-muted-foreground animate-pulse">
+            <span className="text-[10px] text-muted-foreground animate-pulse truncate">
               {typingUsers.length === 1 ? "typing..." : "people typing..."}
             </span>
           )}
