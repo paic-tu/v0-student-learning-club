@@ -34,13 +34,6 @@ export function RotateDevicePrompt() {
         }
       } else {
         // If we rotate to landscape (or are on big screen), hide it
-        if (isSmallScreen && !isPortrait) {
-             // User rotated to landscape -> Mark as seen so it doesn't return
-             // Only write if not already set to avoid constant writes
-             if (sessionStorage.getItem("hasSeenRotatePrompt_v3") !== "true") {
-                sessionStorage.setItem("hasSeenRotatePrompt_v3", "true")
-             }
-        }
         setShowPrompt(false)
       }
     }
