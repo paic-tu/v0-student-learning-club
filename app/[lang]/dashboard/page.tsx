@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 
-export default async function DashboardPage({ params }: { params: Promise<{ lang: string }> }) {
+export default async function DashboardRouting({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params
   const session = await auth()
   
@@ -23,4 +23,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ lang
     console.log("[Dashboard] Unknown role, redirecting to home")
     redirect(`/${lang}`)
   }
+
+  // This return is unreachable but helps with TypeScript and potential component lifecycle
+  return null
 }

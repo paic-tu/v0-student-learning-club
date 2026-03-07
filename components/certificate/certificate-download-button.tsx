@@ -1,8 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { PDFDocument, rgb, StandardFonts, type PDFFont } from "pdf-lib"
-import fontkit from "@pdf-lib/fontkit"
+import { PDFDocument } from "pdf-lib"
 import { Button } from "@/components/ui/button"
 import { Loader2, Download, Check, LayoutTemplate } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
@@ -106,34 +105,130 @@ export function CertificateDownloadButton({
 
       // 1. Create a new PDF document
       const pdfDoc = await PDFDocument.create()
-      if (fontkit) {
-        pdfDoc.registerFontkit(fontkit)
-      }
+      // Note: We don't need fontkit anymore as we're rendering text to canvas
 
       // Get design config
       const designConfig = DESIGNS[selectedDesign] || DESIGNS['design-1']
 
-      // 2. Load the SVG background
+      // 2. Load the SVG background and Fonts
       const svgUrl = `/certificates/${selectedDesign}.svg`
       const img = new Image()
       img.src = svgUrl
-      await new Promise((resolve, reject) => {
-        img.onload = resolve
-        img.onerror = reject
-      })
+      
+      // Load fonts
+      const fontRegular = new FontFace('Amiri', 'url(/fonts/Amiri-Regular.ttf)')
+      const fontBold = new FontFace('Amiri', 'url(/fonts/Amiri-Bold.ttf)', { weight: 'bold' })
+      
+      await Promise.all([
+        new Promise((resolve, reject) => {
+          img.onload = resolve
+          img.onerror = reject
+        }),
+        fontRegular.load().then(f => document.fonts.add(f)),
+        fontBold.load().then(f => document.fonts.add(f))
+      ])
 
+      // 3. Setup High-Res Canvas
+      const SCALE_FACTOR = 4 // 4x resolution for high quality print
       const canvas = document.createElement("canvas")
-      canvas.width = img.width
-      canvas.height = img.height
+      canvas.width = img.width * SCALE_FACTOR
+      canvas.height = img.height * SCALE_FACTOR
       const ctx = canvas.getContext("2d")
       if (!ctx) throw new Error("Could not get canvas context")
+      
+      // Scale context to match logical units (original image size)
+      ctx.scale(SCALE_FACTOR, SCALE_FACTOR)
+      
+      // Draw background
       ctx.drawImage(img, 0, 0)
       
-      const pngDataUrl = canvas.toDataURL("image/png")
+      // Helper for coordinate conversion
+      const cmToPt = 28.3465
+      // logical pixels per point
+      const scaleX = img.width / designConfig.width
+      const scaleY = img.height / designConfig.height 
+      
+      const drawTextOnCanvas = (
+        text: string,
+        config: TextConfig,
+        isBold: boolean = false
+      ) => {
+        // Calculate font size in logical pixels
+        const fontSizePx = config.fontSize * scaleY
+        
+        ctx.font = `${isBold ? 'bold ' : ''}${fontSizePx}px "Amiri"`
+        ctx.fillStyle = '#000000'
+        ctx.textBaseline = 'top' // easier to map from top-left
+        
+        // Calculate X and Y in logical pixels
+        // config.x is cm from left
+        const x_pt = config.x * cmToPt
+        let x = x_pt * scaleX
+        
+        // config.y is cm from top
+        const y_pt = config.y * cmToPt
+        // Adjust y to match baseline or top?
+        // PDF-lib logic was: y = height - boxY - textHeight (bottom-left origin)
+        // Here we use top-left origin.
+        // If config.y represents the top of the text box:
+        const y = y_pt * scaleY
+        
+        // Alignment
+        const textMetrics = ctx.measureText(text)
+        const textWidth = textMetrics.width
+        const boxWidthPx = config.maxWidth * cmToPt * scaleX
+        
+        if (config.align === 'center') {
+          x = x + (boxWidthPx - textWidth) / 2
+        } else if (config.align === 'right') {
+          x = x + boxWidthPx - textWidth
+        }
+        
+        // Handle RTL if Arabic
+        // Check if text contains Arabic characters
+        const isArabic = /[\u0600-\u06FF]/.test(text)
+        if (isArabic) {
+           ctx.direction = 'rtl'
+           // For RTL, if align is left (default), we might need adjustment?
+           // Canvas handles RTL text drawing correctly if direction is set.
+           // But 'x' usually specifies the anchor point.
+           // If direction is rtl, 'x' is the right edge? No, x is still the anchor.
+           // If textAlign is 'start' (default), it draws from x to left?
+           // Let's force explicit textAlign to match our calculation
+           ctx.textAlign = 'left' 
+           // We calculated 'x' as the left edge of the text (or start point).
+           // If we use 'left' align, it draws from x to right.
+           // This is correct for the calculated 'x' regardless of script, 
+           // because we manually calculated the start position based on alignment.
+           ctx.direction = 'inherit' // Reset to inherit or handle manually?
+           // Actually, standard Canvas 'direction' handles glyph shaping.
+           // If we manually calculated x position, we should just draw LTR style?
+           // No, shaping requires context direction.
+           
+           ctx.direction = 'rtl'
+           // If direction is RTL, and textAlign is 'left', does it draw from x to right?
+           // Yes, textAlign 'left' is always left.
+        } else {
+           ctx.direction = 'ltr'
+        }
+        
+        ctx.fillText(text, x, y)
+      }
+
+      // Draw Texts
+      drawTextOnCanvas(safeStudentName, designConfig.studentName)
+      drawTextOnCanvas(safeCourseName, designConfig.courseName)
+      
+      if (certNum && designConfig.certificateNumber) {
+        drawTextOnCanvas(certNum, designConfig.certificateNumber, true)
+      }
+
+      // 4. Convert to PNG and Embed in PDF
+      const pngDataUrl = canvas.toDataURL("image/png", 1.0)
       const pngBytes = await fetch(pngDataUrl).then((res) => res.arrayBuffer())
       const embeddedImage = await pdfDoc.embedPng(pngBytes)
 
-      // 3. Add a page with configured dimensions
+      // 5. Add a page with configured dimensions
       const width = designConfig.width
       const height = designConfig.height
       const page = pdfDoc.addPage([width, height])
@@ -145,115 +240,7 @@ export function CertificateDownloadButton({
         height,
       })
 
-      // 4. Load Custom Font
-      let font: PDFFont
-      let arimoFont: PDFFont | undefined
-      
-      try {
-         // Use Amiri font for Arabic support
-         const fontUrl = `/fonts/Amiri-Regular.ttf`
-         const fontBytes = await fetch(fontUrl).then((res) => res.arrayBuffer())
-         font = await pdfDoc.embedFont(fontBytes)
-      } catch (e) {
-        console.error("Failed to load custom font, falling back to standard font", e)
-        font = await pdfDoc.embedFont(StandardFonts.TimesRoman)
-      }
-
-      try {
-         const fontUrl = `/fonts/Amiri-Bold.ttf`
-         const fontBytes = await fetch(fontUrl).then((res) => res.arrayBuffer())
-         arimoFont = await pdfDoc.embedFont(fontBytes)
-      } catch (e) {
-         arimoFont = font
-      }
-
-      // 5. Draw Text Helper
-      const cmToPt = 28.3465
-      
-      const drawTextInBox = (
-        text: string,
-        config: TextConfig,
-        fontToUse: PDFFont
-      ) => {
-        const fontSize = config.fontSize
-        const textWidth = fontToUse.widthOfTextAtSize(text, fontSize)
-        const textHeight = fontToUse.heightAtSize(fontSize)
-        
-        const boxX_pt = config.x * cmToPt
-        const boxW_pt = config.maxWidth * cmToPt
-        
-        let x = boxX_pt
-        if (config.align === 'center') {
-          // Center within the box width starting from x
-          // But if we want to align to a specific X point, we should treat x as the center point?
-          // The previous logic treated x as the left edge of the box.
-          // Let's stick to that: x is left edge of the bounding box.
-          // If we want to center on the page, x should be (PageWidth - BoxWidth) / 2
-          // But my config for Design 3 assumed x was the center point? 
-          // No, I set x=14.85 which is the center of the page.
-          // If I want to center text AT 14.85, then:
-          // x = 14.85 * cmToPt - (textWidth / 2)
-          // The previous logic: x = boxX_pt + (boxW_pt - textWidth) / 2
-          // If boxW is 0 or ignored, this logic fails.
-          
-          // Let's change behavior: if align is center, x is the center point.
-          // But for backward compatibility with Design 1, I must check how it was used.
-          // Design 1: x=22.02, w=7.33, align=center. 
-          // It meant: the box starts at 22.02 and has width 7.33. Center text inside that box.
-          
-          // For Design 3, I want to center on the page.
-          // So I should define a box that spans the page width?
-          // Or just define the center point.
-          
-          // Let's assume standard behavior:
-          // If align center: x = boxX + (boxW - textWidth) / 2
-          x = boxX_pt + (boxW_pt - textWidth) / 2
-        } else if (config.align === 'right') {
-          x = boxX_pt + boxW_pt - textWidth
-        }
-
-        // Y positioning
-        const boxY_pt_from_top = config.y * cmToPt
-        // Use a default height if not provided in config (e.g. 1.5cm)
-        // Design 1 used 1.54, 1.41, 0.59. 
-        // My config didn't include height. Let's assume height is roughly fontSize * 1.5?
-        // Or just position based on top Y.
-        // The previous code centered vertically in the box.
-        // Let's use a standard line height factor.
-        const boxH_pt = (config.fontSize * 1.5) // Approximate box height from font size if not strict
-        
-        // Actually, let's just stick to the previous Y logic which was specific.
-        // The previous logic:
-        // const boxCenterY_from_top = boxY_pt_from_top + (boxH_pt / 2)
-        // const y = height - boxCenterY_from_top - (textHeight / 2) + (fontSize / 3)
-        
-        // This is complicated. Let's simplify:
-        // y (pdf coords) = height - y_from_top
-        // We want the text baseline to be such that the text is roughly at y_from_top.
-        // Let's just use y = height - boxY_pt_from_top - textHeight
-        
-        const y = height - boxY_pt_from_top - textHeight
-        
-        page.drawText(text, {
-          x,
-          y,
-          size: fontSize,
-          font: fontToUse,
-          color: rgb(0, 0, 0),
-        })
-      }
-
-      // Student Name
-      drawTextInBox(safeStudentName, designConfig.studentName, font)
-
-      // Course Name
-      drawTextInBox(safeCourseName, designConfig.courseName, font)
-
-      // Certificate Number
-      if (certNum && designConfig.certificateNumber) {
-        drawTextInBox(certNum, designConfig.certificateNumber, arimoFont || font)
-      }
-
+      // Save PDF
       const bytes = await pdfDoc.save()
       const blob = new Blob([bytes], { type: "application/pdf" })
       const url = URL.createObjectURL(blob)
