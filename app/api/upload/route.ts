@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { writeFile, mkdir } from "fs/promises"
-import { join } from "path"
-import { nanoid } from "nanoid"
+import { db } from "@/lib/db"
+import { files } from "@/lib/db/schema"
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,33 +14,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    const base64Data = buffer.toString("base64")
 
-    // Ensure uploads directory exists
-    const uploadsDir = join(process.cwd(), "public", "uploads")
-    try {
-      await mkdir(uploadsDir, { recursive: true })
-    } catch (error) {
-      // Directory likely exists
-    }
+    // Insert into database
+    const [insertedFile] = await db.insert(files).values({
+      name: file.name,
+      type: file.type,
+      data: base64Data,
+      size: file.size,
+    }).returning({ id: files.id })
 
-    // Generate unique filename
-    const ext = file.name.split(".").pop() || "jpg"
-    const filename = `${nanoid()}.${ext}`
-    const filepath = join(uploadsDir, filename)
-
-    // Write file
-    await writeFile(filepath, buffer)
-
-    // Return public URL
-    const url = `/uploads/${filename}`
+    // Return API route URL
+    const url = `/api/files/${insertedFile.id}`
 
     return NextResponse.json({ url })
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error uploading file:", error)
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: `Internal server error: ${error.message}` },
       { status: 500 }
     )
   }
