@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { notFound, redirect } from "next/navigation"
-import { CourseEditForm } from "@/components/admin/course-edit-form"
-import { getAllCategories } from "@/lib/db/queries"
+import { CourseManagement } from "@/components/instructor/course-management"
+import { getAllCategories, getCourseEnrollments } from "@/lib/db/queries"
 import { db } from "@/lib/db"
 import { courses } from "@/lib/db/schema"
 import { eq, and } from "drizzle-orm"
@@ -30,6 +30,8 @@ export default async function InstructorCourseEditPage({ params }: { params: Pro
     notFound()
   }
 
+  const enrollments = await getCourseEnrollments(courseId)
+
   const course = {
     ...courseRaw,
     category_name: courseRaw.category?.nameEn,
@@ -57,16 +59,24 @@ export default async function InstructorCourseEditPage({ params }: { params: Pro
     email: session.user.email || ""
   }]
 
+  const stats = {
+    totalStudents: courseRaw.enrollmentCount || 0,
+    rating: Number(courseRaw.rating) || 0,
+    reviews: courseRaw.reviewsCount || 0
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">{isAr ? "إعدادات الدورة" : "Course Settings"}</h1>
+        <h1 className="text-3xl font-bold">{isAr ? "إدارة الدورة" : "Manage Course"}</h1>
       </div>
-      <CourseEditForm 
+      <CourseManagement 
         course={course} 
         categories={categories as any} 
         instructors={instructors as any} 
         lang={lang}
+        enrollments={enrollments}
+        stats={stats}
       />
     </div>
   )

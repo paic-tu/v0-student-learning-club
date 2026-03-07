@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { conversations, conversationParticipants, messages, users, enrollments } from "@/lib/db/schema"
+import { conversations, conversationParticipants, messages, users, enrollments, courses } from "@/lib/db/schema"
 import { eq, and, desc, or, sql, asc, gt, ne, count } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
@@ -280,11 +280,41 @@ export async function joinCommunityChat() {
   return { conversationId: communityChat.id }
 }
 
+// Helper to check if chat is allowed
+async function canChat(userId1: string, userId2: string) {
+  const [user1] = await db.select({ role: users.role }).from(users).where(eq(users.id, userId1))
+  const [user2] = await db.select({ role: users.role }).from(users).where(eq(users.id, userId2))
+
+  if (!user1 || !user2) return false
+
+  // Admin can chat with anyone
+  if (user1.role === "admin" || user2.role === "admin") return true
+
+  // Check enrollment relationship
+  const [enrollment] = await db
+    .select({ id: enrollments.id })
+    .from(enrollments)
+    .innerJoin(courses, eq(enrollments.courseId, courses.id))
+    .where(or(
+      // user1 is instructor, user2 is student
+      and(eq(courses.instructorId, userId1), eq(enrollments.userId, userId2)),
+      // user1 is student, user2 is instructor
+      and(eq(courses.instructorId, userId2), eq(enrollments.userId, userId1))
+    ))
+    .limit(1)
+
+  return !!enrollment
+}
+
 export async function createPrivateChat(otherUserId: string) {
   const session = await auth()
   if (!session?.user?.id) return { error: "Unauthorized" }
 
   if (session.user.id === otherUserId) return { error: "Cannot chat with yourself" }
+
+  // Check permission
+  const allowed = await canChat(session.user.id, otherUserId)
+  if (!allowed) return { error: "You can only chat with your instructors or students" }
 
   // Check if conversation already exists
   // This is tricky with Drizzle, we need to find a conversation where both users are participants and type is individual
@@ -330,10 +360,10 @@ export async function getAllUsers() {
     const session = await auth()
     if (!session?.user?.id) return []
 
-    // Return all users except current user for starting a chat
-    // Limit to 50 for now
-    return await db.query.users.findMany({
-        where: sql`${users.id} != ${session.user.id}`,
+    // Admins see everyone
+    if (session.user.role === "admin") {
+      return await db.query.users.findMany({
+        where: ne(users.id, session.user.id),
         columns: {
             id: true,
             name: true,
@@ -342,7 +372,42 @@ export async function getAllUsers() {
             role: true,
         },
         limit: 50
-    })
+      })
+    }
+
+    // Instructors see their students
+    if (session.user.role === "instructor") {
+      return await db
+        .selectDistinct({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          avatarUrl: users.avatarUrl,
+          role: users.role,
+        })
+        .from(users)
+        .innerJoin(enrollments, eq(enrollments.userId, users.id))
+        .innerJoin(courses, eq(enrollments.courseId, courses.id))
+        .where(eq(courses.instructorId, session.user.id))
+    }
+
+    // Students see their instructors
+    if (session.user.role === "student") {
+      return await db
+        .selectDistinct({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          avatarUrl: users.avatarUrl,
+          role: users.role,
+        })
+        .from(users)
+        .innerJoin(courses, eq(courses.instructorId, users.id))
+        .innerJoin(enrollments, eq(enrollments.courseId, courses.id))
+        .where(eq(enrollments.userId, session.user.id))
+    }
+
+    return []
 }
 
 export async function getPublicUserProfile(userId: string) {

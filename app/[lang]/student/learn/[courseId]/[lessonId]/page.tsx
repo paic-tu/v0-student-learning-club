@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/auth"
-import { getLearningData, getUserLessonNotes } from "@/lib/db/queries"
+import { getLearningData, getUserLessonNotes, getQuizById, getQuizSubmission } from "@/lib/db/queries"
 import { redirect, notFound } from "next/navigation"
 import { CurriculumSidebar } from "@/components/learn/curriculum-sidebar"
 import { LessonContent } from "@/components/learn/lesson-content"
@@ -41,10 +41,27 @@ export default async function LearningPage({
   const prevLessonId = (navigation as any)?.prev?.id ?? null
   const nextLessonId = (navigation as any)?.next?.id ?? null
 
+  // Verify sequential progress: Student must complete the previous lesson before accessing the current one
+  if (user.role === "student" && prevLessonId && !completedLessons.includes(prevLessonId)) {
+    redirect(`/${lang}/student/learn/${courseId}/${prevLessonId}`)
+  }
+
   const lessonNotes = await getUserLessonNotes(user.id, currentLessonAny.id)
+
+  let quiz = null
+  let quizSubmission = null
+
+  if (currentLessonAny.contentType === 'quiz' || currentLessonAny.type === 'quiz') {
+    const quizId = currentLessonAny.quizConfig?.quizId
+    if (quizId) {
+      quiz = await getQuizById(quizId)
+      quizSubmission = await getQuizSubmission(quizId, user.id)
+    }
+  }
 
   const currentLessonMapped = {
     ...currentLessonAny,
+    type: currentLessonAny.contentType || currentLessonAny.type,
     titleEn: currentLessonAny.title_en ?? currentLessonAny.titleEn,
     titleAr: currentLessonAny.title_ar ?? currentLessonAny.titleAr,
     descriptionEn: currentLessonAny.description_en ?? currentLessonAny.descriptionEn,
@@ -144,10 +161,10 @@ export default async function LearningPage({
 
             <Button 
               size="sm" 
-              disabled={!nextLessonId}
-              asChild={!!nextLessonId}
+              disabled={!nextLessonId || (user.role === "student" && !completedLessons.includes(currentLessonAny.id))}
+              asChild={!!nextLessonId && (user.role !== "student" || completedLessons.includes(currentLessonAny.id))}
             >
-              {nextLessonId ? (
+              {nextLessonId && (user.role !== "student" || completedLessons.includes(currentLessonAny.id)) ? (
                 <Link href={`/${lang}/student/learn/${courseAny.id}/${nextLessonId}`}>
                   <span className="hidden sm:inline">{isAr ? "التالي" : "Next"}</span>
                   {isAr ? <ChevronLeft className="h-4 w-4 sm:me-1" /> : <ChevronRight className="h-4 w-4 sm:ms-1" />}
@@ -170,6 +187,8 @@ export default async function LearningPage({
               lang={lang} 
               userId={user.id}
               initialNotes={lessonNotes}
+              quiz={quiz}
+              quizSubmission={quizSubmission}
             />
             
             {/* Action Bar (Complete, Notes) */}

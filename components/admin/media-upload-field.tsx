@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2, Upload, X } from "lucide-react"
-import { uploadFileAction } from "@/lib/actions/upload"
 import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
 
@@ -42,7 +41,7 @@ export function MediaUploadField({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const isControlled = propValue !== undefined
-  const value = isControlled ? propValue : internalValue
+  const value = (isControlled ? propValue : internalValue) ?? ""
 
   React.useEffect(() => {
     if (!isControlled) {
@@ -93,13 +92,20 @@ export function MediaUploadField({
       formData.append("file", file)
 
       try {
-        const result = await uploadFileAction(formData)
+        // Use API route instead of Server Action for better large file handling
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        })
 
-        if (result.error) {
-          throw new Error(result.error)
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error || `Upload failed with status: ${response.status}`)
         }
 
-        if (result.success && result.url) {
+        const result = await response.json()
+
+        if (result.url) {
           handleValueChange(result.url)
           toast({
             title: isAr ? "تم بنجاح" : "Success",

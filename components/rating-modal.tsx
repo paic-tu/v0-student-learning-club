@@ -80,7 +80,7 @@ export function RatingModal({ isOpen, onClose, courseId, courseTitle }: RatingMo
         {label}
       </label>
       <div className="flex gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
+        {[1, 2, 3, 4].map((star) => (
           <button
             key={star}
             type="button"

@@ -1,6 +1,6 @@
 "use server"
 
-import { and, desc, eq, count, sql, inArray, asc, getTableColumns, sum, not } from "drizzle-orm"
+import { and, desc, eq, count, sql, inArray, asc, getTableColumns, sum, not, or, isNull } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { 
   courses, enrollments, lessons, notes, users, bookmarks, modules, progress, 
@@ -136,6 +136,59 @@ export async function getInstructorCourses(instructorId: string) {
   } catch (error) {
     console.error("Error fetching instructor courses:", error)
     return []
+  }
+}
+
+export async function getCourseQuizzes(courseId: string, instructorId?: string) {
+  try {
+    const conditions = [eq(challenges.type, "quiz")]
+    
+    if (instructorId) {
+      conditions.push(
+        or(
+          eq(challenges.courseId, courseId),
+          and(isNull(challenges.courseId), eq(challenges.instructorId, instructorId))
+        )
+      )
+    } else {
+      conditions.push(eq(challenges.courseId, courseId))
+    }
+
+    return await db.query.challenges.findMany({
+      where: and(...conditions),
+      orderBy: [desc(challenges.createdAt)],
+    })
+  } catch (error) {
+    console.error("Error fetching course quizzes:", error)
+    return []
+  }
+}
+
+export async function getQuizById(quizId: string) {
+  try {
+    const quiz = await db.query.challenges.findFirst({
+      where: eq(challenges.id, quizId),
+    })
+    return quiz
+  } catch (error) {
+    console.error("Error fetching quiz:", error)
+    return null
+  }
+}
+
+export async function getQuizSubmission(challengeId: string, userId: string) {
+  try {
+    const submission = await db.query.challengeSubmissions.findFirst({
+      where: and(
+        eq(challengeSubmissions.challengeId, challengeId),
+        eq(challengeSubmissions.userId, userId)
+      ),
+      orderBy: [desc(challengeSubmissions.createdAt)]
+    })
+    return submission
+  } catch (error) {
+    console.error("Error fetching quiz submission:", error)
+    return null
   }
 }
 
@@ -792,10 +845,24 @@ export async function getLearningData(userId: string, courseId: string, lessonId
         next: nextLesson
       }
     }
-
   } catch (error) {
     console.error("[v0] Error fetching learning data:", error)
     return { error: "Internal server error" }
+  }
+}
+
+export async function getCourseEnrollments(courseId: string) {
+  try {
+    return await db.query.enrollments.findMany({
+      where: eq(enrollments.courseId, courseId),
+      with: {
+        user: true
+      },
+      orderBy: [desc(enrollments.createdAt)]
+    })
+  } catch (error) {
+    console.error("Error fetching course enrollments:", error)
+    return []
   }
 }
 

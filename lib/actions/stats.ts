@@ -14,39 +14,32 @@ export async function getLandingPageStats() {
       .select({ value: avg(reviews.rating) })
       .from(reviews)
     
-    // Default to 4.9 (98%) if no reviews, as a fallback for empty DB
-    const rawRating = ratingResult?.value ? Number(ratingResult.value) : 4.9
-    const rawSatisfaction = Math.round((rawRating / 5) * 100)
+    // Default to 0 if no reviews
+    const rawRating = ratingResult?.value ? Number(ratingResult.value) : 0
+    const rawSatisfaction = rawRating ? Math.round((rawRating / 5) * 100) : 0
 
     if (!stats) {
       return {
-        courses: 172, // 156 * 1.1
-        students: 13750, // 12500 * 1.1
-        certificates: 9174, // 8340 * 1.1
-        satisfaction: 98
+        courses: 0,
+        students: 0,
+        certificates: 0,
+        satisfaction: 0
       }
     }
 
-    // Apply 10% increase logic as requested
-    const increase = (val: number) => Math.ceil(val * 1.10)
-
     return {
-      courses: increase(stats.course_count),
-      students: increase(stats.student_count),
-      certificates: increase(stats.certificate_count),
-      // For satisfaction, we apply 10% increase but cap at 100%
-      // Or maybe the user meant the count of satisfied users? 
-      // Given the context "Satisfaction 98%", it's likely a percentage.
-      // If we have 90%, 10% increase -> 99%.
-      satisfaction: Math.min(Math.ceil(rawSatisfaction * 1.10), 100)
+      courses: stats.course_count,
+      students: stats.student_count,
+      certificates: stats.certificate_count,
+      satisfaction: rawSatisfaction
     }
   } catch (error) {
     console.error("Error fetching landing page stats:", error)
     return {
-      courses: 172,
-      students: 13750,
-      certificates: 9174,
-      satisfaction: 98
+      courses: 0,
+      students: 0,
+      certificates: 0,
+      satisfaction: 0
     }
   }
 }

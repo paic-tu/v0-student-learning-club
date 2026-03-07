@@ -4,7 +4,7 @@ import { InstructorLessonForm } from "@/components/instructor/lesson-form"
 import { db } from "@/lib/db"
 import { courses, lessons } from "@/lib/db/schema"
 import { eq, and } from "drizzle-orm"
-import { getCourseModules } from "@/lib/db/queries"
+import { getCourseModules, getCourseQuizzes } from "@/lib/db/queries"
 
 export default async function EditInstructorLessonPage({ params }: { params: Promise<{ lang: string, courseId: string, lessonId: string }> }) {
   const { lang, courseId, lessonId } = await params
@@ -40,7 +40,10 @@ export default async function EditInstructorLessonPage({ params }: { params: Pro
     notFound()
   }
 
-  const modules = await getCourseModules(courseId)
+  const [modules, quizzes] = await Promise.all([
+    getCourseModules(courseId),
+    getCourseQuizzes(courseId, session.user.id)
+  ])
 
   return (
     <div className="space-y-6">
@@ -55,6 +58,7 @@ export default async function EditInstructorLessonPage({ params }: { params: Pro
           initialData={lesson} 
           lang={lang} 
           modules={modules}
+          quizzes={quizzes}
         />
       </div>
     </div>

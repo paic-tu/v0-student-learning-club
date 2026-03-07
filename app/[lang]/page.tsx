@@ -22,10 +22,10 @@ export default function HomePage() {
   const { user, isAuthenticated } = useAuth()
   const router = useRouter()
   const [stats, setStats] = useState({
-    courses: 156,
-    students: 12500,
-    certificates: 8340,
-    satisfaction: 98
+    courses: 0,
+    students: 0,
+    certificates: 0,
+    satisfaction: 0
   })
 
   useEffect(() => {

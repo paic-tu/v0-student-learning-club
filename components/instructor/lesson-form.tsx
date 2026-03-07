@@ -28,6 +28,7 @@ const getLessonSchema = (isAr: boolean) => z.object({
   contentMarkdown: z.string().optional().nullable(),
   freePreview: z.boolean().default(false),
   moduleId: z.string().uuid().optional().nullable(),
+  quizId: z.string().optional().nullable(),
 })
 
 type LessonFormData = z.infer<ReturnType<typeof getLessonSchema>>
@@ -39,9 +40,10 @@ interface InstructorLessonFormProps {
   lang: string
   moduleId?: string
   modules?: any[]
+  quizzes?: any[]
 }
 
-export function InstructorLessonForm({ courseId, initialData, lessonId, lang, moduleId, modules = [] }: InstructorLessonFormProps) {
+export function InstructorLessonForm({ courseId, initialData, lessonId, lang, moduleId, modules = [], quizzes = [] }: InstructorLessonFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
@@ -64,6 +66,7 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
       contentMarkdown: initialData?.contentMarkdown || initialData?.content_markdown || initialData?.contentEn || initialData?.content_en || "",
       freePreview: initialData?.isPreview || initialData?.is_preview || false,
       moduleId: initialData?.moduleId || initialData?.module_id || moduleId || null,
+      quizId: initialData?.quizConfig?.quizId || initialData?.quiz_config?.quizId || null,
     },
   })
 
@@ -77,10 +80,15 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
       
       const method = lessonId ? "PATCH" : "POST"
 
+      const submitData = {
+        ...data,
+        quizConfig: data.contentType === "quiz" && data.quizId ? { quizId: data.quizId } : null
+      }
+
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(submitData),
       })
 
       if (!response.ok) {
@@ -114,6 +122,8 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "")
   }
+
+  const contentType = form.watch("contentType")
 
   return (
     <Form {...form}>
@@ -308,60 +318,129 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
 
           <div className="space-y-4 border rounded-md p-4">
             <h3 className="text-lg font-medium">{isAr ? "المحتوى" : "Content"}</h3>
-            <FormField
-            control={form.control}
-            name="videoUrl"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{isAr ? "رابط الفيديو أو رفع ملف" : "Video URL or Upload"}</FormLabel>
-                <FormControl>
-                  <MediaUploadField
-                    name="videoUrl"
-                    value={field.value || ""}
-                    onChange={field.onChange}
-                    type="video"
-                    placeholder={isAr ? "https://youtube.com/... أو رفع فيديو" : "https://youtube.com/... or upload video"}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
 
-          <FormField
-            control={form.control}
-            name="thumbnailUrl"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{isAr ? "رابط الصورة المصغرة أو رفع صورة" : "Thumbnail URL or Upload (Cover Pic)"}</FormLabel>
-                <FormControl>
-                  <MediaUploadField
-                    name="thumbnailUrl"
-                    value={field.value || ""}
-                    onChange={field.onChange}
-                    type="image"
-                    placeholder={isAr ? "https://... أو رفع صورة" : "https://... or upload image"}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            {(contentType === "video") && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="videoUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{isAr ? "رابط الفيديو أو رفع ملف" : "Video URL or Upload"}</FormLabel>
+                      <FormControl>
+                        <MediaUploadField
+                          name="videoUrl"
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          type="video"
+                          placeholder={isAr ? "https://youtube.com/... أو رفع فيديو" : "https://youtube.com/... or upload video"}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-          <FormField
-            control={form.control}
-            name="contentMarkdown"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{isAr ? "المحتوى (Markdown)" : "Content (Markdown)"}</FormLabel>
-                <FormControl>
-                  <Textarea {...field} value={field.value || ""} rows={10} placeholder={isAr ? "# محتوى الدرس..." : "# Lesson Content..."} />
-                </FormControl>
-                <FormDescription>{isAr ? "استخدم Markdown للتنسيق" : "Use Markdown for formatting"}</FormDescription>
-                <FormMessage />
-              </FormItem>
+                <FormField
+                  control={form.control}
+                  name="durationMinutes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{isAr ? "المدة (بالدقائق)" : "Duration (minutes)"}</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value))}
+                          placeholder="0"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
             )}
-          />
+
+            {(contentType === "video" || contentType === "article") && (
+              <FormField
+                control={form.control}
+                name="thumbnailUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{isAr ? "رابط الصورة المصغرة أو رفع صورة" : "Thumbnail URL or Upload (Cover Pic)"}</FormLabel>
+                    <FormControl>
+                      <MediaUploadField
+                        name="thumbnailUrl"
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        type="image"
+                        placeholder={isAr ? "https://... أو رفع صورة" : "https://... or upload image"}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {(contentType === "article" || contentType === "video") && (
+              <FormField
+                control={form.control}
+                name="contentMarkdown"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{isAr ? (contentType === "article" ? "محتوى المقال (Markdown)" : "وصف الفيديو / الملاحظات") : (contentType === "article" ? "Article Content (Markdown)" : "Video Description / Notes")}</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} value={field.value || ""} rows={10} placeholder={isAr ? (contentType === "article" ? "# اكتب مقالك هنا..." : "أضف ملاحظات أو وصف للفيديو...") : (contentType === "article" ? "# Write your article here..." : "Add notes or description...")} />
+                    </FormControl>
+                    <FormDescription>{isAr ? "استخدم Markdown للتنسيق" : "Use Markdown for formatting"}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {contentType === "quiz" && (
+              <FormField
+                control={form.control}
+                name="quizId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{isAr ? "اختر الكويز" : "Select Quiz"}</FormLabel>
+                    {quizzes && quizzes.length > 0 ? (
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={isAr ? "اختر الكويز" : "Select a quiz"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {quizzes.map((quiz) => (
+                            <SelectItem key={quiz.id} value={quiz.id}>
+                              {isAr ? quiz.titleAr : quiz.titleEn}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="p-4 border rounded-md bg-muted text-center text-muted-foreground">
+                        {isAr ? "لا توجد اختبارات متاحة. يرجى إنشاء اختبار من قسم الاختبارات أولاً." : "No quizzes available. Please create a quiz from the Quizzes section first."}
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            
+            {contentType === "assignment" && (
+               <div className="p-4 bg-muted rounded-md text-center">
+                <p className="text-muted-foreground mb-2">
+                  {isAr ? "إعدادات الواجب ستكون متاحة قريباً." : "Assignment settings will be available soon."}
+                </p>
+              </div>
+            )}
           </div>
 
         <div className="flex gap-4">

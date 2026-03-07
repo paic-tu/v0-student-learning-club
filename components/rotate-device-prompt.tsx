@@ -56,13 +56,13 @@ export function RotateDevicePrompt() {
     }
   }, [pathname])
 
-  // Timer to auto-hide after 2 seconds
+  // Timer to auto-hide after 5 seconds
   useEffect(() => {
     if (showPrompt) {
       const timer = setTimeout(() => {
         setShowPrompt(false)
         localStorage.setItem("hasSeenRotatePrompt", "true")
-      }, 2000)
+      }, 5000)
       return () => clearTimeout(timer)
     }
   }, [showPrompt])

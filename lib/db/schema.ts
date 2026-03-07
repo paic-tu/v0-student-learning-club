@@ -141,6 +141,7 @@ export const lessons = pgTable("lessons", {
   
   // Video specific
   videoUrl: text("video_url"),
+  thumbnailUrl: text("thumbnail_url"),
   videoProvider: videoProviderEnum("video_provider").default("upload"),
   durationMinutes: integer("duration_minutes"),
   

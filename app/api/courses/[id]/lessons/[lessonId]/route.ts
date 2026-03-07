@@ -18,6 +18,8 @@ const updateLessonSchema = z.object({
   thumbnailUrl: z.string().optional().or(z.literal("")).nullable(),
   contentMarkdown: z.string().optional().nullable(),
   freePreview: z.boolean().optional(),
+  quizConfig: z.record(z.any()).optional().nullable(),
+  quizId: z.string().uuid().optional().nullable(),
 })
 
 export async function GET(
@@ -96,8 +98,12 @@ export async function PATCH(
       return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 })
     }
 
-    const { contentMarkdown, ...rest } = parsed.data
+    const { contentMarkdown, quizId, ...rest } = parsed.data
     const updateData: any = { ...rest }
+
+    if (quizId) {
+      updateData.quizConfig = { ...updateData.quizConfig, quizId }
+    }
 
     // Map contentMarkdown to contentEn and contentAr
     if (contentMarkdown !== undefined && contentMarkdown !== null) {

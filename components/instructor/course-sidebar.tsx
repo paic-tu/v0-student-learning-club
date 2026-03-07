@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Plus, MoreVertical, Pencil, Trash2, GripVertical, FileText, Video, BookOpen, PlusCircle, Edit } from "lucide-react"
+import { Plus, MoreVertical, Pencil, Trash2, GripVertical, FileText, Video, BookOpen, PlusCircle, Edit, ChevronUp, ChevronDown, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -64,6 +64,12 @@ export function CourseSidebar({ course, modules, lessons, lang }: CourseSidebarP
   const [isLoading, setIsLoading] = useState(false)
   const [selectedModule, setSelectedModule] = useState<any>(null)
   const [moduleToDelete, setModuleToDelete] = useState<string | null>(null)
+  const [orderedLessons, setOrderedLessons] = useState<any[]>(lessons)
+  const [isReordering, setIsReordering] = useState(false)
+
+  useEffect(() => {
+    setOrderedLessons(lessons)
+  }, [lessons])
 
   useEffect(() => {
     // Check if we are on a specific lesson page
@@ -75,11 +81,81 @@ export function CourseSidebar({ course, modules, lessons, lang }: CourseSidebarP
   }, [pathname])
 
   const lessonsByModule = modules.reduce((acc: any, module: any) => {
-    acc[module.id] = lessons.filter((lesson: any) => lesson.moduleId === module.id)
+    acc[module.id] = orderedLessons
+      .filter((lesson: any) => lesson.moduleId === module.id)
+      .sort((a, b) => a.orderIndex - b.orderIndex)
     return acc
   }, {})
 
-  const uncategorizedLessons = lessons.filter((lesson: any) => !lesson.moduleId)
+  const uncategorizedLessons = orderedLessons
+    .filter((lesson: any) => !lesson.moduleId)
+    .sort((a, b) => a.orderIndex - b.orderIndex)
+
+  const handleMoveLesson = async (lessonId: string, direction: 'up' | 'down', moduleId: string | null) => {
+    if (isReordering) return
+
+    const currentList = moduleId 
+      ? lessonsByModule[moduleId] 
+      : uncategorizedLessons
+    
+    const currentIndex = currentList.findIndex((l: any) => l.id === lessonId)
+    if (currentIndex === -1) return
+
+    let newIndex = currentIndex
+    if (direction === 'up' && currentIndex > 0) {
+      newIndex = currentIndex - 1
+    } else if (direction === 'down' && currentIndex < currentList.length - 1) {
+      newIndex = currentIndex + 1
+    } else {
+      return
+    }
+
+    setIsReordering(true)
+
+    const newGroupList = [...currentList]
+    const lessonA = newGroupList[currentIndex]
+    const lessonB = newGroupList[newIndex]
+    
+    // Swap positions in the local list copy
+    newGroupList[currentIndex] = lessonB
+    newGroupList[newIndex] = lessonA
+    
+    // Create updates with new order indices
+    const updates = newGroupList.map((lesson: any, index: number) => ({
+      id: lesson.id,
+      orderIndex: index
+    }))
+
+    // Update global state
+    const newOrderedLessons = orderedLessons.map(l => {
+      const update = updates.find((u: any) => u.id === l.id)
+      return update ? { ...l, orderIndex: update.orderIndex } : l
+    })
+
+    setOrderedLessons(newOrderedLessons)
+
+    try {
+      const response = await fetch(`/api/courses/${course.id}/lessons/reorder`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: updates }),
+      })
+
+      if (!response.ok) throw new Error("Failed to reorder lessons")
+      
+      router.refresh()
+    } catch (error) {
+      console.error(error)
+      toast({
+        title: isAr ? "خطأ" : "Error",
+        description: isAr ? "فشل تغيير ترتيب الدروس" : "Failed to reorder lessons",
+        variant: "destructive",
+      })
+      setOrderedLessons(lessons)
+    } finally {
+      setIsReordering(false)
+    }
+  }
 
   const handleCreateModule = async () => {
     if (!moduleTitleEn || !moduleTitleAr) {
@@ -293,24 +369,45 @@ export function CourseSidebar({ course, modules, lessons, lang }: CourseSidebarP
                     <p className="text-xs text-muted-foreground py-2 italic">{isAr ? "لا توجد دروس في هذه الوحدة" : "No lessons in this module"}</p>
                   ) : (
                     lessonsByModule[module.id]?.map((lesson: any) => (
-                      <Link 
-                        key={lesson.id} 
-                        href={`/${lang}/instructor/courses/${course.id}/lessons/${lesson.id}/edit`}
-                        className={cn(
-                          "flex items-center gap-2 text-sm p-2 rounded-md hover:bg-muted transition-colors",
-                          activeLessonId === lesson.id ? "bg-muted font-medium" : "text-muted-foreground"
-                        )}
-                      >
-                        {getLessonIcon(lesson.type)}
-                        <span className="truncate">
-                          {isAr 
-                            ? (lesson.title_ar || lesson.titleAr || lesson.title_en || lesson.titleEn) 
-                            : (lesson.title_en || lesson.titleEn || lesson.title_ar || lesson.titleAr)}
-                        </span>
-                        {lesson.isFreePreview && (
-                          <Badge variant="outline" className="ml-auto text-[10px] h-5 px-1">{isAr ? "مجاني" : "Free"}</Badge>
-                        )}
-                      </Link>
+                      <div key={lesson.id} className="group flex items-center gap-1">
+                        <div className="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-4 w-4 p-0" 
+                            onClick={() => handleMoveLesson(lesson.id, 'up', module.id)}
+                            disabled={isReordering}
+                          >
+                            <ChevronUp className="h-3 w-3" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-4 w-4 p-0" 
+                            onClick={() => handleMoveLesson(lesson.id, 'down', module.id)}
+                            disabled={isReordering}
+                          >
+                            <ChevronDown className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <Link 
+                          href={`/${lang}/instructor/courses/${course.id}/lessons/${lesson.id}/edit`}
+                          className={cn(
+                            "flex-1 flex items-center gap-2 text-sm p-2 rounded-md hover:bg-muted transition-colors",
+                            activeLessonId === lesson.id ? "bg-muted font-medium" : "text-muted-foreground"
+                          )}
+                        >
+                          {getLessonIcon(lesson.type)}
+                          <span className="truncate">
+                            {isAr 
+                              ? (lesson.title_ar || lesson.titleAr || lesson.title_en || lesson.titleEn) 
+                              : (lesson.title_en || lesson.titleEn || lesson.title_ar || lesson.titleAr)}
+                          </span>
+                          {lesson.isFreePreview && (
+                            <Badge variant="outline" className="ml-auto text-[10px] h-5 px-1">{isAr ? "مجاني" : "Free"}</Badge>
+                          )}
+                        </Link>
+                      </div>
                     ))
                   )}
                   
@@ -336,24 +433,45 @@ export function CourseSidebar({ course, modules, lessons, lang }: CourseSidebarP
             <h3 className="text-sm font-medium text-muted-foreground mb-2">{isAr ? "دروس غير مصنفة" : "Uncategorized Lessons"}</h3>
             <div className="space-y-1 border rounded-lg p-2">
               {uncategorizedLessons.map((lesson: any) => (
-                <Link 
-                  key={lesson.id} 
-                  href={`/${lang}/instructor/courses/${course.id}/lessons/${lesson.id}/edit`}
-                  className={cn(
-                    "flex items-center gap-2 text-sm p-2 rounded-md hover:bg-muted transition-colors",
-                    activeLessonId === lesson.id ? "bg-muted font-medium" : "text-muted-foreground"
-                  )}
-                >
-                  {getLessonIcon(lesson.type)}
-                  <span className="truncate">
-                    {isAr 
-                      ? (lesson.title_ar || lesson.titleAr || lesson.title_en || lesson.titleEn) 
-                      : (lesson.title_en || lesson.titleEn || lesson.title_ar || lesson.titleAr)}
-                  </span>
-                  {lesson.isFreePreview && (
-                    <Badge variant="outline" className="ml-auto text-[10px] h-5 px-1">{isAr ? "مجاني" : "Free"}</Badge>
-                  )}
-                </Link>
+                <div key={lesson.id} className="group flex items-center gap-1">
+                  <div className="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-4 w-4 p-0" 
+                      onClick={() => handleMoveLesson(lesson.id, 'up', null)}
+                      disabled={isReordering}
+                    >
+                      <ChevronUp className="h-3 w-3" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-4 w-4 p-0" 
+                      onClick={() => handleMoveLesson(lesson.id, 'down', null)}
+                      disabled={isReordering}
+                    >
+                      <ChevronDown className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <Link 
+                    href={`/${lang}/instructor/courses/${course.id}/lessons/${lesson.id}/edit`}
+                    className={cn(
+                      "flex-1 flex items-center gap-2 text-sm p-2 rounded-md hover:bg-muted transition-colors",
+                      activeLessonId === lesson.id ? "bg-muted font-medium" : "text-muted-foreground"
+                    )}
+                  >
+                    {getLessonIcon(lesson.type)}
+                    <span className="truncate">
+                      {isAr 
+                        ? (lesson.title_ar || lesson.titleAr || lesson.title_en || lesson.titleEn) 
+                        : (lesson.title_en || lesson.titleEn || lesson.title_ar || lesson.titleAr)}
+                    </span>
+                    {lesson.isFreePreview && (
+                      <Badge variant="outline" className="ml-auto text-[10px] h-5 px-1">{isAr ? "مجاني" : "Free"}</Badge>
+                    )}
+                  </Link>
+                </div>
               ))}
             </div>
           </div>

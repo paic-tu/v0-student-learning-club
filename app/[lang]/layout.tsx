@@ -7,7 +7,6 @@ import { LanguageProvider } from "@/lib/language-context"
 import { ThemeProvider } from "@/lib/theme-context"
 import { AuthProvider } from "@/lib/auth-context"
 import { Toaster } from "@/components/ui/toaster"
-import { DbInitializer } from "@/components/db-initializer"
 import { auth } from "@/lib/auth"
 import { SWUnregister } from "@/components/sw-unregister"
 import { RotateDevicePrompt } from "@/components/rotate-device-prompt"
@@ -57,7 +56,6 @@ export default async function RootLayout({
   return (
     <html lang={lang} dir={dir} suppressHydrationWarning>
       <body className={`${arabic.variable} ${inter.variable} ${playfair.variable} ${dancing.variable} font-sans antialiased`}>
-        <DbInitializer />
         <ThemeProvider>
           <LanguageProvider defaultLang={lang as "ar" | "en"}>
             <AuthProvider session={session}>

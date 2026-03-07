@@ -52,7 +52,9 @@ export function LessonPlayerClient({
           title: "Lesson Completed",
           description: "Great job! Keep going."
         })
-        setShowRatingModal(true)
+        if (result.progress === 100) {
+          setShowRatingModal(true)
+        }
         router.refresh()
       }
     } catch (error) {

@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
         orderIndex: orderIndex,
         durationMinutes: data.durationMinutes,
         videoUrl: data.videoUrl,
-        // thumbnailUrl is not in lessons schema, removing it
+        thumbnailUrl: data.thumbnailUrl,
         contentEn: data.contentMarkdown, // mapped to contentEn
         isPreview: data.freePreview, // mapped to isPreview
       })

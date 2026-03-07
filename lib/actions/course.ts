@@ -225,3 +225,28 @@ export async function completeLessonAction(courseId: string, lessonId: string) {
     return { error: "Failed to complete lesson" }
   }
 }
+
+export async function deleteCourseAction(courseId: string) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id || (session.user.role !== "instructor" && session.user.role !== "admin")) {
+      return { error: "Unauthorized" }
+    }
+
+    // Verify ownership if instructor
+    if (session.user.role === "instructor") {
+      const course = await db.query.courses.findFirst({
+        where: and(eq(courses.id, courseId), eq(courses.instructorId, session.user.id))
+      })
+      if (!course) return { error: "Course not found or unauthorized" }
+    }
+
+    await db.delete(courses).where(eq(courses.id, courseId))
+    
+    revalidatePath("/instructor/courses")
+    return { success: true }
+  } catch (error) {
+    console.error("Delete course error:", error)
+    return { error: "Failed to delete course" }
+  }
+}

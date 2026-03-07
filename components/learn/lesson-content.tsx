@@ -113,14 +113,18 @@ function NotesSection({
   )
 }
 
+import { QuizClient } from "@/components/quiz-client"
+
 interface LessonContentProps {
   lesson: any
   lang: string
   userId?: string
   initialNotes?: any[]
+  quiz?: any
+  quizSubmission?: any
 }
 
-export function LessonContent({ lesson, lang, userId, initialNotes = [] }: LessonContentProps) {
+export function LessonContent({ lesson, lang, userId, initialNotes = [], quiz, quizSubmission }: LessonContentProps) {
   const isAr = lang === "ar"
   const [notes, setNotes] = useState(initialNotes)
   const [newNote, setNewNote] = useState("")
@@ -227,7 +231,37 @@ export function LessonContent({ lesson, lang, userId, initialNotes = [] }: Lesso
     )
   }
 
-  if (lesson.type === "article" || lesson.type === "quiz" || lesson.type === "resource" || lesson.type === "assignment") {
+  if (lesson.type === "quiz") {
+    if (!quiz) {
+      return (
+        <Card className="p-8 text-center border-dashed">
+          <p className="text-muted-foreground">
+            {isAr ? "لم يتم العثور على الاختبار" : "Quiz content not found"}
+          </p>
+        </Card>
+      )
+    }
+    
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 mb-6">
+          <Badge variant="outline" className="capitalize">
+            <FileText className="h-3 w-3 me-1" />
+            {lesson.type}
+          </Badge>
+          {lesson.durationMinutes && (
+            <span className="text-sm text-muted-foreground">{lesson.durationMinutes} min</span>
+          )}
+        </div>
+        
+        <h1 className="text-3xl font-bold mb-6 text-start">{isAr ? lesson.titleAr : lesson.titleEn}</h1>
+        
+        <QuizClient challenge={quiz} previousSubmission={quizSubmission} />
+      </div>
+    )
+  }
+
+  if (lesson.type === "article" || lesson.type === "resource" || lesson.type === "assignment") {
     return (
       <Card className="p-8 text-start" dir={isAr ? "rtl" : "ltr"}>
         <div className="flex items-center gap-2 mb-6">

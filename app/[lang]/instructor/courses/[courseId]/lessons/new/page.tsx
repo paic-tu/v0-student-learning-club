@@ -4,7 +4,7 @@ import { InstructorLessonForm } from "@/components/instructor/lesson-form"
 import { db } from "@/lib/db"
 import { courses } from "@/lib/db/schema"
 import { eq, and } from "drizzle-orm"
-import { getCourseModules } from "@/lib/db/queries"
+import { getCourseModules, getCourseQuizzes } from "@/lib/db/queries"
 
 export default async function NewInstructorLessonPage({ 
   params, 
@@ -35,7 +35,10 @@ export default async function NewInstructorLessonPage({
     notFound()
   }
 
-  const modules = await getCourseModules(courseId)
+  const [modules, quizzes] = await Promise.all([
+    getCourseModules(courseId),
+    getCourseQuizzes(courseId, session.user.id)
+  ])
 
   return (
     <div className="space-y-6">
@@ -49,6 +52,7 @@ export default async function NewInstructorLessonPage({
           lang={lang} 
           moduleId={moduleId} 
           modules={modules}
+          quizzes={quizzes}
         />
       </div>
     </div>

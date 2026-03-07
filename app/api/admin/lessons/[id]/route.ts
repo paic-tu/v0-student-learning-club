@@ -82,7 +82,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     if (data.orderIndex !== undefined) updateData.orderIndex = data.orderIndex
     if (data.durationMinutes !== undefined) updateData.durationMinutes = data.durationMinutes
     if (data.videoUrl !== undefined) updateData.videoUrl = data.videoUrl
-    // thumbnailUrl is not in lessons schema, ignoring it
+    if (data.thumbnailUrl !== undefined) updateData.thumbnailUrl = data.thumbnailUrl
     if (data.contentMarkdown !== undefined) updateData.contentEn = data.contentMarkdown
     if (data.freePreview !== undefined) updateData.isPreview = data.freePreview
 

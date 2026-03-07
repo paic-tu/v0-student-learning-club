@@ -18,6 +18,8 @@ const createLessonSchema = z.object({
   thumbnailUrl: z.string().optional().or(z.literal("")).nullable(),
   contentMarkdown: z.string().optional().nullable(),
   freePreview: z.boolean().default(false),
+  quizConfig: z.record(z.any()).optional().nullable(),
+  quizId: z.string().uuid().optional().nullable(),
 })
 
 export async function GET(
@@ -103,8 +105,12 @@ export async function POST(
     }
 
     const data = parsed.data
-    const { contentMarkdown, ...rest } = data
+    const { contentMarkdown, quizId, ...rest } = data
     const insertData: any = { ...rest }
+
+    if (quizId) {
+      insertData.quizConfig = { ...insertData.quizConfig, quizId }
+    }
 
     // Map contentMarkdown to contentEn and contentAr
     if (contentMarkdown !== undefined && contentMarkdown !== null) {
