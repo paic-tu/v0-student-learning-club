@@ -270,7 +270,7 @@ export function CourseDetailClient({ course, initialBookmarked, initialEnrolled 
                   <p className="text-sm text-muted-foreground mb-2">{t("instructor", language)}</p>
                   <div className="flex items-center gap-2">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={course.instructor_avatar || undefined} />
+                      <AvatarImage src={course.instructor_avatar || "/default-avatar.svg"} />
                       <AvatarFallback>{course.instructor_name?.charAt(0) || "I"}</AvatarFallback>
                     </Avatar>
                     <div>

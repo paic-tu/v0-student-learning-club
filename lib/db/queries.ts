@@ -444,6 +444,57 @@ export async function updateUserProfile(userId: string, data: any) {
   }
 }
 
+export async function getInstructorDashboardData(userId: string) {
+  try {
+    const coursesData = await db
+      .select({
+        count: count(),
+        enrollments: sum(courses.enrollmentCount),
+      })
+      .from(courses)
+      .where(eq(courses.instructorId, userId))
+      .then((res) => res[0])
+
+    const coursesList = await db.query.courses.findMany({
+      where: eq(courses.instructorId, userId),
+      columns: { id: true },
+    })
+    
+    const courseIds = coursesList.map(c => c.id)
+    
+    let reviewsCount = 0
+    let averageRating = 0
+
+    if (courseIds.length > 0) {
+      const reviewsData = await db
+        .select({
+          count: count(),
+          avgRating: sql<number>`avg(${reviews.rating})`,
+        })
+        .from(reviews)
+        .where(inArray(reviews.courseId, courseIds))
+        .then((res) => res[0])
+      
+      reviewsCount = reviewsData.count
+      averageRating = Number(reviewsData.avgRating) || 0
+    }
+
+    return {
+      stats: {
+        courses: coursesData.count || 0,
+        students: Number(coursesData.enrollments) || 0,
+        reviews: reviewsCount,
+        rating: averageRating,
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching instructor dashboard data:", error)
+    return {
+      stats: { courses: 0, students: 0, reviews: 0, rating: 0 }
+    }
+  }
+}
+
 // Student Dashboard
 export async function getStudentDashboardData(userId: string) {
   try {
@@ -1118,6 +1169,12 @@ export async function getPlatformStats() {
       .select({ count: count() })
       .from(certificates)
       .then((res) => res[0].count)
+
+    const certifiedStudentCount = await db
+      .select({ count: sql<number>`count(distinct ${certificates.userId})` })
+      .from(certificates)
+      .where(eq(certificates.status, "issued"))
+      .then((res) => Number(res[0].count))
       
     const challengeCount = await db
       .select({ count: count() })
@@ -1134,6 +1191,7 @@ export async function getPlatformStats() {
       course_count: courseCount,
       enrollment_count: enrollmentCount,
       certificate_count: certificateCount,
+      certified_student_count: certifiedStudentCount,
       challenge_count: challengeCount,
       contest_count: contestCount,
     }

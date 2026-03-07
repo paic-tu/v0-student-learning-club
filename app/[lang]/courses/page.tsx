@@ -42,10 +42,11 @@ export default function CoursesPage() {
   ]
 
   const filteredCourses = courses.filter((course) => {
-    const title = language === "ar" ? course.title_ar : course.title_en
+    const title = (language === "ar" ? course.title_ar : course.title_en) || ""
+    const instructorName = course.instructor_name || ""
     const matchesSearch =
       title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.instructor_name.toLowerCase().includes(searchTerm.toLowerCase())
+      instructorName.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory =
       selectedCategory === "all" ||
       course.category_name_en === selectedCategory ||

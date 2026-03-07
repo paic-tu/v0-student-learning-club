@@ -1,0 +1,83 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { Smartphone } from "lucide-react"
+
+export function RotateDevicePrompt() {
+  const [showPrompt, setShowPrompt] = useState(false)
+
+  useEffect(() => {
+    const checkOrientation = () => {
+      // Check if it's a mobile device (touch capable and small screen)
+      // We use 768px as standard tablet/mobile breakpoint
+      const isSmallScreen = window.matchMedia("(max-width: 768px)").matches
+      
+      // Check if in portrait mode
+      const isPortrait = window.matchMedia("(orientation: portrait)").matches
+      
+      // Only show if small screen AND portrait
+      setShowPrompt(isSmallScreen && isPortrait)
+    }
+
+    // Initial check
+    checkOrientation()
+
+    // Listen for resize/orientation changes
+    window.addEventListener("resize", checkOrientation)
+    
+    // Some devices fire this
+    window.addEventListener("orientationchange", checkOrientation)
+
+    return () => {
+      window.removeEventListener("resize", checkOrientation)
+      window.removeEventListener("orientationchange", checkOrientation)
+    }
+  }, [])
+
+  if (!showPrompt) return null
+
+  return (
+    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/95 backdrop-blur-md p-6 text-center animate-in fade-in duration-300">
+      <div className="relative mb-10">
+        {/* Phone Frame */}
+        <div className="relative h-40 w-24 rounded-[2rem] border-4 border-foreground/20 bg-background/50 shadow-2xl animate-rotate-device flex items-center justify-center overflow-hidden">
+          {/* Notch/Speaker */}
+          <div className="absolute top-3 left-1/2 h-1.5 w-8 -translate-x-1/2 rounded-full bg-foreground/20" />
+          
+          {/* Screen Content Simulation */}
+          <div className="w-full h-full bg-muted/30 flex flex-col p-2 gap-2 opacity-50">
+            <div className="h-4 w-12 bg-foreground/10 rounded" />
+            <div className="h-2 w-full bg-foreground/10 rounded" />
+            <div className="h-2 w-2/3 bg-foreground/10 rounded" />
+            <div className="mt-auto h-8 w-full bg-primary/20 rounded" />
+          </div>
+          
+          {/* Home Indicator */}
+          <div className="absolute bottom-2 left-1/2 h-1 w-10 -translate-x-1/2 rounded-full bg-foreground/20" />
+        </div>
+      </div>
+      
+      <h2 className="text-2xl font-bold mb-3 tracking-tight">
+        Rotate Device / تدوير الجهاز
+      </h2>
+      <p className="text-muted-foreground max-w-xs mx-auto text-base leading-relaxed">
+        Please rotate your device to landscape mode for the best experience.
+        <br />
+        يرجى تدوير جهازك إلى الوضع الأفقي للحصول على أفضل تجربة.
+      </p>
+
+      <style jsx global>{`
+        @keyframes rotate-device {
+          0% { transform: rotate(0deg); }
+          25% { transform: rotate(0deg); }
+          45% { transform: rotate(90deg); }
+          80% { transform: rotate(90deg); }
+          100% { transform: rotate(0deg); }
+        }
+        .animate-rotate-device {
+          animation: rotate-device 3s ease-in-out infinite;
+        }
+      `}</style>
+    </div>
+  )
+}

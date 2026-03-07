@@ -28,10 +28,11 @@ export function BrowseCoursesClient({ initialCourses }: BrowseCoursesClientProps
   ]
 
   const filteredCourses = initialCourses.filter((course) => {
-    const title = isAr ? course.title_ar : course.title_en
+    const title = (isAr ? course.title_ar : course.title_en) || ""
+    const instructorName = course.instructor_name || ""
     const matchesSearch =
       title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.instructor_name.toLowerCase().includes(searchTerm.toLowerCase())
+      instructorName.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory =
       selectedCategory === "all" ||
       course.category_name_en === selectedCategory

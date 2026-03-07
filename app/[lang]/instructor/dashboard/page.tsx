@@ -104,7 +104,7 @@ export default async function InstructorDashboardPage({ params }: { params: Prom
                  {recentReviews.slice(0, 5).map((review: any) => (
                    <div key={review.id} className="flex items-start gap-4 border-b pb-4 last:border-0 last:pb-0">
                      <Avatar className="w-8 h-8">
-                       <AvatarImage src={review.avatar_url} />
+                       <AvatarImage src={review.avatar_url || "/default-avatar.svg"} />
                        <AvatarFallback>{review.user_name?.[0] || "U"}</AvatarFallback>
                      </Avatar>
                      <div className="flex-1 space-y-1">

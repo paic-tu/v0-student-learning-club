@@ -1,8 +1,9 @@
 import type { ReactNode } from "react"
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { StudentSidebar } from "@/components/student/student-sidebar"
+import { StudentSidebar, StudentMobileNav } from "@/components/student/student-sidebar"
 import { PortalHeader } from "@/components/portal-header"
+import { RotateDevicePrompt } from "@/components/rotate-device-prompt"
 
 export default async function StudentLayout({
   children,
@@ -28,9 +29,10 @@ export default async function StudentLayout({
 
   return (
     <div className="flex min-h-screen bg-muted/20">
+      <RotateDevicePrompt />
       <StudentSidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <PortalHeader user={user} />
+        <PortalHeader user={user} mobileNav={<StudentMobileNav />} />
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>

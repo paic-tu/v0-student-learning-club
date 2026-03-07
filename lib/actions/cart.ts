@@ -228,7 +228,8 @@ export async function checkoutAction() {
         await db.delete(cartItems).where(eq(cartItems.cartId, cart.id))
 
         revalidatePath("/cart")
-        revalidatePath("/library")
+        revalidatePath("/student/dashboard")
+        revalidatePath("/student/my-courses")
         return { success: true, orderId: order.id }
     } catch (error) {
         console.error("[Action] checkoutAction error:", error)

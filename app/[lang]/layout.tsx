@@ -10,6 +10,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { DbInitializer } from "@/components/db-initializer"
 import { auth } from "@/lib/auth"
 import { SWUnregister } from "@/components/sw-unregister"
+import { RotateDevicePrompt } from "@/components/rotate-device-prompt"
 
 const arabic = IBM_Plex_Sans_Arabic({
   weight: ["400", "500", "600", "700"],
@@ -61,6 +62,7 @@ export default async function RootLayout({
           <LanguageProvider defaultLang={lang as "ar" | "en"}>
             <AuthProvider session={session}>
               <SWUnregister />
+              <RotateDevicePrompt />
               {children}
               <Toaster />
             </AuthProvider>

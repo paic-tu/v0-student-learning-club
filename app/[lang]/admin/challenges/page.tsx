@@ -19,11 +19,22 @@ export default async function ChallengesManagementPage(props: { params: Promise<
     with: {
       category: true
     },
-    extras: {
-      submissionCount: sql<number>`(SELECT COUNT(*) FROM ${challengeSubmissions} WHERE ${challengeSubmissions.challengeId} = ${challenges.id})`.as('submission_count')
-    },
     orderBy: [desc(challenges.createdAt)]
   })
+
+  const submissionCounts = await db.select({
+    challengeId: challengeSubmissions.challengeId,
+    count: sql<number>`count(*)`
+  })
+  .from(challengeSubmissions)
+  .groupBy(challengeSubmissions.challengeId)
+
+  const countsMap = new Map(submissionCounts.map(c => [c.challengeId, c.count]))
+
+  const challengesWithCounts = challengesData.map(c => ({
+    ...c,
+    submissionCount: Number(countsMap.get(c.id) || 0)
+  }))
 
   return (
     <div className="space-y-6">
@@ -51,7 +62,7 @@ export default async function ChallengesManagementPage(props: { params: Promise<
 
       <Card>
         <CardHeader>
-          <CardTitle>All Challenges ({challengesData.length})</CardTitle>
+          <CardTitle>All Challenges ({challengesWithCounts.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -68,7 +79,7 @@ export default async function ChallengesManagementPage(props: { params: Promise<
               </TableRow>
             </TableHeader>
             <TableBody>
-              {challengesData.map((challenge) => (
+              {challengesWithCounts.map((challenge) => (
                 <TableRow key={challenge.id}>
                   <TableCell className="font-medium">{challenge.id}</TableCell>
                   <TableCell>{challenge.titleEn}</TableCell>

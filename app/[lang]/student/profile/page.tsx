@@ -65,7 +65,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ lang: 
         <div className="h-32 w-full bg-gradient-to-r from-primary/20 to-primary/5 rounded-t-xl" />
         <div className="absolute -bottom-10 left-8 flex items-end gap-6">
           <Avatar className="w-24 h-24 border-4 border-background shadow-lg">
-            <AvatarImage src={user.image || user.avatarUrl || ""} alt={user.name} />
+            <AvatarImage src={user.image || user.avatarUrl || "/default-avatar.svg"} alt={user.name} />
             <AvatarFallback className="text-2xl">{getInitials(user.name)}</AvatarFallback>
           </Avatar>
           <div className="mb-2">

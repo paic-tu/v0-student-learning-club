@@ -144,7 +144,7 @@ export function CertificateDownloadButton({
       drawTextInBox(
         safeStudentName,
         3.0, // Nudged slightly right from 2.5 to 3.0
-        9.5, // Moved down slightly from 9.2 to 9.5
+        8.5, // Decreased by one line (moved up approx 1cm) from 9.5
         21.68,
         1.54,
         30 // Font size

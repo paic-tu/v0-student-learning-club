@@ -129,13 +129,6 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
     defaultValues,
   })
 
-  useEffect(() => {
-    if (pathname.includes("/admin/courses/new") || pathname.includes("/instructor/courses/new")) {
-      form.reset(defaultValues)
-      setPreviewThumbnail(null)
-    }
-  }, [pathname, form, defaultValues])
-
   const onSubmit = async (data: z.infer<typeof courseSchema>) => {
     setIsLoading(true)
 

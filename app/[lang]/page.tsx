@@ -11,7 +11,8 @@ import Link from "next/link"
 import { BookOpen, Award, Users, Sparkles, Target, Zap } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
 import { t } from "@/lib/i18n"
-import { useEffect } from "react"
+import { getLandingPageStats } from "@/lib/actions/stats"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 
@@ -20,6 +21,16 @@ export default function HomePage() {
   const isRTL = language === "ar"
   const { user, isAuthenticated } = useAuth()
   const router = useRouter()
+  const [stats, setStats] = useState({
+    courses: 156,
+    students: 12500,
+    certificates: 8340,
+    satisfaction: 98
+  })
+
+  useEffect(() => {
+    getLandingPageStats().then(setStats)
+  }, [])
 
   return (
     <div className="min-h-screen">
@@ -128,28 +139,28 @@ export default function HomePage() {
                 {[
                   {
                     icon: BookOpen,
-                    value: 156,
+                    value: stats.courses,
                     suffix: "+",
                     label: isRTL ? "دورة تعليمية" : "Courses",
                     color: "text-blue-500",
                   },
                   {
                     icon: Users,
-                    value: 12500,
+                    value: stats.students,
                     suffix: "+",
                     label: isRTL ? "طالب وطالبة" : "Students",
                     color: "text-green-500",
                   },
                   {
                     icon: Award,
-                    value: 8340,
+                    value: stats.certificates,
                     suffix: "+",
                     label: isRTL ? "شهادة صادرة" : "Certificates",
                     color: "text-purple-500",
                   },
                   {
                     icon: Zap,
-                    value: 98,
+                    value: stats.satisfaction,
                     suffix: "%",
                     label: isRTL ? "نسبة الرضا" : "Satisfaction",
                     color: "text-amber-500",
@@ -159,6 +170,7 @@ export default function HomePage() {
                     <CardContent className="pt-8 pb-6 space-y-3">
                       <stat.icon className={`h-10 w-10 mx-auto ${stat.color}`} strokeWidth={1.5} />
                       <AnimatedCounter
+                        key={stat.value}
                         value={stat.value}
                         suffix={stat.suffix}
                         duration={2500}

@@ -35,7 +35,7 @@ export default async function ReviewsPage({ params }: { params: Promise<{ lang: 
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
                     <Avatar>
-                      <AvatarImage src={review.user_avatar} />
+                      <AvatarImage src={review.user_avatar || "/default-avatar.svg"} />
                       <AvatarFallback>{review.user_name?.[0] || "U"}</AvatarFallback>
                     </Avatar>
                     <div>

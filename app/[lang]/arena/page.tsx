@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { NavBar } from "@/components/nav-bar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { useLanguage } from "@/lib/language-context"
 import { Trophy, Medal, Award, TrendingUp } from "lucide-react"
@@ -144,6 +144,7 @@ export default function ArenaPage() {
                       {getRankIcon(index + 1) || <span className="text-muted-foreground">#{index + 1}</span>}
                     </div>
                     <Avatar className="h-10 w-10">
+                      <AvatarImage src={user.image || "/default-avatar.svg"} alt={user.name} />
                       <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">

@@ -1,7 +1,7 @@
 import { requirePermission } from "@/lib/rbac/require-permission"
 import { db } from "@/lib/db"
 import { products, categories, orders } from "@/lib/db/schema"
-import { eq, desc, sum, count } from "drizzle-orm"
+import { eq, desc, sum, count, inArray } from "drizzle-orm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -27,7 +27,7 @@ export default async function StoreManagementPage(props: { params: Promise<{ lan
       totalOrders: count()
     })
     .from(orders)
-    .where(eq(orders.status, 'completed'))
+    .where(inArray(orders.status, ['paid', 'shipped', 'delivered']))
   ])
 
   return (

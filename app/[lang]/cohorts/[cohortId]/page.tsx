@@ -287,15 +287,19 @@ export default function CohortDetailPage(props: { params: Promise<{ cohortId: st
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {cohort.members.slice(0, 10).map((member: any) => (
                     <div key={member.id} className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <div className="flex-shrink-0">
                         {member.avatar_url ? (
                           <img
-                            src={member.avatar_url || "/placeholder.svg"}
+                            src={member.avatar_url || "/default-avatar.svg"}
                             alt={member.name}
                             className="w-8 h-8 rounded-full"
                           />
                         ) : (
-                          <span className="text-sm font-medium">{member.name.charAt(0)}</span>
+                          <img
+                            src="/default-avatar.svg"
+                            alt={member.name}
+                            className="w-8 h-8 rounded-full"
+                          />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">

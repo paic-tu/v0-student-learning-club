@@ -42,7 +42,7 @@ export async function enrollAction(courseId: string) {
     })
 
     revalidatePath(`/courses/${courseId}`)
-    revalidatePath(`/library`)
+    revalidatePath(`/student/dashboard`)
     
     return { success: true }
   } catch (error) {

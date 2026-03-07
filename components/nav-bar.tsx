@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Moon, Sun, Globe, ShoppingCart, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -68,7 +69,8 @@ export function NavBar() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-6">
           <Link href={`/${language}`} className="flex items-center gap-2">
-            <div className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            {/* <Image src="/logo.svg" alt="Neon Logo" width={60} height={34} className="h-10 w-auto" /> */}
+            <div className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent hidden sm:block">
               {language === "ar" ? "نيون" : "Neon"}
             </div>
           </Link>

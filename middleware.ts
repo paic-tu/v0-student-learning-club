@@ -28,8 +28,7 @@ const publicRoutes = [
 
 // Get the preferred locale from headers or default
 function getLocale(request: any) {
-  const acceptLanguage = request.headers.get("accept-language")
-  if (acceptLanguage?.includes("en")) return "en"
+  // Force default locale (Arabic) unless explicitly in URL
   return defaultLocale
 }
 
@@ -96,17 +95,15 @@ export default auth((req) => {
   }
 
   if (pathWithoutLocale.startsWith(INSTRUCTOR_PORTAL)) {
-    if (userRole !== "instructor") {
+    if (userRole !== "instructor" && userRole !== "admin") {
        if (userRole === "student") return NextResponse.redirect(new URL(`/${locale}/student/dashboard`, req.url))
-       if (userRole === "admin") return NextResponse.redirect(new URL(`/${locale}/admin/dashboard`, req.url))
        return NextResponse.redirect(new URL(`/${locale}/access-denied`, req.url))
     }
   }
 
   if (pathWithoutLocale.startsWith(STUDENT_PORTAL)) {
-     if (userRole !== "student") {
+     if (userRole !== "student" && userRole !== "admin") {
         if (userRole === "instructor") return NextResponse.redirect(new URL(`/${locale}/instructor/dashboard`, req.url))
-        if (userRole === "admin") return NextResponse.redirect(new URL(`/${locale}/admin/dashboard`, req.url))
         return NextResponse.redirect(new URL(`/${locale}/access-denied`, req.url))
      }
   }

@@ -34,7 +34,7 @@ async function DashboardStats({ lang }: { lang: Language }) {
     },
     {
       title: t.certificates[lang],
-      value: stats.certificate_count,
+      value: stats.certified_student_count,
       icon: Award,
       color: "text-yellow-500",
     },
