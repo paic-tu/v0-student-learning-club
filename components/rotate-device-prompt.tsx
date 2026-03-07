@@ -72,10 +72,14 @@ export function RotateDevicePrompt() {
   if (!showPrompt) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/95 p-6 text-center animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/95 p-6 text-center animate-in fade-in duration-300" style={{ transform: 'translateZ(0)' }}>
       <div className="relative mb-10">
         {/* Phone Frame */}
-        <div className="relative h-40 w-24 rounded-[2rem] border-4 border-foreground/20 bg-background/50 shadow-2xl animate-rotate-device flex items-center justify-center overflow-hidden will-change-transform">
+        <div 
+          className="relative h-40 w-24 rounded-[2rem] border-4 border-foreground/20 bg-background/50 shadow-xl animate-rotate-device flex items-center justify-center overflow-hidden will-change-transform"
+          aria-hidden="true"
+          style={{ backfaceVisibility: 'hidden' }}
+        >
           {/* Notch/Speaker */}
           <div className="absolute top-3 left-1/2 h-1.5 w-8 -translate-x-1/2 rounded-full bg-foreground/20" />
           
@@ -111,6 +115,12 @@ export function RotateDevicePrompt() {
         }
         .animate-rotate-device {
           animation: rotate-device 3s ease-in-out infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .animate-rotate-device {
+            animation: none;
+            transform: rotate(90deg);
+          }
         }
       `}</style>
     </div>
