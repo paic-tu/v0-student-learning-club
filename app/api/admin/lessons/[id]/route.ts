@@ -16,8 +16,8 @@ const updateLessonSchema = z.object({
   status: z.enum(["draft", "published", "archived"]).optional(), // Adjusted to match potential DB values or schema
   orderIndex: z.coerce.number().int().min(0).optional(),
   durationMinutes: z.coerce.number().int().min(0).optional().nullable(),
-  videoUrl: z.string().url().optional().or(z.literal("")).nullable(),
-  thumbnailUrl: z.string().url().optional().or(z.literal("")).nullable(),
+  videoUrl: z.string().optional().or(z.literal("")).nullable(),
+  thumbnailUrl: z.string().optional().or(z.literal("")).nullable(),
   contentMarkdown: z.string().optional().nullable(),
   freePreview: z.boolean().optional(),
 })

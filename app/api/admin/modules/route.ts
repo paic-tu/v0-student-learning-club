@@ -8,8 +8,10 @@ import { logAudit, type AuditResource } from "@/lib/audit/audit-logger"
 
 const createModuleSchema = z.object({
   courseId: z.string().uuid(),
-  titleEn: z.string().min(1),
-  titleAr: z.string().min(1),
+  titleEn: z.string().optional(),
+  titleAr: z.string().optional(),
+}).refine((data) => data.titleEn || data.titleAr, {
+  message: "At least one title (English or Arabic) is required",
 })
 
 export async function GET(req: NextRequest) {
@@ -53,6 +55,9 @@ export async function POST(req: NextRequest) {
     }
 
     const data = parsed.data
+    // Fallback: if one title is missing, use the other.
+    const finalTitleEn = data.titleEn?.trim() || data.titleAr?.trim() || "Untitled"
+    const finalTitleAr = data.titleAr?.trim() || data.titleEn?.trim() || "بدون عنوان"
 
     // Get max order index
     const maxResult = await db
@@ -67,8 +72,8 @@ export async function POST(req: NextRequest) {
       .insert(modules)
       .values({
         courseId: data.courseId,
-        titleEn: data.titleEn,
-        titleAr: data.titleAr,
+        titleEn: finalTitleEn,
+        titleAr: finalTitleAr,
         orderIndex: orderIndex,
       })
       .returning()

@@ -16,8 +16,8 @@ const createLessonSchema = z.object({
   status: z.enum(["draft", "published", "archived"]).default("draft"),
   orderIndex: z.coerce.number().int().min(0).default(0),
   durationMinutes: z.coerce.number().int().min(0).optional().nullable(),
-  videoUrl: z.string().url().optional().or(z.literal("")).nullable(),
-  thumbnailUrl: z.string().url().optional().or(z.literal("")).nullable(),
+  videoUrl: z.string().optional().or(z.literal("")).nullable(),
+  thumbnailUrl: z.string().optional().or(z.literal("")).nullable(),
   contentMarkdown: z.string().optional().nullable(),
   freePreview: z.boolean().default(false),
 })

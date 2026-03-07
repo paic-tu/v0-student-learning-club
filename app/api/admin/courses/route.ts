@@ -33,8 +33,8 @@ const createCourseSchema = z.object({
   price: z.coerce.number().min(0).default(0),
   isFree: z.boolean().default(true),
   isPublished: z.boolean().default(false),
-  thumbnailUrl: z.string().url().optional().or(z.literal("")).nullable(),
-  videoUrl: z.string().url().optional().or(z.literal("")).nullable(),
+  thumbnailUrl: z.string().optional().or(z.literal("")).nullable(),
+  videoUrl: z.string().optional().or(z.literal("")).nullable(),
 })
 
 export async function POST(req: NextRequest) {

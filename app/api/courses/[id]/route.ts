@@ -1,9 +1,8 @@
-"use server"
-
 import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { courses, users, categories, lessons } from "@/lib/db/schema"
 import { eq, asc } from "drizzle-orm"
+import { auth } from "@/lib/auth"
 
 export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params
@@ -70,5 +69,76 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
   } catch (error) {
     console.error("[v0] Error fetching course:", error)
     return NextResponse.json({ error: "Failed to fetch course" }, { status: 500 })
+  }
+}
+
+export async function PATCH(
+  req: Request,
+  props: { params: Promise<{ id: string }> }
+) {
+  const params = await props.params
+  try {
+    const session = await auth()
+    const { id: courseId } = params
+    const values = await req.json()
+
+    if (!session?.user?.id) {
+      return new NextResponse("Unauthorized", { status: 401 })
+    }
+
+    const course = await db.query.courses.findFirst({
+      where: eq(courses.id, courseId),
+    })
+
+    if (!course) {
+      return new NextResponse("Not found", { status: 404 })
+    }
+
+    if (course.instructorId !== session.user.id && session.user.role !== "admin") {
+      return new NextResponse("Unauthorized", { status: 401 })
+    }
+
+    await db.update(courses).set({
+      ...values,
+    }).where(eq(courses.id, courseId))
+
+    return NextResponse.json(course)
+  } catch (error) {
+    console.log("[COURSE_ID_PATCH]", error)
+    return new NextResponse("Internal Error", { status: 500 })
+  }
+}
+
+export async function DELETE(
+  req: Request,
+  props: { params: Promise<{ id: string }> }
+) {
+  const params = await props.params
+  try {
+    const session = await auth()
+    const { id: courseId } = params
+
+    if (!session?.user?.id) {
+      return new NextResponse("Unauthorized", { status: 401 })
+    }
+
+    const course = await db.query.courses.findFirst({
+      where: eq(courses.id, courseId),
+    })
+
+    if (!course) {
+      return new NextResponse("Not found", { status: 404 })
+    }
+
+    if (course.instructorId !== session.user.id && session.user.role !== "admin") {
+      return new NextResponse("Unauthorized", { status: 401 })
+    }
+
+    await db.delete(courses).where(eq(courses.id, courseId))
+
+    return new NextResponse(null, { status: 200 })
+  } catch (error) {
+    console.log("[COURSE_ID_DELETE]", error)
+    return new NextResponse("Internal Error", { status: 500 })
   }
 }

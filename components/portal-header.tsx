@@ -21,6 +21,8 @@ import { signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useLanguage } from "@/lib/language-context"
 import { useTheme } from "@/lib/theme-context"
+import { useState, useEffect } from "react"
+import { getUnreadMessageCount } from "@/lib/actions/chat"
 import type React from "react"
 
 interface PortalHeaderProps {
@@ -37,6 +39,23 @@ export function PortalHeader({ user, mobileNav }: PortalHeaderProps) {
   const router = useRouter()
   const { language, setLanguage } = useLanguage()
   const { theme, toggleTheme } = useTheme()
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    const fetchCount = async () => {
+      try {
+        const count = await getUnreadMessageCount()
+        setUnreadCount(count)
+      } catch (error) {
+        console.error("Failed to fetch unread count:", error)
+      }
+    }
+
+    fetchCount()
+    // Poll every 10 seconds
+    const interval = setInterval(fetchCount, 10000)
+    return () => clearInterval(interval)
+  }, [])
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: "/auth/login" })
@@ -83,8 +102,18 @@ export function PortalHeader({ user, mobileNav }: PortalHeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button variant="ghost" size="icon">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="relative"
+          onClick={() => router.push(`/${language}/${user.role}/chat`)}
+        >
           <Bell className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <span className="absolute top-1.5 right-1.5 flex h-3 w-3 items-center justify-center rounded-full bg-red-600 text-[8px] font-bold text-white ring-1 ring-background">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
         </Button>
 
         <DropdownMenu>

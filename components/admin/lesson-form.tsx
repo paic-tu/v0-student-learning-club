@@ -13,7 +13,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Checkbox } from "@/components/ui/checkbox"
 import { FormLayout } from "@/components/admin/form-layout"
 import { toast } from "sonner"
-import { Loader2, Upload } from "lucide-react"
+import { MediaUploadField } from "@/components/admin/media-upload-field"
 
 const lessonSchema = z.object({
   titleEn: z.string().min(1, "English title is required"),
@@ -26,8 +26,8 @@ const lessonSchema = z.object({
   status: z.enum(["draft", "published"]),
   orderIndex: z.number().int().min(0),
   durationMinutes: z.number().int().min(0).optional().nullable(),
-  videoUrl: z.string().url().optional().or(z.literal("")).nullable(),
-  thumbnailUrl: z.string().url().optional().or(z.literal("")).nullable(),
+  videoUrl: z.string().optional().or(z.literal("")).nullable(),
+  thumbnailUrl: z.string().optional().or(z.literal("")).nullable(),
   contentMarkdown: z.string().optional().nullable(),
   freePreview: z.boolean().default(false),
   prerequisites: z.array(z.string()).default([]),
@@ -43,8 +43,6 @@ interface LessonFormProps {
 export function LessonForm({ courses, initialData }: LessonFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [uploadingThumb, setUploadingThumb] = useState(false)
   const [modules, setModules] = useState<any[]>([])
 
   const form = useForm<LessonFormData>({
@@ -150,40 +148,6 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
   const safeParseInt = (value: string): number | null => {
     const parsed = Number.parseInt(value, 10)
     return isNaN(parsed) ? null : parsed
-  }
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: "videoUrl" | "thumbnailUrl") => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const isThumb = fieldName === "thumbnailUrl"
-    if (isThumb) setUploadingThumb(true)
-    else setUploading(true)
-
-    const formData = new FormData()
-    formData.append("file", file)
-
-    try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      })
-
-      if (!res.ok) {
-         const errorText = await res.text()
-         throw new Error(errorText || "Upload failed")
-      }
-
-      const data = await res.json()
-      form.setValue(fieldName, data.url)
-      toast.success("File uploaded successfully")
-    } catch (error) {
-      toast.error("Failed to upload file")
-      console.error(error)
-    } finally {
-      if (isThumb) setUploadingThumb(false)
-      else setUploading(false)
-    }
   }
 
   return (
@@ -420,26 +384,12 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
               <FormItem>
                 <FormLabel>Video URL or Upload</FormLabel>
                 <FormControl>
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <Input {...field} value={field.value || ""} placeholder="https://youtube.com/... or upload file" />
-                      <div className="relative">
-                        <Input
-                          type="file"
-                          className="absolute inset-0 opacity-0 cursor-pointer"
-                          onChange={(e) => handleFileUpload(e, "videoUrl")}
-                          accept="video/*"
-                          disabled={uploading}
-                        />
-                        <Button type="button" variant="outline" disabled={uploading}>
-                          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                    </div>
-                    {field.value && field.value.startsWith("/uploads/") && (
-                      <p className="text-xs text-muted-foreground">Local file uploaded: {field.value}</p>
-                    )}
-                  </div>
+                  <MediaUploadField
+                    value={field.value || ""}
+                    onChange={field.onChange}
+                    type="video"
+                    placeholder="https://youtube.com/... or upload video"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -453,32 +403,12 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
               <FormItem>
                 <FormLabel>Thumbnail URL or Upload (Cover Pic)</FormLabel>
                 <FormControl>
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <Input {...field} value={field.value || ""} placeholder="https://... or upload image" />
-                      <div className="relative">
-                        <Input
-                          type="file"
-                          className="absolute inset-0 opacity-0 cursor-pointer"
-                          onChange={(e) => handleFileUpload(e, "thumbnailUrl")}
-                          accept="image/*"
-                          disabled={uploadingThumb}
-                        />
-                        <Button type="button" variant="outline" disabled={uploadingThumb}>
-                          {uploadingThumb ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                    </div>
-                    {field.value && field.value.startsWith("/uploads/") && (
-                      <p className="text-xs text-muted-foreground">Local image uploaded: {field.value}</p>
-                    )}
-                    {field.value && (
-                      <div className="mt-2 aspect-video w-40 relative rounded-md overflow-hidden border">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={field.value} alt="Preview" className="object-cover w-full h-full" />
-                      </div>
-                    )}
-                  </div>
+                  <MediaUploadField
+                    value={field.value || ""}
+                    onChange={field.onChange}
+                    type="image"
+                    placeholder="https://... or upload image"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

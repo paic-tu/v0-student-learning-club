@@ -117,7 +117,7 @@ export default function CoursesPage() {
                 <CardHeader className="p-0">
                   <div className="relative h-48 w-full bg-muted rounded-t-lg overflow-hidden">
                     <img
-                      src={course.thumbnail_url || "/placeholder.svg?height=200&width=300&query=course"}
+                      src={course.thumbnailUrl || course.thumbnail_url || "/placeholder.svg?height=200&width=300&query=course"}
                       alt={language === "ar" ? course.title_ar : course.title_en}
                       className="w-full h-full object-cover"
                     />

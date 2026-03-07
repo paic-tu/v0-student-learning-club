@@ -148,6 +148,7 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ i
             course={course as any} 
             categories={allCategories.map(c => ({...c, name_en: c.nameEn, name_ar: c.nameAr})) as any} 
             instructors={instructors} 
+            lang={lang}
           />
         </CardContent>
       </Card>

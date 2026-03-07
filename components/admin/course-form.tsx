@@ -19,7 +19,8 @@ import { useToast } from "@/hooks/use-toast"
 import type { CourseFormProps } from "@/types/course-form-props"
 import { StringListInput } from "@/components/ui/string-list-input"
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { MediaUploadField } from "@/components/admin/media-upload-field"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 
 const getCourseSchema = (isAr: boolean) => z.object({
   titleEn: z.string().min(1, isAr ? "العنوان بالإنجليزية مطلوب" : "English title is required"),
@@ -39,8 +40,8 @@ const getCourseSchema = (isAr: boolean) => z.object({
   price: z.number().min(0),
   isFree: z.boolean().default(false),
   isPublished: z.boolean().default(false),
-  thumbnailUrl: z.string().url(isAr ? "رابط غير صالح" : "Invalid thumbnail URL").optional().or(z.literal("")),
-  videoUrl: z.string().url(isAr ? "رابط غير صالح" : "Invalid video URL").optional().or(z.literal("")),
+  thumbnailUrl: z.string().optional().or(z.literal("")),
+  videoUrl: z.string().optional().or(z.literal("")),
 })
 
 export function CourseForm({ categories: initialCategories, instructors, redirectBase, lang = "en" }: CourseFormProps) {
@@ -86,7 +87,7 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
 
       const newCategory = await res.json()
       setCategories([...categories, newCategory])
-      form.setValue("categoryId", newCategory.id)
+      form.setValue("categoryId", newCategory.id.toString())
       setIsCategoryDialogOpen(false)
       setNewCategoryNameEn("")
       setNewCategoryNameAr("")
@@ -344,7 +345,9 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                             <SelectItem value="null">{isAr ? "لا يوجد" : "None"}</SelectItem>
                             {categories.map((category) => (
                               <SelectItem key={category.id} value={category.id.toString()}>
-                                {isAr ? category.nameAr || category.name_en : category.nameEn || category.name_en}
+                                {isAr 
+                                  ? category.name_ar || category.nameAr || category.name_en || category.nameEn || `تصنيف ${category.id}`
+                                  : category.name_en || category.nameEn || category.name_ar || category.nameAr || `Category ${category.id}`}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -599,29 +602,20 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                 name="thumbnailUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{isAr ? "رابط الصورة المصغرة" : "Thumbnail URL"}</FormLabel>
                     <FormControl>
-                      <Input
-                        {...field}
+                      <MediaUploadField
+                        name="thumbnailUrl"
+                        label={isAr ? "رابط الصورة المصغرة" : "Thumbnail URL"}
+                        value={field.value || ""}
+                        onChange={field.onChange}
                         placeholder="https://example.com/thumbnail.jpg"
-                        onChange={(e) => {
-                          field.onChange(e)
-                          setPreviewThumbnail(e.target.value)
-                        }}
+                        isAr={isAr}
+                        type="image"
                       />
                     </FormControl>
-                    <p className="text-xs text-muted-foreground">{isAr ? "رابط الصورة المصغرة للدورة (HTTPS)" : "Course thumbnail image URL (HTTPS)"}</p>
-                    {previewThumbnail && (
-                      <div className="mt-4 p-4 border rounded-lg">
-                        <p className="text-xs font-medium mb-2">{isAr ? "معاينة:" : "Preview:"}</p>
-                        <img
-                          src={previewThumbnail || "/placeholder.svg"}
-                          alt="Thumbnail preview"
-                          className="h-40 w-full object-cover rounded"
-                          onError={() => setPreviewThumbnail(null)}
-                        />
-                      </div>
-                    )}
+                    <FormDescription>
+                      {isAr ? "رابط الصورة المصغرة للدورة" : "Course thumbnail image URL"}
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -632,14 +626,20 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                 name="videoUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{isAr ? "رابط فيديو المقدمة" : "Intro Video URL"}</FormLabel>
                     <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="https://example.com/video.mp4 or https://youtube.com/watch?v=..."
+                      <MediaUploadField
+                        name="videoUrl"
+                        label={isAr ? "رابط الفيديو" : "Video URL"}
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        placeholder="https://youtube.com/watch?v=..."
+                        isAr={isAr}
+                        type="video"
                       />
                     </FormControl>
-                    <p className="text-xs text-muted-foreground">{isAr ? "رابط فيديو المقدمة أو إعلان الدورة" : "Link to intro or course trailer video"}</p>
+                    <FormDescription>
+                      {isAr ? "رابط فيديو مقدمة الدورة" : "Course introduction or trailer video URL"}
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

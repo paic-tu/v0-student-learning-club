@@ -60,6 +60,11 @@ export function ChatSidebar({ conversations, selectedId, onSelect, onCommunityCh
                   <AvatarFallback>{conv.name[0]}</AvatarFallback>
                 </Avatar>
                 {/* Online indicator could go here */}
+                {conv.unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-medium text-white ring-2 ring-background">
+                    {conv.unreadCount > 9 ? "9+" : conv.unreadCount}
+                  </span>
+                )}
               </div>
               
               <div className="flex-1 overflow-hidden">

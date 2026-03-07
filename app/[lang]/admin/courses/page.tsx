@@ -19,6 +19,7 @@ export default async function CoursesManagementPage(props: { params: Promise<{ l
     .select({
       id: courses.id,
       title_en: courses.titleEn,
+      thumbnail_url: courses.thumbnailUrl,
       instructor_name: users.name,
       category_name: categories.nameEn,
       is_published: courses.isPublished,
@@ -69,6 +70,7 @@ export default async function CoursesManagementPage(props: { params: Promise<{ l
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Image</TableHead>
                 <TableHead>ID</TableHead>
                 <TableHead>Title (EN)</TableHead>
                 <TableHead>Instructor</TableHead>
@@ -82,6 +84,21 @@ export default async function CoursesManagementPage(props: { params: Promise<{ l
             <TableBody>
               {coursesData.map((course) => (
                 <TableRow key={course.id}>
+                  <TableCell>
+                    <div className="relative h-10 w-16 overflow-hidden rounded bg-muted">
+                      {course.thumbnail_url ? (
+                        <img
+                          src={course.thumbnail_url}
+                          alt={course.title_en || "Course"}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-secondary text-[10px] text-muted-foreground">
+                          No Img
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="font-medium">{course.id}</TableCell>
                   <TableCell>{course.title_en}</TableCell>
                   <TableCell>{course.instructor_name}</TableCell>

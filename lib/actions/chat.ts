@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { conversations, conversationParticipants, messages, users, enrollments } from "@/lib/db/schema"
-import { eq, and, desc, or, sql, asc, gt, ne } from "drizzle-orm"
+import { eq, and, desc, or, sql, asc, gt, ne, count } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 export async function getConversations() {
@@ -38,6 +38,31 @@ export async function getConversations() {
     },
   })
 
+  // Get unread counts for all conversations
+  const unreadCounts = await db
+    .select({
+      conversationId: conversationParticipants.conversationId,
+      count: count(),
+    })
+    .from(messages)
+    .innerJoin(
+      conversationParticipants,
+      eq(messages.conversationId, conversationParticipants.conversationId)
+    )
+    .where(
+      and(
+        eq(conversationParticipants.userId, session.user.id),
+        ne(messages.senderId, session.user.id),
+        gt(
+          messages.createdAt,
+          sql`COALESCE(${conversationParticipants.lastReadAt}, ${conversationParticipants.joinedAt})`
+        )
+      )
+    )
+    .groupBy(conversationParticipants.conversationId)
+
+  const unreadMap = new Map(unreadCounts.map((u) => [u.conversationId, u.count]))
+
   // Transform data for UI
   return userConversations.map((p) => {
     const conv = p.conversation
@@ -66,10 +91,52 @@ export async function getConversations() {
         senderId: lastMessage.senderId,
       } : null,
       updatedAt: conv.updatedAt,
-      unreadCount: 0, // TODO: Calculate unread count based on lastReadAt
+      unreadCount: unreadMap.get(conv.id) || 0,
     }
   }).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
 }
+
+export async function getUnreadMessageCount() {
+  const session = await auth()
+  if (!session?.user?.id) return 0
+
+  const result = await db
+    .select({ count: count() })
+    .from(messages)
+    .innerJoin(
+      conversationParticipants,
+      eq(messages.conversationId, conversationParticipants.conversationId)
+    )
+    .where(
+      and(
+        eq(conversationParticipants.userId, session.user.id),
+        ne(messages.senderId, session.user.id),
+        gt(
+          messages.createdAt,
+          sql`COALESCE(${conversationParticipants.lastReadAt}, ${conversationParticipants.joinedAt})`
+        )
+      )
+    )
+
+  return result[0]?.count || 0
+}
+
+export async function markConversationAsRead(conversationId: string) {
+  const session = await auth()
+  if (!session?.user?.id) return
+
+  await db.update(conversationParticipants)
+    .set({ lastReadAt: new Date() })
+    .where(and(
+      eq(conversationParticipants.conversationId, conversationId),
+      eq(conversationParticipants.userId, session.user.id)
+    ))
+  
+  revalidatePath("/student/chat")
+  revalidatePath("/instructor/chat")
+  revalidatePath("/admin/chat")
+}
+
 
 export async function getMessages(conversationId: string) {
   const session = await auth()

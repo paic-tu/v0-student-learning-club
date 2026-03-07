@@ -4,6 +4,31 @@ import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { courses, users, categories } from "@/lib/db/schema"
 import { eq, desc } from "drizzle-orm"
+import { auth } from "@/lib/auth"
+
+export async function POST(req: Request) {
+  try {
+    const session = await auth()
+    const values = await req.json()
+
+    if (!session?.user?.id) {
+      return new NextResponse("Unauthorized", { status: 401 })
+    }
+
+    const [course] = await db
+      .insert(courses)
+      .values({
+        instructorId: session.user.id,
+        ...values,
+      })
+      .returning()
+
+    return NextResponse.json(course)
+  } catch (error) {
+    console.error("[COURSES_POST]", error)
+    return new NextResponse("Internal Error", { status: 500 })
+  }
+}
 
 export async function GET() {
   try {

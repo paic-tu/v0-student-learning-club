@@ -15,8 +15,8 @@ export default async function NewInstructorCoursePage({ params }: { params: Prom
   const categoriesData = await getAllCategories()
   const categories = categoriesData.map((c: any) => ({
     id: c.id,
-    nameEn: c.name_en,
-    nameAr: c.name_ar
+    nameEn: c.nameEn || c.name_en,
+    nameAr: c.nameAr || c.name_ar
   }))
   
   // Only pass the current user as the only available instructor

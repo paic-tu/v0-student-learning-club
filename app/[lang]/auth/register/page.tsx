@@ -16,11 +16,16 @@ import { registerAction, loginAction } from "@/lib/actions/auth"
 import PhoneInput from "react-phone-number-input"
 import "react-phone-number-input/style.css"
 
+import { Checkbox } from "@/components/ui/checkbox"
+
 export default function RegisterPage() {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [phoneNumber, setPhoneNumber] = useState("")
+  const [agreedTerms, setAgreedTerms] = useState(false)
+  const [agreedPolicy, setAgreedPolicy] = useState(false)
   const [loading, setLoading] = useState(false)
   const { language } = useLanguage()
   const router = useRouter()
@@ -28,6 +33,25 @@ export default function RegisterPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (password !== confirmPassword) {
+      toast({
+        title: language === "ar" ? "خطأ" : "Error",
+        description: language === "ar" ? "كلمتا المرور غير متطابقتين" : "Passwords do not match",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!agreedTerms || !agreedPolicy) {
+      toast({
+        title: language === "ar" ? "خطأ" : "Error",
+        description: language === "ar" ? "يجب الموافقة على جميع الشروط والسياسات" : "You must agree to all terms and policies",
+        variant: "destructive",
+      })
+      return
+    }
+
     setLoading(true)
 
     const formData = new FormData()
@@ -162,6 +186,63 @@ export default function RegisterPage() {
                 <p className="text-xs text-muted-foreground">
                   {language === "ar" ? "6 أحرف على الأقل" : "At least 6 characters"}
                 </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">{language === "ar" ? "تأكيد كلمة المرور" : "Confirm Password"}</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-start space-x-2 rtl:space-x-reverse">
+                  <Checkbox
+                    id="terms"
+                    checked={agreedTerms}
+                    onCheckedChange={(checked) => setAgreedTerms(checked as boolean)}
+                  />
+                  <div className="grid gap-1.5 leading-none">
+                    <label
+                      htmlFor="terms"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {language === "ar" ? "أوافق على " : "I agree to "}
+                      <Link href={`/${language}/terms`} className="text-primary hover:underline" target="_blank">
+                        {language === "ar" ? "شروط الاستخدام" : "Terms of Use"}
+                      </Link>
+                      {language === "ar" ? " و " : " and "}
+                      <Link href={`/${language}/privacy`} className="text-primary hover:underline" target="_blank">
+                        {language === "ar" ? "سياسة الخصوصية" : "Privacy Policy"}
+                      </Link>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-2 rtl:space-x-reverse">
+                  <Checkbox
+                    id="policy"
+                    checked={agreedPolicy}
+                    onCheckedChange={(checked) => setAgreedPolicy(checked as boolean)}
+                  />
+                  <div className="grid gap-1.5 leading-none">
+                    <label
+                      htmlFor="policy"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {language === "ar" ? "أوافق على " : "I agree to "}
+                      <Link href={`/${language}/content-policy`} className="text-primary hover:underline" target="_blank">
+                        {language === "ar" ? "سياسة المحتوى" : "Content Policy"}
+                      </Link>
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>

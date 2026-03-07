@@ -11,7 +11,7 @@ const createCategorySchema = z.object({
   nameAr: z.string().min(1, "Arabic name is required"),
   descriptionEn: z.string().optional(),
   descriptionAr: z.string().optional(),
-  iconUrl: z.string().url().optional().or(z.literal("")).nullable(),
+  iconUrl: z.string().optional().or(z.literal("")).nullable(),
 })
 
 function slugify(input: string) {

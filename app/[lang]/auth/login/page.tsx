@@ -15,6 +15,8 @@ import { NavBar } from "@/components/nav-bar"
 import { loginAction } from "@/lib/actions/auth"
 import { AlertCircle } from "lucide-react"
 
+import { Checkbox } from "@/components/ui/checkbox"
+
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -117,7 +119,15 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">{t("password", language)}</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">{t("password", language)}</Label>
+                  <Link
+                    href={`/${language}/auth/forgot-password`}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    {language === "ar" ? "نسيت كلمة المرور؟" : "Forgot password?"}
+                  </Link>
+                </div>
                 <Input
                   id="password"
                   type="password"

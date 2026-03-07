@@ -16,7 +16,7 @@ import {
   MessageCircle
 } from "lucide-react"
 
-function InstructorNav({ isCollapsed }: { isCollapsed?: boolean }) {
+function InstructorNav({ isCollapsed, unreadCount = 0 }: { isCollapsed?: boolean, unreadCount?: number }) {
   const pathname = usePathname()
   const segments = pathname.split("/")
   const locale = segments[1] || "ar"
@@ -83,7 +83,7 @@ function InstructorNav({ isCollapsed }: { isCollapsed?: boolean }) {
             key={item.href}
             href={hrefWithLocale}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors relative",
               isActive
                 ? "bg-indigo-100 text-indigo-900"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -93,6 +93,14 @@ function InstructorNav({ isCollapsed }: { isCollapsed?: boolean }) {
           >
             <Icon className="h-5 w-5" />
             {!isCollapsed && <span>{item.label}</span>}
+            {item.href === "/instructor/chat" && unreadCount > 0 && (
+              <span className={cn(
+                "bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center",
+                isCollapsed ? "absolute -top-1 -right-1 h-4 w-4" : "ml-auto h-5 w-5"
+              )}>
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
           </Link>
         )
       })}
@@ -103,6 +111,7 @@ function InstructorNav({ isCollapsed }: { isCollapsed?: boolean }) {
 import { useState, useEffect } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { getUnreadMessageCount } from "@/lib/actions/chat"
 
 export function InstructorSidebar() {
   const pathname = usePathname()
@@ -112,6 +121,21 @@ export function InstructorSidebar() {
   
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    const fetchCount = async () => {
+      try {
+        const count = await getUnreadMessageCount()
+        setUnreadCount(count)
+      } catch (error) {
+        console.error("Failed to fetch unread count:", error)
+      }
+    }
+    fetchCount()
+    const interval = setInterval(fetchCount, 10000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Load state from local storage
   useEffect(() => {
@@ -130,7 +154,7 @@ export function InstructorSidebar() {
             <span>{isAr ? "لوحة المدرب" : "Instructor"}</span>
           </Link>
         </div>
-        <InstructorNav />
+        <InstructorNav unreadCount={0} />
       </aside>
     )
   }
@@ -170,7 +194,7 @@ export function InstructorSidebar() {
       </div>
       
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <InstructorNav isCollapsed={isCollapsed} />
+        <InstructorNav isCollapsed={isCollapsed} unreadCount={unreadCount} />
       </div>
     </aside>
   )

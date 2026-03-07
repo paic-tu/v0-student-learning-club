@@ -26,14 +26,12 @@ const updateCourseSchema = z.object({
   is_published: z.boolean().optional(),
   thumbnail_url: z
     .string()
-    .url()
     .nullable()
     .optional()
     .or(z.literal(""))
     .transform((v) => v || null),
   video_url: z
     .string()
-    .url()
     .nullable()
     .optional()
     .or(z.literal(""))

@@ -329,6 +329,8 @@ export const challenges = pgTable("challenges", {
   testCases: jsonb("test_cases"),
   solution: text("solution"),
   categoryId: uuid("category_id").references(() => categories.id),
+  instructorId: uuid("instructor_id").references(() => users.id),
+  courseId: uuid("course_id").references(() => courses.id),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 })
@@ -671,8 +673,16 @@ export const challengesRelations = relations(challenges, ({ one, many }) => ({
     fields: [challenges.categoryId],
     references: [categories.id],
   }),
+  instructor: one(users, {
+    fields: [challenges.instructorId],
+    references: [users.id],
+  }),
+  course: one(courses, {
+    fields: [challenges.courseId],
+    references: [courses.id],
+  }),
   submissions: many(challengeSubmissions),
-}) )
+}))
 
 export const certificatesRelations = relations(certificates, ({ one }) => ({
   user: one(users, { fields: [certificates.userId], references: [users.id] }),

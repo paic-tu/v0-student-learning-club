@@ -4,7 +4,8 @@ import { CourseForm } from "@/components/admin/course-form"
 import { requirePermission } from "@/lib/rbac/require-permission"
 import { getAllCategories, getInstructors } from "@/lib/db/queries"
 
-export default async function NewCoursePage() {
+export default async function NewCoursePage({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params
   await requirePermission("courses:write")
 
   const categories = await getAllCategories()
@@ -17,8 +18,8 @@ export default async function NewCoursePage() {
           title="Create New Course"
           description="Add a new course to the platform"
           breadcrumbs={[
-            { label: "Admin", href: "/admin" },
-            { label: "Courses", href: "/admin/courses" },
+            { label: "Admin", href: `/${lang}/admin` },
+            { label: "Courses", href: `/${lang}/admin/courses` },
             { label: "New" },
           ]}
         />
@@ -36,15 +37,15 @@ export default async function NewCoursePage() {
         title="Create New Course"
         description="Add a new course to the platform with complete details"
         breadcrumbs={[
-          { label: "Admin", href: "/admin" },
-          { label: "Courses", href: "/admin/courses" },
+          { label: "Admin", href: `/${lang}/admin` },
+          { label: "Courses", href: `/${lang}/admin/courses` },
           { label: "New" },
         ]}
       />
 
       <div className="grid gap-8">
         <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading form...</div>}>
-          <CourseForm categories={categories as any} instructors={instructors as any} />
+          <CourseForm categories={categories as any} instructors={instructors as any} lang={lang} />
         </Suspense>
       </div>
     </div>

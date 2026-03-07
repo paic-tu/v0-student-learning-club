@@ -18,6 +18,17 @@ export function SiteFooter() {
               ? "© 2025 Neon | نيون التعليمية. جميع الحقوق محفوظة."
               : "© 2025 Neon Educational Platform. All rights reserved."}
           </p>
+          <div className="flex justify-center gap-4 text-sm text-muted-foreground mt-4 flex-wrap">
+            <a href={`/${language}/privacy`} className="hover:text-primary transition-colors">
+              {isAr ? "سياسة الخصوصية" : "Privacy Policy"}
+            </a>
+            <a href={`/${language}/terms`} className="hover:text-primary transition-colors">
+              {isAr ? "شروط الاستخدام" : "Terms of Use"}
+            </a>
+            <a href={`/${language}/content-policy`} className="hover:text-primary transition-colors">
+              {isAr ? "سياسة المحتوى" : "Content Policy"}
+            </a>
+          </div>
         </div>
       </div>
     </footer>

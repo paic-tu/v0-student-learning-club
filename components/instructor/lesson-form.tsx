@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, Upload } from "lucide-react"
+import { MediaUploadField } from "@/components/admin/media-upload-field"
+import { Loader2 } from "lucide-react"
 
 const getLessonSchema = (isAr: boolean) => z.object({
   titleEn: z.string().min(1, isAr ? "العنوان بالإنجليزية مطلوب" : "English title is required"),
@@ -22,8 +23,8 @@ const getLessonSchema = (isAr: boolean) => z.object({
   status: z.enum(["draft", "published"]),
   orderIndex: z.coerce.number().int().min(0),
   durationMinutes: z.coerce.number().int().min(0).optional().nullable(),
-  videoUrl: z.string().url(isAr ? "رابط غير صالح" : "Invalid URL").optional().or(z.literal("")).nullable(),
-  thumbnailUrl: z.string().url(isAr ? "رابط غير صالح" : "Invalid URL").optional().or(z.literal("")).nullable(),
+  videoUrl: z.string().optional().or(z.literal("")).nullable(),
+  thumbnailUrl: z.string().optional().or(z.literal("")).nullable(),
   contentMarkdown: z.string().optional().nullable(),
   freePreview: z.boolean().default(false),
   moduleId: z.string().uuid().optional().nullable(),
@@ -44,8 +45,6 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
   const router = useRouter()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [uploadingThumb, setUploadingThumb] = useState(false)
 
   const isAr = lang === "ar"
   const lessonSchema = getLessonSchema(isAr)
@@ -53,18 +52,18 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
   const form = useForm<LessonFormData>({
     resolver: zodResolver(lessonSchema),
     defaultValues: {
-      titleEn: initialData?.title_en || "",
-      titleAr: initialData?.title_ar || "",
+      titleEn: initialData?.titleEn || initialData?.title_en || "",
+      titleAr: initialData?.titleAr || initialData?.title_ar || "",
       slug: initialData?.slug || "",
       contentType: (initialData?.type as any) || "video",
       status: (initialData?.status as any) || "draft",
-      orderIndex: initialData?.order_index || 0,
-      durationMinutes: initialData?.duration_minutes || undefined,
-      videoUrl: initialData?.video_url || "",
-      thumbnailUrl: initialData?.thumbnail_url || "",
-      contentMarkdown: initialData?.content_markdown || "",
-      freePreview: initialData?.is_preview || false,
-      moduleId: initialData?.module_id || moduleId || null,
+      orderIndex: initialData?.orderIndex || initialData?.order_index || 0,
+      durationMinutes: initialData?.durationMinutes || initialData?.duration_minutes || undefined,
+      videoUrl: initialData?.videoUrl || initialData?.video_url || "",
+      thumbnailUrl: initialData?.thumbnailUrl || initialData?.thumbnail_url || "",
+      contentMarkdown: initialData?.contentMarkdown || initialData?.content_markdown || initialData?.contentEn || initialData?.content_en || "",
+      freePreview: initialData?.isPreview || initialData?.is_preview || false,
+      moduleId: initialData?.moduleId || initialData?.module_id || moduleId || null,
     },
   })
 
@@ -85,7 +84,9 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
       })
 
       if (!response.ok) {
-        throw new Error("Something went wrong")
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Lesson save error:", errorData);
+        throw new Error(errorData.error || "Something went wrong")
       }
 
       toast({
@@ -95,10 +96,11 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
 
       router.push(`/${lang}/instructor/courses/${courseId}/edit`)
       router.refresh()
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Lesson form submit error:", error);
       toast({
         title: isAr ? "خطأ" : "Error",
-        description: isAr ? "حدث خطأ ما. يرجى المحاولة مرة أخرى." : "Something went wrong. Please try again.",
+        description: error.message || (isAr ? "حدث خطأ ما. يرجى المحاولة مرة أخرى." : "Something went wrong. Please try again."),
         variant: "destructive",
       })
     } finally {
@@ -111,47 +113,6 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "")
-  }
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: "videoUrl" | "thumbnailUrl") => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const isThumb = fieldName === "thumbnailUrl"
-    if (isThumb) setUploadingThumb(true)
-    else setUploading(true)
-
-    const formData = new FormData()
-    formData.append("file", file)
-
-    try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      })
-
-      if (!res.ok) {
-         const errorText = await res.text()
-         throw new Error(errorText || "Upload failed")
-      }
-
-      const data = await res.json()
-      form.setValue(fieldName, data.url)
-      toast({
-        title: isAr ? "تم بنجاح" : "Success",
-        description: isAr ? "تم رفع الملف بنجاح" : "File uploaded successfully",
-      })
-    } catch (error) {
-      toast({
-        title: isAr ? "خطأ" : "Error",
-        description: isAr ? "فشل رفع الملف" : "Failed to upload file",
-        variant: "destructive",
-      })
-      console.error(error)
-    } finally {
-      if (isThumb) setUploadingThumb(false)
-      else setUploading(false)
-    }
   }
 
   return (
@@ -173,7 +134,7 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
                   <SelectContent>
                     {modules.map((module) => (
                       <SelectItem key={module.id} value={module.id}>
-                        {lang === "ar" ? module.title_ar : module.title_en}
+                        {lang === "ar" ? (module.titleAr || module.title_ar) : (module.titleEn || module.title_en)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -354,23 +315,13 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
               <FormItem>
                 <FormLabel>{isAr ? "رابط الفيديو أو رفع ملف" : "Video URL or Upload"}</FormLabel>
                 <FormControl>
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <Input {...field} value={field.value || ""} placeholder={isAr ? "https://youtube.com/... أو رفع ملف" : "https://youtube.com/... or upload file"} />
-                      <div className="relative">
-                        <Input
-                          type="file"
-                          className="absolute inset-0 opacity-0 cursor-pointer"
-                          onChange={(e) => handleFileUpload(e, "videoUrl")}
-                          accept="video/*"
-                          disabled={uploading}
-                        />
-                        <Button type="button" variant="outline" size="icon" disabled={uploading}>
-                          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+                  <MediaUploadField
+                    name="videoUrl"
+                    value={field.value || ""}
+                    onChange={field.onChange}
+                    type="video"
+                    placeholder={isAr ? "https://youtube.com/... أو رفع فيديو" : "https://youtube.com/... or upload video"}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -384,29 +335,13 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
               <FormItem>
                 <FormLabel>{isAr ? "رابط الصورة المصغرة أو رفع صورة" : "Thumbnail URL or Upload (Cover Pic)"}</FormLabel>
                 <FormControl>
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <Input {...field} value={field.value || ""} placeholder={isAr ? "https://... أو رفع صورة" : "https://... or upload image"} />
-                      <div className="relative">
-                        <Input
-                          type="file"
-                          className="absolute inset-0 opacity-0 cursor-pointer"
-                          onChange={(e) => handleFileUpload(e, "thumbnailUrl")}
-                          accept="image/*"
-                          disabled={uploadingThumb}
-                        />
-                        <Button type="button" variant="outline" size="icon" disabled={uploadingThumb}>
-                          {uploadingThumb ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                    </div>
-                    {field.value && (
-                      <div className="mt-2 aspect-video w-40 relative rounded-md overflow-hidden border">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={field.value} alt="Preview" className="object-cover w-full h-full" />
-                      </div>
-                    )}
-                  </div>
+                  <MediaUploadField
+                    name="thumbnailUrl"
+                    value={field.value || ""}
+                    onChange={field.onChange}
+                    type="image"
+                    placeholder={isAr ? "https://... أو رفع صورة" : "https://... or upload image"}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

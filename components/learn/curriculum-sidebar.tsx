@@ -32,8 +32,15 @@ export function CurriculumSidebar({ course, currentLessonId, lang, className }: 
   return (
     <div dir={isAr ? "rtl" : "ltr"} className={cn("flex flex-col h-full bg-background shrink-0", className)}>
       <div className="h-16 flex flex-col justify-center px-4 border-b shrink-0">
-        <h2 className="font-semibold text-sm line-clamp-1" title={isAr ? course.titleAr : course.titleEn}>
-          {isAr ? course.titleAr : course.titleEn}
+        <h2 
+          className="font-semibold text-sm line-clamp-1" 
+          title={isAr 
+            ? (course.titleAr || course.title_ar || course.titleEn || course.title_en) 
+            : (course.titleEn || course.title_en || course.titleAr || course.title_ar)}
+        >
+          {isAr 
+            ? (course.titleAr || course.title_ar || course.titleEn || course.title_en) 
+            : (course.titleEn || course.title_en || course.titleAr || course.title_ar)}
         </h2>
         <p className="text-xs text-muted-foreground">
           {course.enrollmentCount} {isAr ? "طالب" : "Students"}
@@ -46,7 +53,11 @@ export function CurriculumSidebar({ course, currentLessonId, lang, className }: 
             <AccordionItem key={module.id} value={module.id}>
               <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50">
                 <div className="text-start w-full">
-                  <div className="font-medium text-sm">{isAr ? module.titleAr : module.titleEn}</div>
+                  <div className="font-medium text-sm">
+                    {isAr 
+                      ? (module.titleAr || module.title_ar || module.titleEn || module.title_en) 
+                      : (module.titleEn || module.title_en || module.titleAr || module.title_ar)}
+                  </div>
                   <div className="text-xs text-muted-foreground font-normal mt-0.5">
                     {module.lessons?.length || 0} {isAr ? "دروس" : "Lessons"}
                   </div>
@@ -76,7 +87,9 @@ export function CurriculumSidebar({ course, currentLessonId, lang, className }: 
                           <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
                         )}
                         <span className="line-clamp-1 flex-1 text-start">
-                          {isAr ? lesson.titleAr : lesson.titleEn}
+                          {isAr 
+                            ? (lesson.titleAr || lesson.title_ar || lesson.titleEn || lesson.title_en) 
+                            : (lesson.titleEn || lesson.title_en || lesson.titleAr || lesson.title_ar)}
                         </span>
                         {lesson.durationMinutes && (
                           <span className="text-xs text-muted-foreground/70">

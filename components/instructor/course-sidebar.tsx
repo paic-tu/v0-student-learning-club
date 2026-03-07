@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Plus, MoreVertical, Pencil, Trash2, GripVertical, FileText, Video, BookOpen } from "lucide-react"
+import { Plus, MoreVertical, Pencil, Trash2, GripVertical, FileText, Video, BookOpen, PlusCircle, Edit } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Accordion,
@@ -231,7 +232,11 @@ export function CourseSidebar({ course, modules, lessons, lang }: CourseSidebarP
   return (
     <div className="flex flex-col h-full bg-background border-r">
       <div className="p-4 border-b">
-        <h2 className="font-semibold text-lg">{isAr ? course.title_ar || course.title_en : course.title_en}</h2>
+        <h2 className="font-semibold text-lg">
+          {isAr 
+            ? (course.title_ar || course.titleAr || course.title_en || course.titleEn) 
+            : (course.title_en || course.titleEn || course.title_ar || course.titleAr)}
+        </h2>
         <div className="flex items-center gap-2 mt-2">
           <Badge variant="outline">{isAr ? "مدرب" : "Instructor"}</Badge>
           <Badge variant={course.isPublished ? "default" : "secondary"}>
@@ -255,7 +260,9 @@ export function CourseSidebar({ course, modules, lessons, lang }: CourseSidebarP
               <div className="flex items-center justify-between py-2">
                 <AccordionTrigger className="hover:no-underline py-0 flex-1">
                   <span className="font-medium text-sm text-left">
-                    {isAr ? module.title_ar || module.title_en : module.title_en}
+                    {isAr 
+                      ? (module.title_ar || module.titleAr || module.title_en || module.titleEn) 
+                      : (module.title_en || module.titleEn || module.title_ar || module.titleAr)}
                   </span>
                 </AccordionTrigger>
                 <DropdownMenu>
@@ -295,7 +302,11 @@ export function CourseSidebar({ course, modules, lessons, lang }: CourseSidebarP
                         )}
                       >
                         {getLessonIcon(lesson.type)}
-                        <span className="truncate">{isAr ? lesson.title_ar || lesson.title_en : lesson.title_en}</span>
+                        <span className="truncate">
+                          {isAr 
+                            ? (lesson.title_ar || lesson.titleAr || lesson.title_en || lesson.titleEn) 
+                            : (lesson.title_en || lesson.titleEn || lesson.title_ar || lesson.titleAr)}
+                        </span>
                         {lesson.isFreePreview && (
                           <Badge variant="outline" className="ml-auto text-[10px] h-5 px-1">{isAr ? "مجاني" : "Free"}</Badge>
                         )}
@@ -334,7 +345,11 @@ export function CourseSidebar({ course, modules, lessons, lang }: CourseSidebarP
                   )}
                 >
                   {getLessonIcon(lesson.type)}
-                  <span className="truncate">{isAr ? lesson.title_ar || lesson.title_en : lesson.title_en}</span>
+                  <span className="truncate">
+                    {isAr 
+                      ? (lesson.title_ar || lesson.titleAr || lesson.title_en || lesson.titleEn) 
+                      : (lesson.title_en || lesson.titleEn || lesson.title_ar || lesson.titleAr)}
+                  </span>
                   {lesson.isFreePreview && (
                     <Badge variant="outline" className="ml-auto text-[10px] h-5 px-1">{isAr ? "مجاني" : "Free"}</Badge>
                   )}

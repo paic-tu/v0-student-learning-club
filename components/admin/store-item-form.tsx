@@ -24,7 +24,7 @@ const storeItemSchema = z.object({
   pointsCost: z.number().int().min(0).optional().nullable(),
   stock: z.number().int().min(0),
   categoryId: z.number().int().positive().optional().nullable(),
-  imageUrl: z.string().url().optional().or(z.literal("")).nullable(),
+  imageUrl: z.string().optional().or(z.literal("")).nullable(),
   isActive: z.boolean().default(true),
 })
 

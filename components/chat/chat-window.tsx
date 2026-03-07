@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem } from "@/components/ui/form"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Send, Loader2, ArrowLeft, Paperclip, Smile, File, Download, X } from "lucide-react"
-import { getMessages, sendMessage, notifyTyping, getTypingUsers } from "@/lib/actions/chat"
+import { getMessages, sendMessage, notifyTyping, getTypingUsers, markConversationAsRead } from "@/lib/actions/chat"
 import { cn } from "@/lib/utils"
 import { GifPicker } from "./gif-picker"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -121,6 +121,13 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
 
     return () => clearInterval(interval)
   }, [conversationId])
+
+  // Mark conversation as read when messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      markConversationAsRead(conversationId)
+    }
+  }, [conversationId, messages.length])
 
   // Scroll to bottom on new messages
   const prevMessagesLength = useRef(0)

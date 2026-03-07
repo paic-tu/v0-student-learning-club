@@ -14,7 +14,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useLanguage } from "@/lib/language-context"
 import { useAuth } from "@/lib/auth-context"
@@ -43,7 +42,7 @@ export function CourseDetailClient({ course, initialBookmarked, initialEnrolled 
   const [isEnrolled, setIsEnrolled] = useState(initialEnrolled)
   const [loading, setLoading] = useState(false)
   const [addingToCart, setAddingToCart] = useState(false)
-  const [showVideoModal, setShowVideoModal] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
 
   // Helper to safely access properties that might be camelCase or snake_case
   const getProp = (obj: any, camel: string, snake: string) => {
@@ -68,6 +67,26 @@ export function CourseDetailClient({ course, initialBookmarked, initialEnrolled 
   const videoUrl = getProp(course, "videoUrl", "video_url") || getProp(course, "previewVideoUrl", "preview_video_url")
   const isFree = getProp(course, "isFree", "is_free")
   const price = getProp(course, "price", "price")
+
+  const getEmbedUrl = (url: string) => {
+    if (!url) return null
+    
+    // YouTube
+    const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
+    const youtubeMatch = url.match(youtubeRegex)
+    if (youtubeMatch) {
+      return `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1`
+    }
+    
+    // Vimeo
+    const vimeoRegex = /(?:vimeo\.com\/)([0-9]+)/
+    const vimeoMatch = url.match(vimeoRegex)
+    if (vimeoMatch) {
+      return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`
+    }
+    
+    return url
+  }
 
   const handleShare = () => {
     const url = window.location.href
@@ -212,23 +231,48 @@ export function CourseDetailClient({ course, initialBookmarked, initialEnrolled 
             </div>
 
             {/* Video Player / Thumbnail */}
-            <div className="rounded-xl overflow-hidden border bg-card shadow-sm aspect-video relative group cursor-pointer" onClick={() => setShowVideoModal(true)}>
-              {thumbnailUrl ? (
-                <img
-                  src={thumbnailUrl}
-                  alt={title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
+            <div className="rounded-xl overflow-hidden border bg-card shadow-sm aspect-video relative group">
+              {!isPlaying ? (
+                <div 
+                  className="w-full h-full cursor-pointer relative"
+                  onClick={() => setIsPlaying(true)}
+                >
+                  {thumbnailUrl ? (
+                    <img
+                      src={thumbnailUrl}
+                      alt={title}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <PlayCircle className="w-16 h-16 text-muted-foreground/50" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-full bg-background/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                      <Play className="w-6 h-6 ml-1 text-primary fill-current" />
+                    </div>
+                  </div>
+                </div>
               ) : (
-                <div className="w-full h-full bg-muted flex items-center justify-center">
-                  <PlayCircle className="w-16 h-16 text-muted-foreground/50" />
+                <div className="w-full h-full bg-black">
+                  {videoUrl && (videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be") || videoUrl.includes("vimeo.com")) ? (
+                    <iframe
+                      src={getEmbedUrl(videoUrl) || ""}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <video
+                      src={videoUrl}
+                      className="w-full h-full"
+                      controls
+                      autoPlay
+                    />
+                  )}
                 </div>
               )}
-              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors flex items-center justify-center">
-                <div className="w-16 h-16 rounded-full bg-background/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Play className="w-6 h-6 ml-1 text-primary fill-current" />
-                </div>
-              </div>
             </div>
 
             {/* Tabs for Content */}
@@ -453,26 +497,6 @@ export function CourseDetailClient({ course, initialBookmarked, initialEnrolled 
         </div>
       </div>
 
-      {/* Video Modal */}
-      <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-none">
-          <DialogTitle className="sr-only">Course Preview</DialogTitle>
-          <div className="aspect-video">
-             {videoUrl ? (
-                <iframe
-                  src={videoUrl}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-             ) : (
-                <div className="w-full h-full flex items-center justify-center text-white">
-                   No preview available
-                </div>
-             )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </main>
   )
 }
