@@ -746,6 +746,7 @@ export const conversationParticipants = pgTable("conversation_participants", {
     .references(() => users.id, { onDelete: "cascade" }),
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
   lastReadAt: timestamp("last_read_at"),
+  lastTypedAt: timestamp("last_typed_at"),
 })
 
 export const messages = pgTable("messages", {

@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { conversations, conversationParticipants, messages, users } from "@/lib/db/schema"
-import { eq, and, desc, or, sql, asc } from "drizzle-orm"
+import { eq, and, desc, or, sql, asc, gt, ne } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 export async function getConversations() {
@@ -134,6 +134,45 @@ export async function sendMessage(conversationId: string, content: string) {
   revalidatePath("/instructor/chat", "page")
   revalidatePath("/admin/chat", "page")
   return { success: true }
+}
+
+export async function notifyTyping(conversationId: string) {
+  const session = await auth()
+  if (!session?.user?.id) return
+
+  await db.update(conversationParticipants)
+    .set({ lastTypedAt: new Date() })
+    .where(and(
+      eq(conversationParticipants.conversationId, conversationId),
+      eq(conversationParticipants.userId, session.user.id)
+    ))
+}
+
+export async function getTypingUsers(conversationId: string) {
+  const session = await auth()
+  if (!session?.user?.id) return []
+
+  // Get users who typed in the last 3 seconds
+  const threeSecondsAgo = new Date(Date.now() - 3000)
+
+  const participants = await db.query.conversationParticipants.findMany({
+    where: and(
+      eq(conversationParticipants.conversationId, conversationId),
+      // Exclude current user
+      ne(conversationParticipants.userId, session.user.id),
+      // Typed recently
+      gt(conversationParticipants.lastTypedAt, threeSecondsAgo)
+    ),
+    with: {
+      user: {
+        columns: {
+          name: true,
+        },
+      },
+    },
+  })
+
+  return participants.map((p) => p.user.name)
 }
 
 export async function joinCommunityChat() {

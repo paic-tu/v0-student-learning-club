@@ -24,14 +24,19 @@ export function ChatSidebar({ conversations, selectedId, onSelect, onCommunityCh
         {action}
       </div>
 
-      <div className="p-2">
+      <div className="p-2 space-y-1">
         <Button
           variant={selectedId === "community" ? "secondary" : "ghost"}
-          className="w-full justify-start gap-2 mb-2"
+          className={cn(
+            "w-full justify-start gap-3 h-12",
+            selectedId === "community" && "bg-secondary"
+          )}
           onClick={onCommunityChat}
         >
-          <Users className="h-4 w-4" />
-          Community Chat
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+            <Users className="h-4 w-4 text-primary" />
+          </div>
+          <span className="font-medium">Community Chat</span>
         </Button>
       </div>
 
@@ -42,27 +47,38 @@ export function ChatSidebar({ conversations, selectedId, onSelect, onCommunityCh
               key={conv.id}
               onClick={() => onSelect(conv.id)}
               className={cn(
-                "flex items-start gap-3 p-3 rounded-lg transition-colors hover:bg-muted text-left",
-                selectedId === conv.id && "bg-muted"
+                "flex items-center gap-3 p-3 rounded-lg transition-all text-left group",
+                selectedId === conv.id 
+                  ? "bg-accent text-accent-foreground shadow-sm" 
+                  : "hover:bg-muted/50"
               )}
             >
-              <Avatar>
-                <AvatarImage src={conv.image} />
-                <AvatarFallback>{conv.name[0]}</AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="h-10 w-10 border-2 border-background">
+                  <AvatarImage src={conv.image || "/placeholder-user.jpg"} />
+                  <AvatarFallback>{conv.name[0]}</AvatarFallback>
+                </Avatar>
+                {/* Online indicator could go here */}
+              </div>
+              
               <div className="flex-1 overflow-hidden">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium truncate">{conv.name}</span>
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="font-medium truncate text-sm">{conv.name}</span>
                   {conv.lastMessage && (
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(conv.lastMessage.createdAt).toLocaleDateString()}
+                    <span className="text-[10px] text-muted-foreground shrink-0">
+                      {new Date(conv.lastMessage.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                     </span>
                   )}
                 </div>
-                {conv.lastMessage && (
-                  <p className="text-sm text-muted-foreground truncate">
+                {conv.lastMessage ? (
+                  <p className="text-xs text-muted-foreground truncate opacity-80 group-hover:opacity-100 transition-opacity">
+                    <span className="font-medium text-foreground/80">
+                      {conv.lastMessage.senderId === "me" ? "You: " : ""} 
+                    </span>
                     {conv.lastMessage.content}
                   </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">No messages yet</p>
                 )}
               </div>
             </button>
