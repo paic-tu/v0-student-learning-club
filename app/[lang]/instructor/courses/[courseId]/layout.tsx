@@ -25,7 +25,7 @@ export default async function InstructorCourseLayout({
   }
 
   // Verify ownership
-  if ((course as any).instructor_id !== session.user.id && session.user.role !== "admin") {
+  if (course.instructorId !== session.user.id && session.user.role !== "admin") {
     redirect(`/${lang}/access-denied`)
   }
 
