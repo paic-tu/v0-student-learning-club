@@ -758,6 +758,8 @@ export const messages = pgTable("messages", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
+  type: text("type", { enum: ["text", "image", "file", "gif", "sticker"] }).default("text").notNull(),
+  attachmentUrl: text("attachment_url"),
   isSystemMessage: boolean("is_system_message").default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

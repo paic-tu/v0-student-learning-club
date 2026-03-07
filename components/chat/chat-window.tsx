@@ -13,6 +13,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Send, Loader2, ArrowLeft, Paperclip, Smile } from "lucide-react"
 import { getMessages, sendMessage, notifyTyping, getTypingUsers } from "@/lib/actions/chat"
 import { cn } from "@/lib/utils"
+import { GifPicker } from "./gif-picker"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const formSchema = z.object({
   content: z.string().min(1),
@@ -103,6 +106,16 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
     }
   }
 
+  async function onGifSelect(url: string, type: "gif" | "sticker") {
+    try {
+      await sendMessage(conversationId, type === "gif" ? "Sent a GIF" : "Sent a Sticker", type, url)
+      const data = await getMessages(conversationId)
+      setMessages(data)
+    } catch (error) {
+      console.error("Failed to send GIF/Sticker:", error)
+    }
+  }
+
   return (
     <div className="flex flex-col h-full bg-background w-full">
       <div className="p-3 border-b flex items-center gap-3 sticky top-0 bg-background/95 backdrop-blur z-10 shadow-sm">
@@ -176,18 +189,30 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
                   </div>
                 )}
                 <div className={cn(
-                  "relative px-4 py-2 pb-6 rounded-[22px] text-sm leading-relaxed whitespace-pre-wrap shadow-sm min-w-[120px] transition-all",
+                  "relative text-sm leading-relaxed whitespace-pre-wrap shadow-sm transition-all",
+                  msg.type === "sticker" ? "bg-transparent shadow-none p-0 min-w-0" :
+                  msg.type === "gif" ? "p-0 overflow-hidden rounded-[20px] min-w-[200px]" :
+                  "px-4 py-2 pb-6 rounded-[22px] min-w-[120px]",
                   isMe 
-                    ? "bg-primary text-primary-foreground rounded-tr-none" 
-                    : "bg-white dark:bg-muted text-foreground/90 rounded-tl-none border"
+                    ? (msg.type === "text" ? "bg-primary text-primary-foreground rounded-tr-none" : "")
+                    : (msg.type === "text" ? "bg-white dark:bg-muted text-foreground/90 rounded-tl-none border" : "")
                 )}>
-                  {msg.content}
-                  <span className={cn(
-                    "text-[10px] absolute bottom-1.5 opacity-70 select-none font-medium",
-                    isMe ? "left-3 text-primary-foreground/80" : "right-3 text-muted-foreground"
-                  )}>
-                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
+                  {msg.type === "sticker" ? (
+                    <img src={msg.attachmentUrl} alt="Sticker" className="w-32 h-32 object-contain" />
+                  ) : msg.type === "gif" ? (
+                    <img src={msg.attachmentUrl} alt="GIF" className="w-full max-w-[250px] h-auto object-cover" />
+                  ) : (
+                    msg.content
+                  )}
+                  
+                  {msg.type === "text" && (
+                    <span className={cn(
+                      "text-[10px] absolute bottom-1.5 opacity-70 select-none font-medium",
+                      isMe ? "left-3 text-primary-foreground/80" : "right-3 text-muted-foreground"
+                    )}>
+                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -212,6 +237,8 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
             <Button type="button" size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground hover:text-foreground rounded-full shrink-0">
               <Paperclip className="h-5 w-5" />
             </Button>
+
+            <GifPicker onSelect={onGifSelect} />
             
             <FormField
               control={form.control}

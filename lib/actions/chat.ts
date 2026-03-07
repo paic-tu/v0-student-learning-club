@@ -104,11 +104,11 @@ export async function getMessages(conversationId: string) {
   return chatMessages
 }
 
-export async function sendMessage(conversationId: string, content: string) {
+export async function sendMessage(conversationId: string, content: string, type: "text" | "image" | "file" | "gif" | "sticker" = "text", attachmentUrl?: string) {
   const session = await auth()
   if (!session?.user?.id) return { error: "Unauthorized" }
 
-  if (!content.trim()) return { error: "Message cannot be empty" }
+  if (!content.trim() && !attachmentUrl) return { error: "Message cannot be empty" }
 
   // Verify participation
   const participant = await db.query.conversationParticipants.findFirst({
@@ -124,6 +124,8 @@ export async function sendMessage(conversationId: string, content: string) {
     conversationId,
     senderId: session.user.id,
     content,
+    type,
+    attachmentUrl,
   })
 
   await db.update(conversations)
