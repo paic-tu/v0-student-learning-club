@@ -15,7 +15,7 @@ import {
   Settings
 } from "lucide-react"
 
-export function StudentNav() {
+export function StudentNav({ isCollapsed }: { isCollapsed?: boolean }) {
   const pathname = usePathname()
   const segments = pathname.split("/")
   const locale = (segments[1] || "ar") as Language
@@ -80,10 +80,12 @@ export function StudentNav() {
               isActive
                 ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-400"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              isCollapsed && "justify-center px-2"
             )}
+            title={isCollapsed ? item.label : undefined}
           >
             <Icon className="h-5 w-5" />
-            {item.label}
+            {!isCollapsed && <span>{item.label}</span>}
           </Link>
         )
       })}

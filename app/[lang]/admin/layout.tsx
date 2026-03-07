@@ -4,7 +4,6 @@ import { getCurrentUser } from "@/lib/auth"
 import { canAccessAdmin } from "@/lib/rbac/permissions"
 import { AdminSidebar, AdminMobileNav } from "@/components/admin/admin-sidebar"
 import { AdminHeader } from "@/components/admin/admin-header"
-import { RotateDevicePrompt } from "@/components/rotate-device-prompt"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const userPromise = Promise.race([
@@ -26,7 +25,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex h-screen bg-muted/20">
-      <RotateDevicePrompt />
       <AdminSidebar user={user} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <AdminHeader user={user} mobileNav={<AdminMobileNav user={user} />} />
