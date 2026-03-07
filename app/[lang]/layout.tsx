@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/lib/theme-context"
 import { AuthProvider } from "@/lib/auth-context"
 import { Toaster } from "@/components/ui/toaster"
 import { DbInitializer } from "@/components/db-initializer"
+import { auth } from "@/lib/auth"
 
 const arabic = IBM_Plex_Sans_Arabic({
   weight: ["400", "500", "600", "700"],
@@ -49,6 +50,7 @@ export default async function RootLayout({
 }>) {
   const { lang } = await params
   const dir = lang === "en" ? "ltr" : "rtl"
+  const session = await auth()
 
   return (
     <html lang={lang} dir={dir} suppressHydrationWarning>
@@ -56,7 +58,7 @@ export default async function RootLayout({
         <DbInitializer />
         <ThemeProvider>
           <LanguageProvider defaultLang={lang as "ar" | "en"}>
-            <AuthProvider>
+            <AuthProvider session={session}>
               {children}
               <Toaster />
             </AuthProvider>

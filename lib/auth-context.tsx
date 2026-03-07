@@ -3,9 +3,9 @@
 import { SessionProvider, useSession, signOut } from "next-auth/react"
 import type { ReactNode } from "react"
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children, session }: { children: ReactNode; session?: any }) {
   return (
-    <SessionProvider refetchOnWindowFocus={false} refetchInterval={0}>
+    <SessionProvider session={session} refetchOnWindowFocus={false} refetchInterval={0}>
       {children}
     </SessionProvider>
   )
