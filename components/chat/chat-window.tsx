@@ -84,11 +84,16 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
   }, [conversationId])
 
   // Scroll to bottom on new messages
+  const prevMessagesLength = useRef(0)
+
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollIntoView({ behavior: "smooth" })
+    if (messages.length > prevMessagesLength.current) {
+      if (scrollRef.current) {
+        scrollRef.current.scrollIntoView({ behavior: "smooth" })
+      }
     }
-  }, [messages])
+    prevMessagesLength.current = messages.length
+  }, [messages.length])
 
   const watchContent = form.watch("content")
 
