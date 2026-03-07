@@ -303,7 +303,36 @@ async function canChat(userId1: string, userId2: string) {
     ))
     .limit(1)
 
-  return !!enrollment
+  if (enrollment) return true
+
+  // Check if both are students in the same course
+  if (user1.role === "student" && user2.role === "student") {
+    // Check if they share any course enrollment
+    const [sharedCourse] = await db
+      .select({ id: enrollments.id })
+      .from(enrollments)
+      .leftJoin(
+        // Self-join enrollments table to find matching courseId for both users
+        // Since Drizzle doesn't support easy self-join aliasing in query builder yet without creating alias table instance,
+        // we can use a simpler approach: check if user1 has any courseId that user2 also has.
+        // But a raw query or separate queries might be cleaner.
+        // Let's use two separate checks or a subquery.
+        // Actually, we can just check if there is an enrollment for user1 with courseId IN (enrollments of user2)
+        courses, eq(enrollments.courseId, courses.id)
+      )
+      .where(and(
+        eq(enrollments.userId, userId1),
+        inArray(
+          enrollments.courseId,
+          db.select({ courseId: enrollments.courseId }).from(enrollments).where(eq(enrollments.userId, userId2))
+        )
+      ))
+      .limit(1)
+    
+    if (sharedCourse) return true
+  }
+
+  return false
 }
 
 export async function createPrivateChat(otherUserId: string) {
@@ -314,7 +343,7 @@ export async function createPrivateChat(otherUserId: string) {
 
   // Check permission
   const allowed = await canChat(session.user.id, otherUserId)
-  if (!allowed) return { error: "You can only chat with your instructors or students" }
+  if (!allowed) return { error: "You can only chat with your instructors or classmates" }
 
   // Check if conversation already exists
   // This is tricky with Drizzle, we need to find a conversation where both users are participants and type is individual
@@ -391,9 +420,9 @@ export async function getAllUsers() {
         .where(eq(courses.instructorId, session.user.id))
     }
 
-    // Students see their instructors
+    // Students see their instructors and classmates
     if (session.user.role === "student") {
-      return await db
+      const instructors = await db
         .selectDistinct({
           id: users.id,
           name: users.name,
@@ -405,6 +434,30 @@ export async function getAllUsers() {
         .innerJoin(courses, eq(courses.instructorId, users.id))
         .innerJoin(enrollments, eq(enrollments.courseId, courses.id))
         .where(eq(enrollments.userId, session.user.id))
+
+      const classmates = await db
+        .selectDistinct({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          avatarUrl: users.avatarUrl,
+          role: users.role,
+        })
+        .from(users)
+        .innerJoin(enrollments, eq(enrollments.userId, users.id))
+        .where(and(
+          ne(users.id, session.user.id), // Exclude self
+          inArray(
+            enrollments.courseId,
+            db.select({ courseId: enrollments.courseId }).from(enrollments).where(eq(enrollments.userId, session.user.id))
+          )
+        ))
+
+      // Merge and remove duplicates by ID
+      const allUsers = [...instructors, ...classmates]
+      const uniqueUsers = Array.from(new Map(allUsers.map(u => [u.id, u])).values())
+      
+      return uniqueUsers
     }
 
     return []
