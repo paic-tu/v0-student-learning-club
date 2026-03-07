@@ -18,7 +18,7 @@ import {
 import { MessageCircle, User, Calendar, Trophy, BookOpen, CheckCircle, Loader2 } from "lucide-react"
 import { createPrivateChat, getPublicUserProfile } from "@/lib/actions/chat"
 import { useRouter } from "next/navigation"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 
 interface UserActionPopoverProps {

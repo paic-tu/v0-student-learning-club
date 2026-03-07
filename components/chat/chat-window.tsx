@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Send, Loader2, ArrowLeft, Paperclip, Smile } from "lucide-react"
+import { Send, Loader2, ArrowLeft, Paperclip, Smile, File, Download, X } from "lucide-react"
 import { getMessages, sendMessage, notifyTyping, getTypingUsers } from "@/lib/actions/chat"
 import { cn } from "@/lib/utils"
 import { GifPicker } from "./gif-picker"
@@ -36,6 +36,44 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
   const [loading, setLoading] = useState(true)
   const scrollRef = useRef<HTMLDivElement>(null)
   const lastTypedTime = useRef<number>(0)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isUploading, setIsUploading] = useState(false)
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) throw new Error("Upload failed")
+
+      const { url } = await response.json()
+      const type = file.type.startsWith("image/") ? "image" : "file"
+      
+      await sendMessage(conversationId, file.name, type, url)
+      
+      // Optimistic update or refetch
+      const data = await getMessages(conversationId)
+      setMessages(data)
+    } catch (error) {
+      console.error("Failed to upload file:", error)
+      // You might want to show a toast here
+    } finally {
+      setIsUploading(false)
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+    }
+  }
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -212,6 +250,46 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
                     <img src={msg.attachmentUrl} alt="Sticker" className="w-32 h-32 object-contain" />
                   ) : msg.type === "gif" ? (
                     <img src={msg.attachmentUrl} alt="GIF" className="w-full max-w-[250px] h-auto object-cover" />
+                  ) : msg.type === "image" ? (
+                    <div className="relative group">
+                      <img 
+                        src={msg.attachmentUrl} 
+                        alt="Image" 
+                        className="w-full max-w-[250px] h-auto object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity" 
+                        onClick={() => window.open(msg.attachmentUrl, '_blank')} 
+                      />
+                       <a 
+                        href={msg.attachmentUrl} 
+                        download 
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="absolute bottom-2 right-2 bg-black/50 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Download className="h-4 w-4" />
+                      </a>
+                    </div>
+                  ) : msg.type === "file" ? (
+                    <div className="flex items-center gap-3 bg-secondary/50 p-2 rounded-lg">
+                      <div className="bg-background p-2 rounded-md">
+                        <File className="h-6 w-6 text-primary" />
+                      </div>
+                      <div className="flex flex-col min-w-0 max-w-[150px]">
+                        <span className="text-sm font-medium truncate" title={msg.content}>
+                          {msg.content}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground uppercase">FILE</span>
+                      </div>
+                      <a 
+                        href={msg.attachmentUrl} 
+                        download 
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-auto p-1.5 hover:bg-background rounded-full transition-colors text-muted-foreground hover:text-foreground"
+                      >
+                        <Download className="h-4 w-4" />
+                      </a>
+                    </div>
                   ) : (
                     msg.content
                   )}
@@ -246,8 +324,21 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
     <div className="p-3 border-t bg-background/95 backdrop-blur shrink-0">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-end gap-2 bg-muted/50 p-2 rounded-2xl border focus-within:ring-1 focus-within:ring-ring transition-all">
-            <Button type="button" size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground hover:text-foreground rounded-full shrink-0">
-              <Paperclip className="h-5 w-5" />
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+            <Button 
+              type="button" 
+              size="icon" 
+              variant="ghost" 
+              className="h-9 w-9 text-muted-foreground hover:text-foreground rounded-full shrink-0"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+            >
+              {isUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Paperclip className="h-5 w-5" />}
             </Button>
 
             <GifPicker onSelect={onGifSelect} />
