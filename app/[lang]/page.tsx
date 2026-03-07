@@ -28,20 +28,9 @@ export default function HomePage() {
         : user.role === "instructor" 
           ? `/${language}/instructor/dashboard`
           : `/${language}/student/dashboard`
-      router.push(dashboardLink)
+      router.replace(dashboardLink)
     }
   }, [isLoading, isAuthenticated, user, language, router])
-
-  if (isAuthenticated && user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-          <p className="text-muted-foreground">{isRTL ? "جاري تحويلك للوحة التحكم..." : "Redirecting to dashboard..."}</p>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen">
@@ -83,12 +72,30 @@ export default function HomePage() {
               </p>
 
               <div className="flex gap-4 justify-center flex-wrap pt-4">
-                <Link href={`/${language}/courses`}>
-                  <Button size="lg" className="font-semibold hover-lift hover-glow text-lg px-8">
+                {isAuthenticated ? (
+                  <Button 
+                    size="lg" 
+                    className="font-semibold hover-lift hover-glow text-lg px-8"
+                    onClick={() => {
+                      const dashboardLink = user?.role === "admin" 
+                        ? `/${language}/admin`
+                        : user?.role === "instructor" 
+                          ? `/${language}/instructor/dashboard`
+                          : `/${language}/student/dashboard`
+                      router.push(dashboardLink)
+                    }}
+                  >
                     <Target className="h-5 w-5 mr-2" />
-                    {t("startLearning", language)}
+                    {isRTL ? "الذهاب إلى لوحة التحكم" : "Go to Dashboard"}
                   </Button>
-                </Link>
+                ) : (
+                  <Link href={`/${language}/courses`}>
+                    <Button size="lg" className="font-semibold hover-lift hover-glow text-lg px-8">
+                      <Target className="h-5 w-5 mr-2" />
+                      {t("startLearning", language)}
+                    </Button>
+                  </Link>
+                )}
                 <Link href={`/${language}/courses`}>
                   <Button
                     size="lg"
