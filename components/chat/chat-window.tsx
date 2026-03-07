@@ -122,8 +122,8 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
   }
 
   return (
-    <div className="flex flex-col h-full bg-background w-full">
-      <div className="h-16 px-4 border-b flex items-center gap-3 sticky top-0 bg-background/95 backdrop-blur z-10 shadow-sm">
+    <div className="flex flex-col h-full bg-background w-full overflow-hidden">
+      <div className="h-16 px-4 border-b flex items-center gap-3 bg-background/95 backdrop-blur z-10 shadow-sm shrink-0">
         {onBack && (
           <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden -ml-2 shrink-0">
             <ArrowLeft className="h-5 w-5" />
@@ -143,8 +143,9 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
         </div>
       </div>
 
-      <ScrollArea className="flex-1 p-4">
-        <div className="flex flex-col gap-4 pb-4">
+      <div className="flex-1 min-h-0 relative">
+        <ScrollArea className="h-full w-full p-4 absolute inset-0">
+          <div className="flex flex-col gap-4 pb-4">
           {loading ? (
             <div className="flex justify-center p-4">
               <Loader2 className="h-6 w-6 animate-spin" />
@@ -235,8 +236,9 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
           <div ref={scrollRef} />
         </div>
       </ScrollArea>
+    </div>
 
-      <div className="p-3 border-t bg-background/95 backdrop-blur">
+    <div className="p-3 border-t bg-background/95 backdrop-blur shrink-0">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-end gap-2 bg-muted/50 p-2 rounded-2xl border focus-within:ring-1 focus-within:ring-ring transition-all">
             <Button type="button" size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground hover:text-foreground rounded-full shrink-0">

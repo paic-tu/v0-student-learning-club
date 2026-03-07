@@ -18,8 +18,8 @@ interface ChatSidebarProps {
 
 export function ChatSidebar({ conversations, selectedId, onSelect, onCommunityChat, action }: ChatSidebarProps) {
   return (
-    <div className="flex flex-col h-full border-r w-full md:w-80 bg-background">
-      <div className="h-16 px-4 border-b flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur z-10">
+    <div className="flex flex-col h-full border-r w-full md:w-80 bg-background overflow-hidden">
+      <div className="h-16 px-4 border-b flex items-center justify-between bg-background/95 backdrop-blur z-10 shrink-0">
         <h2 className="font-semibold text-lg">Messages</h2>
         {action}
       </div>
@@ -40,9 +40,10 @@ export function ChatSidebar({ conversations, selectedId, onSelect, onCommunityCh
         </Button>
       </div>
 
-      <ScrollArea className="flex-1">
-        <div className="flex flex-col gap-1 p-2">
-          {conversations.map((conv) => (
+      <div className="flex-1 min-h-0 relative">
+        <ScrollArea className="h-full w-full absolute inset-0">
+          <div className="flex flex-col gap-1 p-2">
+            {conversations.map((conv) => (
             <button
               key={conv.id}
               onClick={() => onSelect(conv.id)}
@@ -83,8 +84,9 @@ export function ChatSidebar({ conversations, selectedId, onSelect, onCommunityCh
               </div>
             </button>
           ))}
-        </div>
-      </ScrollArea>
+          </div>
+        </ScrollArea>
+      </div>
     </div>
   )
 }
