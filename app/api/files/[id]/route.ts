@@ -29,13 +29,36 @@ export async function GET(
 
     // Convert base64 to buffer
     const buffer = Buffer.from(file.data, "base64")
+    const fileSize = buffer.length
+    
+    // Handle Range requests (required for video seek/streaming)
+    const range = req.headers.get("range")
+    
+    if (range) {
+      const parts = range.replace(/bytes=/, "").split("-")
+      const start = parseInt(parts[0], 10)
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1
+      const chunksize = (end - start) + 1
+      const fileChunk = buffer.subarray(start, end + 1)
+      
+      return new NextResponse(fileChunk, {
+        status: 206,
+        headers: {
+          "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+          "Accept-Ranges": "bytes",
+          "Content-Length": chunksize.toString(),
+          "Content-Type": file.type,
+        },
+      })
+    }
 
-    // Return file with correct headers
+    // Return full file
     return new NextResponse(buffer, {
       headers: {
         "Content-Type": file.type,
-        "Content-Length": buffer.length.toString(),
+        "Content-Length": fileSize.toString(),
         "Cache-Control": "public, max-age=31536000, immutable",
+        "Accept-Ranges": "bytes", // Announce range support
       },
     })
   } catch (error) {
