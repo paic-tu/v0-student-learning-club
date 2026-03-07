@@ -9,6 +9,7 @@ import { AuthProvider } from "@/lib/auth-context"
 import { Toaster } from "@/components/ui/toaster"
 import { DbInitializer } from "@/components/db-initializer"
 import { auth } from "@/lib/auth"
+import { SWUnregister } from "@/components/sw-unregister"
 
 const arabic = IBM_Plex_Sans_Arabic({
   weight: ["400", "500", "600", "700"],
@@ -59,6 +60,7 @@ export default async function RootLayout({
         <ThemeProvider>
           <LanguageProvider defaultLang={lang as "ar" | "en"}>
             <AuthProvider session={session}>
+              <SWUnregister />
               {children}
               <Toaster />
             </AuthProvider>
