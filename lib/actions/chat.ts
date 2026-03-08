@@ -97,28 +97,33 @@ export async function getConversations() {
 }
 
 export async function getUnreadMessageCount() {
-  const session = await auth()
-  if (!session?.user?.id) return 0
+  try {
+    const session = await auth()
+    if (!session?.user?.id) return 0
 
-  const result = await db
-    .select({ count: count() })
-    .from(messages)
-    .innerJoin(
-      conversationParticipants,
-      eq(messages.conversationId, conversationParticipants.conversationId)
-    )
-    .where(
-      and(
-        eq(conversationParticipants.userId, session.user.id),
-        ne(messages.senderId, session.user.id),
-        gt(
-          messages.createdAt,
-          sql`COALESCE(${conversationParticipants.lastReadAt}, ${conversationParticipants.joinedAt})`
+    const result = await db
+      .select({ count: count() })
+      .from(messages)
+      .innerJoin(
+        conversationParticipants,
+        eq(messages.conversationId, conversationParticipants.conversationId)
+      )
+      .where(
+        and(
+          eq(conversationParticipants.userId, session.user.id),
+          ne(messages.senderId, session.user.id),
+          gt(
+            messages.createdAt,
+            sql`COALESCE(${conversationParticipants.lastReadAt}, ${conversationParticipants.joinedAt})`
+          )
         )
       )
-    )
 
-  return result[0]?.count || 0
+    return Number(result[0]?.count || 0)
+  } catch (error) {
+    console.error("Failed to get unread message count:", error)
+    return 0
+  }
 }
 
 export async function markConversationAsRead(conversationId: string) {

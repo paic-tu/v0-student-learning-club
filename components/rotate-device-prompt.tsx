@@ -10,7 +10,7 @@ export function RotateDevicePrompt() {
 
   useEffect(() => {
     // 1. Check persistence (Session based)
-    if (typeof window !== "undefined" && sessionStorage.getItem("hasSeenRotatePrompt_v3") === "true") {
+    if (typeof window !== "undefined" && sessionStorage.getItem("hasSeenRotatePrompt_v4") === "true") {
       return
     }
 
@@ -29,7 +29,7 @@ export function RotateDevicePrompt() {
       
       if (isSmallScreen && isPortrait) {
         // Only show if we haven't seen it yet in this session
-        if (sessionStorage.getItem("hasSeenRotatePrompt_v3") !== "true") {
+        if (sessionStorage.getItem("hasSeenRotatePrompt_v4") !== "true") {
           setShowPrompt(true)
         }
       } else {
@@ -56,7 +56,7 @@ export function RotateDevicePrompt() {
     if (showPrompt) {
       const timer = setTimeout(() => {
         setShowPrompt(false)
-        sessionStorage.setItem("hasSeenRotatePrompt_v3", "true")
+        sessionStorage.setItem("hasSeenRotatePrompt_v4", "true")
       }, 5000)
       return () => clearTimeout(timer)
     }
