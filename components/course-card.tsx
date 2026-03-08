@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -87,10 +88,12 @@ export function CourseCard({ course, hideBookmark = false, isPreview = false }: 
             </div>
           ) : (
             <>
-              <img
+              <Image
                 src={thumbnailUrl}
                 alt={title || "Course"}
-                className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                fill
+                className="object-cover transition-transform group-hover:scale-105"
+                unoptimized
               />
               {videoUrl && (
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 z-10 pointer-events-none group-hover:pointer-events-auto">

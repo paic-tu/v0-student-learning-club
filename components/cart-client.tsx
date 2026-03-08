@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useLanguage } from "@/lib/language-context"
@@ -133,7 +134,13 @@ export function CartClient({ initialCart }: CartClientProps) {
               <Card key={item.id} className="flex flex-col sm:flex-row overflow-hidden">
                 <div className="w-full sm:w-48 h-32 bg-muted relative shrink-0">
                   {image ? (
-                    <img src={image} alt={title} className="w-full h-full object-cover" />
+                    <Image
+                      src={image}
+                      alt={title}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
                   ) : (
                     <div className="flex items-center justify-center h-full text-muted-foreground">No Image</div>
                   )}

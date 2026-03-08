@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import Image from "next/image"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -254,16 +255,35 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
                     : (msg.type === "text" ? "bg-white dark:bg-muted text-foreground/90 rounded-tl-none border" : "")
                 )}>
                   {msg.type === "sticker" ? (
-                    <img src={msg.attachmentUrl} alt="Sticker" className="w-32 h-32 object-contain" />
+                    <Image 
+                      src={msg.attachmentUrl} 
+                      alt="Sticker" 
+                      width={128} 
+                      height={128} 
+                      className="object-contain" 
+                      unoptimized
+                    />
                   ) : msg.type === "gif" ? (
-                    <img src={msg.attachmentUrl} alt="GIF" className="w-full max-w-[250px] h-auto object-cover" />
+                    <Image 
+                      src={msg.attachmentUrl} 
+                      alt="GIF" 
+                      width={0}
+                      height={0}
+                      sizes="100vw"
+                      className="w-full max-w-[250px] h-auto object-cover" 
+                      unoptimized
+                    />
                   ) : msg.type === "image" ? (
                     <div className="relative group">
-                      <img 
+                      <Image 
                         src={msg.attachmentUrl} 
                         alt="Image" 
+                        width={0}
+                        height={0}
+                        sizes="100vw"
                         className="w-full max-w-[250px] h-auto object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity" 
                         onClick={() => window.open(msg.attachmentUrl, '_blank')} 
+                        unoptimized
                       />
                        <a 
                         href={msg.attachmentUrl} 

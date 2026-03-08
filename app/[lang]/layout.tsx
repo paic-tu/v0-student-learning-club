@@ -33,9 +33,48 @@ const dancing = Dancing_Script({
 })
 
 export const metadata: Metadata = {
-  title: "Neon | نيون التعليمية - منصة التعلم الإلكتروني",
-  description: "منصة نيون التعليمية للدورات والشهادات المعتمدة",
-  generator: "v0.app",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://neon-platform.vercel.app'),
+  title: {
+    default: "Neon | نيون التعليمية - منصة التعلم الإلكتروني",
+    template: "%s | Neon - نيون"
+  },
+  description: "منصة نيون التعليمية للدورات والشهادات المعتمدة في البرمجة والتقنية. انضم إلينا لتعلم مهارات المستقبل.",
+  keywords: ["تعليم", "دورات", "برمجة", "نيون", "education", "courses", "programming", "neon", "web development", "tech", "learning platform"],
+  authors: [{ name: "Neon Team" }],
+  creator: "Neon Team",
+  publisher: "Neon Team",
+  openGraph: {
+    type: "website",
+    locale: "ar_SA",
+    url: "/",
+    title: "Neon | نيون التعليمية",
+    description: "منصة نيون التعليمية للدورات والشهادات المعتمدة في البرمجة والتقنية",
+    siteName: "Neon | نيون",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Neon | نيون التعليمية",
+    description: "منصة نيون التعليمية للدورات والشهادات المعتمدة",
+    creator: "@neon_edu",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  alternates: {
+    canonical: '/',
+    languages: {
+      'en-US': '/en',
+      'ar-SA': '/ar',
+    },
+  },
 }
 
 export async function generateStaticParams() {

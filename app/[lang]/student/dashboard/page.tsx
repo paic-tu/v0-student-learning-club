@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import Image from "next/image"
 import { BookOpen, Trophy, Award, PlayCircle, Clock } from "lucide-react"
 import { getStudentDashboardData } from "@/lib/db/queries"
 import { Progress } from "@/components/ui/progress"
@@ -113,11 +114,15 @@ export default async function StudentDashboardPage({ params }: { params: Promise
                 {data.enrolledCourses.map((enrollment: any) => (
                   <div key={enrollment.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                     {enrollment.course?.thumbnailUrl ? (
-                      <img 
-                        src={enrollment.course?.thumbnailUrl} 
-                        alt={isAr ? enrollment.course?.titleAr : enrollment.course?.titleEn} 
-                        className="w-full h-40 sm:w-24 sm:h-16 object-cover rounded-md"
-                      />
+                      <div className="relative w-full h-40 sm:w-24 sm:h-16 shrink-0">
+                        <Image
+                          src={enrollment.course?.thumbnailUrl}
+                          alt={isAr ? enrollment.course?.titleAr : enrollment.course?.titleEn}
+                          fill
+                          className="object-cover rounded-md"
+                          unoptimized
+                        />
+                      </div>
                     ) : (
                       <div className="w-full h-40 sm:w-24 sm:h-16 bg-muted rounded-md flex items-center justify-center">
                         <BookOpen className="h-8 w-8 text-muted-foreground" />

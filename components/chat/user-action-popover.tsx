@@ -186,7 +186,7 @@ export function UserActionPopover({ children, user, currentUserId, onOpenChange 
 
               {profileData.bio && (
                 <div className="bg-muted/30 p-3 rounded-lg text-sm text-muted-foreground italic">
-                  "{profileData.bio}"
+                  &quot;{profileData.bio}&quot;
                 </div>
               )}
 

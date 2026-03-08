@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar, Clock, User, CheckCircle2, XCircle, AlertCircle } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 
 export default function BookingsPage() {
@@ -20,31 +21,31 @@ export default function BookingsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    async function fetchBookings() {
+      try {
+        const [studentRes, mentorRes] = await Promise.all([
+          fetch("/api/bookings?role=student"),
+          fetch("/api/bookings?role=mentor"),
+        ])
+
+        const studentData = await studentRes.json()
+        const mentorData = await mentorRes.json()
+
+        setStudentBookings(studentData.bookings || [])
+        setMentorBookings(mentorData.bookings || [])
+      } catch (error) {
+        console.error("[v0] Error fetching bookings:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
     if (!user) {
       router.push(`/${language}/auth/login`)
       return
     }
     fetchBookings()
-  }, [user])
-
-  async function fetchBookings() {
-    try {
-      const [studentRes, mentorRes] = await Promise.all([
-        fetch("/api/bookings?role=student"),
-        fetch("/api/bookings?role=mentor"),
-      ])
-
-      const studentData = await studentRes.json()
-      const mentorData = await mentorRes.json()
-
-      setStudentBookings(studentData.bookings || [])
-      setMentorBookings(mentorData.bookings || [])
-    } catch (error) {
-      console.error("[v0] Error fetching bookings:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [user, language, router])
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, any> = {
@@ -115,12 +116,14 @@ export default function BookingsPage() {
                 <Card key={booking.id} className="p-6">
                   <div className="flex items-start justify-between gap-4 mb-4">
                     <div className="flex items-start gap-4 flex-1">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden relative shrink-0">
                         {booking.mentor_avatar ? (
-                          <img
+                          <Image
                             src={booking.mentor_avatar || "/placeholder.svg"}
                             alt={booking.mentor_name}
-                            className="w-12 h-12 object-cover"
+                            fill
+                            className="object-cover"
+                            unoptimized
                           />
                         ) : (
                           <User className="h-6 w-6" />
@@ -184,12 +187,14 @@ export default function BookingsPage() {
                 <Card key={booking.id} className="p-6">
                   <div className="flex items-start justify-between gap-4 mb-4">
                     <div className="flex items-start gap-4 flex-1">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden relative shrink-0">
                         {booking.student_avatar ? (
-                          <img
+                          <Image
                             src={booking.student_avatar || "/placeholder.svg"}
                             alt={booking.student_name}
-                            className="w-12 h-12 object-cover"
+                            fill
+                            className="object-cover"
+                            unoptimized
                           />
                         ) : (
                           <User className="h-6 w-6" />

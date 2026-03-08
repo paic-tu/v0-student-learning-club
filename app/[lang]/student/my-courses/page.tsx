@@ -3,6 +3,7 @@ import { getStudentCourses } from "@/lib/db/queries"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import Image from "next/image"
 import { BookOpen, PlayCircle } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
@@ -34,10 +35,12 @@ export default async function MyCoursesPage({ params }: { params: Promise<{ lang
             <Card key={enrollment.id} className="overflow-hidden hover:shadow-lg transition-shadow">
               <div className="aspect-video relative bg-muted">
                 {enrollment.course.thumbnailUrl ? (
-                  <img 
-                    src={enrollment.course.thumbnailUrl} 
-                    alt={isAr ? enrollment.course.titleAr : enrollment.course.titleEn} 
-                    className="w-full h-full object-cover"
+                  <Image
+                    src={enrollment.course.thumbnailUrl}
+                    alt={isAr ? enrollment.course.titleAr : enrollment.course.titleEn}
+                    fill
+                    className="object-cover"
+                    unoptimized
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">

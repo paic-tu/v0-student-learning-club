@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Star, Calendar, Clock, Award } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 
 export default function MentorDetailPage(props: { params: Promise<{ mentorId: string }> }) {
   const params = use(props.params)
@@ -112,12 +113,14 @@ export default function MentorDetailPage(props: { params: Promise<{ mentorId: st
       <div className="border-b">
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-start gap-6 mb-6">
-            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden relative">
               {mentor.avatar_url ? (
-                <img
+                <Image
                   src={mentor.avatar_url || "/placeholder.svg"}
                   alt={mentor.name}
-                  className="w-24 h-24 object-cover"
+                  fill
+                  className="object-cover"
+                  unoptimized
                 />
               ) : (
                 <span className="text-4xl font-bold">{mentor.name.charAt(0)}</span>
@@ -271,12 +274,14 @@ export default function MentorDetailPage(props: { params: Promise<{ mentorId: st
                   {mentor.reviews.map((review: any) => (
                     <div key={review.id} className="pb-6 border-b last:border-0 last:pb-0">
                       <div className="flex items-start gap-4 mb-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden relative">
                           {review.student_avatar ? (
-                            <img
+                            <Image
                               src={review.student_avatar || "/placeholder.svg"}
                               alt={review.student_name}
-                              className="w-10 h-10 object-cover"
+                              fill
+                              className="object-cover"
+                              unoptimized
                             />
                           ) : (
                             <span className="font-medium">{review.student_name.charAt(0)}</span>

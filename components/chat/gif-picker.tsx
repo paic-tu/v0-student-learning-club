@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -66,7 +67,7 @@ export function GifPicker({ onSelect }: GifPickerProps) {
                     className="relative aspect-video rounded-md overflow-hidden hover:opacity-80 transition-opacity"
                     onClick={() => onSelect(gif, "gif")}
                   >
-                    <img src={gif} alt="GIF" className="object-cover w-full h-full" />
+                    <Image src={gif} alt="GIF" fill className="object-cover" unoptimized />
                   </button>
                 ))}
               </div>
@@ -82,7 +83,7 @@ export function GifPicker({ onSelect }: GifPickerProps) {
                     className="relative aspect-square rounded-md overflow-hidden hover:opacity-80 transition-opacity p-1"
                     onClick={() => onSelect(sticker, "sticker")}
                   >
-                    <img src={sticker} alt="Sticker" className="object-contain w-full h-full" />
+                    <Image src={sticker} alt="Sticker" fill className="object-contain" unoptimized />
                   </button>
                 ))}
               </div>

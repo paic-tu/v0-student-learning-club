@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
+import Image from "next/image"
 import { useLanguage } from "@/lib/language-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Star, Calendar, Search } from "lucide-react"
-import Link from "next/link"
 
 export default function MentorsPage() {
   const { language } = useLanguage()
@@ -87,12 +88,14 @@ export default function MentorsPage() {
             {filteredMentors.map((mentor: any) => (
               <Card key={mentor.id} className="p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-start gap-4 mb-4">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden relative">
                     {mentor.avatar_url ? (
-                      <img
+                      <Image
                         src={mentor.avatar_url || "/placeholder.svg"}
                         alt={mentor.name}
-                        className="w-16 h-16 object-cover"
+                        fill
+                        className="object-cover"
+                        unoptimized
                       />
                     ) : (
                       <span className="text-2xl font-bold">{mentor.name.charAt(0)}</span>

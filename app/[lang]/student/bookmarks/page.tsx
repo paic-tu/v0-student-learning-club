@@ -3,6 +3,7 @@ import { getUserBookmarks } from "@/lib/db/queries"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import Image from "next/image"
 import { Bookmark, PlayCircle, BookOpen } from "lucide-react"
 import { BookmarkButton } from "@/components/bookmark-button"
 import { Badge } from "@/components/ui/badge"
@@ -43,10 +44,12 @@ export default async function BookmarksPage({ params }: { params: Promise<{ lang
             <Card key={bookmark.id} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full">
               <div className="aspect-video relative bg-muted group">
                 {bookmark.course.thumbnailUrl ? (
-                  <img 
-                    src={bookmark.course.thumbnailUrl} 
-                    alt={isAr ? bookmark.course.titleAr : bookmark.course.titleEn} 
-                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  <Image
+                    src={bookmark.course.thumbnailUrl}
+                    alt={isAr ? bookmark.course.titleAr : bookmark.course.titleEn}
+                    fill
+                    className="object-cover transition-transform group-hover:scale-105"
+                    unoptimized
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-muted/50">

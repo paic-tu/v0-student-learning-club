@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import NextImage from "next/image"
 import { PDFDocument } from "pdf-lib"
 import { Button } from "@/components/ui/button"
 import { Loader2, Download, Check, LayoutTemplate } from "lucide-react"
@@ -302,10 +303,12 @@ export function CertificateDownloadButton({
                 >
                   <div className="relative w-full aspect-[1.41] bg-muted mb-2 rounded overflow-hidden border">
                      {/* Preview Image - using the SVG itself */}
-                     <img 
-                       src={`/certificates/design-${num}.svg`} 
+                     <NextImage
+                       src={`/certificates/design-${num}.svg`}
                        alt={`Design ${num}`}
-                       className="object-cover w-full h-full"
+                       fill
+                       className="object-cover"
+                       unoptimized
                      />
                      {selectedDesign === `design-${num}` && (
                        <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-0.5">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { NavBar } from "@/components/nav-bar"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -116,10 +117,12 @@ export default function CoursesPage() {
               <Card key={course.id} className="flex flex-col hover:shadow-lg transition-shadow">
                 <CardHeader className="p-0">
                   <div className="relative h-48 w-full bg-muted rounded-t-lg overflow-hidden">
-                    <img
+                    <Image
                       src={course.thumbnailUrl || course.thumbnail_url || "/placeholder.svg?height=200&width=300&query=course"}
                       alt={language === "ar" ? course.title_ar : course.title_en}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
+                      unoptimized
                     />
                   </div>
                 </CardHeader>

@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Search, Filter } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
+import Image from "next/image"
 
 export default async function CoursesManagementPage(props: { params: Promise<{ lang: string }> }) {
   const params = await props.params
@@ -87,10 +88,12 @@ export default async function CoursesManagementPage(props: { params: Promise<{ l
                   <TableCell>
                     <div className="relative h-10 w-16 overflow-hidden rounded bg-muted">
                       {course.thumbnail_url ? (
-                        <img
+                        <Image
                           src={course.thumbnail_url}
                           alt={course.title_en || "Course"}
-                          className="h-full w-full object-cover"
+                          fill
+                          className="object-cover"
+                          unoptimized
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-secondary text-[10px] text-muted-foreground">

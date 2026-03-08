@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Calendar, Users, Clock, MapPin, ArrowRight } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
@@ -155,11 +156,15 @@ export default function CohortDetailPage(props: { params: Promise<{ cohortId: st
                     <Link href={`/courses/${course.course_id}`} key={course.id}>
                       <div className="flex items-center gap-4 p-4 rounded-lg border hover:bg-accent transition-colors">
                         {course.thumbnail_url && (
-                          <img
-                            src={course.thumbnail_url || "/placeholder.svg"}
-                            alt={language === "ar" ? course.title_ar : course.title_en}
-                            className="w-16 h-16 rounded object-cover"
-                          />
+                          <div className="relative w-16 h-16 shrink-0">
+                            <Image
+                              src={course.thumbnail_url || "/placeholder.svg"}
+                              alt={language === "ar" ? course.title_ar : course.title_en}
+                              fill
+                              className="object-cover rounded"
+                              unoptimized
+                            />
+                          </div>
                         )}
                         <div className="flex-1">
                           <h3 className="font-semibold">{language === "ar" ? course.title_ar : course.title_en}</h3>
@@ -287,18 +292,22 @@ export default function CohortDetailPage(props: { params: Promise<{ cohortId: st
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {cohort.members.slice(0, 10).map((member: any) => (
                     <div key={member.id} className="flex items-center gap-3">
-                      <div className="flex-shrink-0">
+                      <div className="flex-shrink-0 relative w-8 h-8 rounded-full overflow-hidden">
                         {member.avatar_url ? (
-                          <img
+                          <Image
                             src={member.avatar_url || "/default-avatar.svg"}
                             alt={member.name}
-                            className="w-8 h-8 rounded-full"
+                            fill
+                            className="object-cover"
+                            unoptimized
                           />
                         ) : (
-                          <img
+                          <Image
                             src="/default-avatar.svg"
                             alt={member.name}
-                            className="w-8 h-8 rounded-full"
+                            fill
+                            className="object-cover"
+                            unoptimized
                           />
                         )}
                       </div>

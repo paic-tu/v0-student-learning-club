@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -120,10 +121,12 @@ export function CertificatePreview({ studentName, certificates }: CertificatePre
               <div style={{ paddingBottom: "70.707%" /* 100% / 1.414 */ }} />
               
               {/* Background Image */}
-              <img 
+              <Image
                 src={`/certificates/${selectedDesign}.svg`}
-                alt="Certificate Background" 
-                className="absolute top-0 left-0 w-full h-full object-contain"
+                alt="Certificate Background"
+                fill
+                className="object-contain"
+                unoptimized
               />
               
               {/* Overlays */}
@@ -196,10 +199,12 @@ export function CertificatePreview({ studentName, certificates }: CertificatePre
                     className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-1 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all h-full shadow-sm"
                   >
                     <div className="relative w-full aspect-[1.41] bg-muted rounded overflow-hidden border">
-                       <img 
-                         src={`/certificates/design-${num}.svg`} 
+                       <Image
+                         src={`/certificates/design-${num}.svg`}
                          alt={`Design ${num}`}
-                         className="object-cover w-full h-full"
+                         fill
+                         className="object-cover"
+                         unoptimized
                        />
                        {selectedDesign === `design-${num}` && (
                          <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">

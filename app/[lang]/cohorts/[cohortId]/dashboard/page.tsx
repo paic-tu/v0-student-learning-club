@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar, BookOpen, Bell, Users } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 
 export default function CohortDashboardPage(props: { params: Promise<{ cohortId: string }> }) {
@@ -19,33 +20,33 @@ export default function CohortDashboardPage(props: { params: Promise<{ cohortId:
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    async function fetchCohort() {
+      try {
+        const res = await fetch(`/api/cohorts/${params.cohortId}`)
+        if (!res.ok) throw new Error("Failed to fetch cohort")
+        const data = await res.json()
+
+        // Check if user is a member
+        const isMember = data.cohort.members?.some((m: any) => m.user_id === user?.id && m.status === "active")
+        if (!isMember) {
+          router.push(`/cohorts/${params.cohortId}`)
+          return
+        }
+
+        setCohort(data.cohort)
+      } catch (error) {
+        console.error("[v0] Error fetching cohort:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
     if (!user) {
       router.push("/auth/login")
       return
     }
     fetchCohort()
-  }, [params.cohortId, user])
-
-  async function fetchCohort() {
-    try {
-      const res = await fetch(`/api/cohorts/${params.cohortId}`)
-      if (!res.ok) throw new Error("Failed to fetch cohort")
-      const data = await res.json()
-
-      // Check if user is a member
-      const isMember = data.cohort.members?.some((m: any) => m.user_id === user?.id && m.status === "active")
-      if (!isMember) {
-        router.push(`/cohorts/${params.cohortId}`)
-        return
-      }
-
-      setCohort(data.cohort)
-    } catch (error) {
-      console.error("[v0] Error fetching cohort:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [params.cohortId, user, router])
 
   if (loading) {
     return (
@@ -206,11 +207,15 @@ export default function CohortDashboardPage(props: { params: Promise<{ cohortId:
                   <Link href={`/courses/${course.course_id}`} key={course.id}>
                     <Card className="p-6 hover:shadow-lg transition-shadow h-full">
                       {course.thumbnail_url && (
-                        <img
-                          src={course.thumbnail_url || "/placeholder.svg"}
-                          alt={language === "ar" ? course.title_ar : course.title_en}
-                          className="w-full h-40 object-cover rounded-lg mb-4"
-                        />
+                        <div className="relative w-full h-40 mb-4">
+                          <Image
+                            src={course.thumbnail_url || "/placeholder.svg"}
+                            alt={language === "ar" ? course.title_ar : course.title_en}
+                            fill
+                            className="object-cover rounded-lg"
+                            unoptimized
+                          />
+                        </div>
                       )}
                       <h3 className="text-xl font-bold mb-2">
                         {language === "ar" ? course.title_ar : course.title_en}
