@@ -6,6 +6,7 @@ import { PDFDocument } from "pdf-lib"
 import { Button } from "@/components/ui/button"
 import { Loader2, Download, Check, LayoutTemplate } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
+import { useToast } from "@/hooks/use-toast"
 import {
   Dialog,
   DialogContent,
@@ -81,8 +82,10 @@ export function CertificateDownloadButton({
   courseId,
   certificateNumber: initialCertificateNumber,
   className,
+  skipRatingCheck = false,
 }: CertificateTemplateProps) {
   const { language } = useLanguage()
+  const { toast } = useToast()
   const [isGenerating, setIsGenerating] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [showRatingModal, setShowRatingModal] = useState(false)
@@ -101,7 +104,15 @@ export function CertificateDownloadButton({
     
     try {
       setIsCheckingRating(true)
-      const hasRated = await checkUserRating(courseId)
+      
+      // Add timeout to prevent infinite loading
+      const checkPromise = checkUserRating(courseId)
+      const timeoutPromise = new Promise<boolean>((resolve) => {
+        setTimeout(() => resolve(false), 5000) // Assume not rated if timeout
+      })
+      
+      const hasRated = await Promise.race([checkPromise, timeoutPromise])
+      
       if (hasRated) {
         setIsOpen(true)
       } else {
@@ -109,8 +120,13 @@ export function CertificateDownloadButton({
       }
     } catch (error) {
       console.error("Error checking rating", error)
-      // Fallback: open dialog to avoid blocking user completely in case of error
-      setIsOpen(true)
+      toast({
+        variant: "destructive",
+        title: isAr ? "خطأ" : "Error",
+        description: isAr ? "حدث خطأ أثناء التحقق من التقييم. يرجى المحاولة مرة أخرى." : "Error checking rating. Please try again.",
+      })
+      // Still open modal as fallback so user is not blocked completely
+      setShowRatingModal(true)
     } finally {
       setIsCheckingRating(false)
     }
@@ -312,6 +328,7 @@ export function CertificateDownloadButton({
         onClose={() => setShowRatingModal(false)}
         courseId={courseId}
         courseTitle={safeCourseName}
+        onSuccess={() => setIsOpen(true)}
       />
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>

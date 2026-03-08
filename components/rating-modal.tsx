@@ -15,9 +15,10 @@ interface RatingModalProps {
   onClose: () => void
   courseId: string
   courseTitle: string
+  onSuccess?: () => void
 }
 
-export function RatingModal({ isOpen, onClose, courseId, courseTitle }: RatingModalProps) {
+export function RatingModal({ isOpen, onClose, courseId, courseTitle, onSuccess }: RatingModalProps) {
   const { language } = useLanguage()
   const { toast } = useToast()
   const [courseRating, setCourseRating] = useState(0)
@@ -54,6 +55,7 @@ export function RatingModal({ isOpen, onClose, courseId, courseTitle }: RatingMo
         title: isAr ? "شكراً لك!" : "Thank you!",
         description: isAr ? "تم إرسال تقييمك بنجاح" : "Your rating has been submitted successfully",
       })
+      if (onSuccess) onSuccess()
       onClose()
     } catch (error) {
       toast({
