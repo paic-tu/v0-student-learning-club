@@ -92,6 +92,7 @@ export default function RegisterPage() {
           if (result.error === "Email already registered") errorMessage = "البريد الإلكتروني مسجل مسبقاً"
           else if (result.error === "Missing required fields") errorMessage = "يرجى ملء جميع الحقول المطلوبة"
           else if (result.error === "Invalid input format") errorMessage = "تنسيق البيانات غير صحيح"
+          else if (result.error?.includes("Service unavailable") || result.error?.includes("quota exceeded")) errorMessage = "الخدمة غير متوفرة: تجاوز الحد المسموح لنقل البيانات"
           else errorMessage = "فشل إنشاء الحساب"
         }
 

@@ -30,20 +30,45 @@ export async function loginAction(prevState: any, formData: FormData) {
     
     console.log("[Auth Action] Login successful")
     return { success: true }
-  } catch (error) {
+  } catch (error: any) {
     console.error("[Auth Action] Detailed Error:", error)
     
+    // Check for specific database quota error
+    if (error?.message?.includes("data transfer quota") || error?.cause?.message?.includes("data transfer quota")) {
+      return { error: "Service unavailable: Data transfer quota exceeded. Please try again later." }
+    }
+
     if (error instanceof AuthError) {
+      // Check if the cause is the quota error
+      if (error.cause?.message?.includes("data transfer quota")) {
+         return { error: "Service unavailable: Data transfer quota exceeded. Please try again later." }
+      }
+
       switch (error.type) {
         case "CredentialsSignin":
           return { error: "Invalid credentials." }
+        case "CallbackRouteError":
+            // Check if the underlying error is the quota error
+            if (error.cause?.err?.message?.includes("data transfer quota")) {
+                return { error: "Service unavailable: Data transfer quota exceeded. Please try again later." }
+            }
+            return { error: "Authentication failed." }
         default:
           return { error: "Authentication failed." }
       }
     }
 
-    // Rethrow redirect errors
-    throw error
+    // Rethrow redirect errors (Next.js redirects are thrown as errors)
+    if (error.message === "NEXT_REDIRECT" || error.digest?.startsWith("NEXT_REDIRECT")) {
+        throw error
+    }
+    
+    // Check for generic error message from Neon
+    if (error?.message?.includes("503") || error?.message?.includes("402")) {
+         return { error: "Service temporarily unavailable. Please try again later." }
+    }
+
+    return { error: "An unexpected error occurred." }
   }
 }
 
@@ -103,12 +128,23 @@ export async function registerAction(formData: FormData) {
     console.log("User inserted successfully")
 
     return { success: true }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Registration error details:", error)
     if (error instanceof Error) {
         console.error("Error message:", error.message)
         console.error("Error stack:", error.stack)
     }
+
+    // Check for specific database quota error
+    if (error?.message?.includes("data transfer quota") || error?.cause?.message?.includes("data transfer quota")) {
+       return { error: "Service unavailable: Data transfer quota exceeded. Please try again later." }
+    }
+    
+    // Check for generic error message from Neon
+    if (error?.message?.includes("503") || error?.message?.includes("402")) {
+         return { error: "Service temporarily unavailable. Please try again later." }
+    }
+
     return { error: "Registration failed. Please try again later." }
   }
 }

@@ -56,14 +56,14 @@ export default function LoginPage() {
       const result = await loginAction(undefined, formData)
 
       if (result?.error) {
-        const msg =
-          result.error === "Invalid credentials."
-            ? language === "ar"
-              ? "البريد الإلكتروني أو كلمة المرور غير صحيحة"
-              : "Invalid email or password"
-            : language === "ar"
-            ? "فشل تسجيل الدخول"
-            : "Login failed"
+        let msg = ""
+        if (result.error === "Invalid credentials.") {
+          msg = language === "ar" ? "البريد الإلكتروني أو كلمة المرور غير صحيحة" : "Invalid email or password"
+        } else if (result.error.includes("Service unavailable") || result.error.includes("quota exceeded")) {
+          msg = language === "ar" ? "الخدمة غير متوفرة: تجاوز الحد المسموح لنقل البيانات" : result.error
+        } else {
+          msg = language === "ar" ? "فشل تسجيل الدخول" : "Login failed"
+        }
         setError(msg)
         console.error("Login failed:", result.error)
       } else {
