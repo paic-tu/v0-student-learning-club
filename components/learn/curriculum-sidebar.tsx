@@ -56,7 +56,7 @@ export function CurriculumSidebar({ course, currentLessonId, lang, className, on
         </p>
       </div>
       
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="flex-1 overflow-y-auto min-h-0 scrollbar-hide">
           <Accordion type="multiple" defaultValue={course.modules.map((m: any) => m.id)} className="w-full">
             {course.modules.map((module: any) => (
               <AccordionItem key={module.id} value={module.id}>

@@ -2,7 +2,7 @@ import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { db } from "@/lib/db"
 import { users } from "@/lib/db/schema"
-import { eq } from "drizzle-orm"
+import { eq, ilike } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
 import { authConfig } from "@/lib/auth.config"
@@ -57,8 +57,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const { email, password } = validatedFields.data
 
           // Use Drizzle to fetch user
+          // Using ilike for case-insensitive email matching
           const user = await db.query.users.findFirst({
-            where: eq(users.email, email),
+            where: ilike(users.email, email),
             columns: {
               id: true,
               email: true,

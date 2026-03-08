@@ -170,7 +170,7 @@ export default async function LearningPage({
         </header>
 
         {/* Content Scroll Area */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-20 md:pb-12">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-20 md:pb-12 scrollbar-hide">
           <div className="max-w-5xl mx-auto w-full">
             <LessonContent 
               lesson={currentLessonMapped} 

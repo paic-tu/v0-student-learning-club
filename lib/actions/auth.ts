@@ -4,13 +4,13 @@ import { signIn } from "@/lib/auth"
 import { AuthError } from "next-auth"
 import { db } from "@/lib/db"
 import { users } from "@/lib/db/schema"
-import { eq } from "drizzle-orm"
+import { eq, ilike } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
 
 export async function loginAction(prevState: any, formData: FormData) {
   try {
-    const email = formData.get("email") as string
+    const email = (formData.get("email") as string)?.toLowerCase()
     const password = formData.get("password") as string
     const redirectTo = formData.get("redirectTo") as string | undefined
 
@@ -48,7 +48,7 @@ const registerSchema = z.object({
 export async function registerAction(formData: FormData) {
   try {
     const name = formData.get("name") as string
-    const email = formData.get("email") as string
+    const email = (formData.get("email") as string)?.toLowerCase()
     const password = formData.get("password") as string
     const phoneNumber = formData.get("phoneNumber") as string
 
@@ -63,7 +63,7 @@ export async function registerAction(formData: FormData) {
     }
 
     const existingUser = await db.query.users.findFirst({
-      where: eq(users.email, email),
+      where: ilike(users.email, email),
     })
 
     if (existingUser) {
