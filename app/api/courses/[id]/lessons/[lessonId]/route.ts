@@ -98,8 +98,12 @@ export async function PATCH(
       return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 })
     }
 
-    const { contentMarkdown, quizId, ...rest } = parsed.data
+    const { contentMarkdown, quizId, contentType, ...rest } = parsed.data
     const updateData: any = { ...rest }
+
+    if (contentType) {
+      updateData.type = contentType
+    }
 
     if (quizId) {
       updateData.quizConfig = { ...updateData.quizConfig, quizId }

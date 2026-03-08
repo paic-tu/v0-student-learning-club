@@ -105,8 +105,8 @@ export async function POST(
     }
 
     const data = parsed.data
-    const { contentMarkdown, quizId, ...rest } = data
-    const insertData: any = { ...rest }
+    const { contentMarkdown, quizId, contentType, ...rest } = data
+    const insertData: any = { ...rest, type: contentType }
 
     if (quizId) {
       insertData.quizConfig = { ...insertData.quizConfig, quizId }
