@@ -62,8 +62,8 @@ export function ChatLayout({ userId, initialConversations = [] }: ChatLayoutProp
     }
   }
 
-  const handleNewChat = (id: string) => {
-    fetchConversations()
+  const handleNewChat = async (id: string) => {
+    await fetchConversations()
     setSelectedId(id)
   }
 

@@ -55,8 +55,8 @@ export function CurriculumSidebar({ course, currentLessonId, lang, className }: 
                 <div className="text-start w-full">
                   <div className="font-medium text-sm">
                     {isAr 
-                      ? (module.titleAr || module.title_ar || module.titleEn || module.title_en) 
-                      : (module.titleEn || module.title_en || module.titleAr || module.title_ar)}
+                      ? (module.titleAr || module.title_ar || module.titleEn || module.title_en || "بدون عنوان") 
+                      : (module.titleEn || module.title_en || module.titleAr || module.title_ar || "Untitled Module")}
                   </div>
                   <div className="text-xs text-muted-foreground font-normal mt-0.5">
                     {module.lessons?.length || 0} {isAr ? "دروس" : "Lessons"}
@@ -88,8 +88,8 @@ export function CurriculumSidebar({ course, currentLessonId, lang, className }: 
                         )}
                         <span className="line-clamp-1 flex-1 text-start">
                           {isAr 
-                            ? (lesson.titleAr || lesson.title_ar || lesson.titleEn || lesson.title_en) 
-                            : (lesson.titleEn || lesson.title_en || lesson.titleAr || lesson.title_ar)}
+                            ? (lesson.titleAr || lesson.title_ar || lesson.titleEn || lesson.title_en || "بدون عنوان") 
+                            : (lesson.titleEn || lesson.title_en || lesson.titleAr || lesson.title_ar || "Untitled Lesson")}
                         </span>
                         {lesson.durationMinutes && (
                           <span className="text-xs text-muted-foreground/70">

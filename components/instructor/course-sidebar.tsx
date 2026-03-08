@@ -288,8 +288,8 @@ export function CourseSidebar({ course, modules, lessons, lang }: CourseSidebarP
 
   const openEditDialog = (module: any) => {
     setSelectedModule(module)
-    setModuleTitleEn(module.title_en)
-    setModuleTitleAr(module.title_ar)
+    setModuleTitleEn(module.title_en || module.titleEn || "")
+    setModuleTitleAr(module.title_ar || module.titleAr || "")
     setIsEditDialogOpen(true)
   }
 
@@ -337,8 +337,8 @@ export function CourseSidebar({ course, modules, lessons, lang }: CourseSidebarP
                 <AccordionTrigger className="hover:no-underline py-0 flex-1">
                   <span className="font-medium text-sm text-left">
                     {isAr 
-                      ? (module.title_ar || module.titleAr || module.title_en || module.titleEn) 
-                      : (module.title_en || module.titleEn || module.title_ar || module.titleAr)}
+                      ? (module.title_ar || module.titleAr || module.title_en || module.titleEn || "بدون عنوان") 
+                      : (module.title_en || module.titleEn || module.title_ar || module.titleAr || "Untitled Module")}
                   </span>
                 </AccordionTrigger>
                 <DropdownMenu>
@@ -400,8 +400,8 @@ export function CourseSidebar({ course, modules, lessons, lang }: CourseSidebarP
                           {getLessonIcon(lesson.type)}
                           <span className="truncate">
                             {isAr 
-                              ? (lesson.title_ar || lesson.titleAr || lesson.title_en || lesson.titleEn) 
-                              : (lesson.title_en || lesson.titleEn || lesson.title_ar || lesson.titleAr)}
+                              ? (lesson.title_ar || lesson.titleAr || lesson.title_en || lesson.titleEn || "بدون عنوان") 
+                              : (lesson.title_en || lesson.titleEn || lesson.title_ar || lesson.titleAr || "Untitled Lesson")}
                           </span>
                           {lesson.isFreePreview && (
                             <Badge variant="outline" className="ml-auto text-[10px] h-5 px-1">{isAr ? "مجاني" : "Free"}</Badge>
@@ -464,8 +464,8 @@ export function CourseSidebar({ course, modules, lessons, lang }: CourseSidebarP
                     {getLessonIcon(lesson.type)}
                     <span className="truncate">
                       {isAr 
-                        ? (lesson.title_ar || lesson.titleAr || lesson.title_en || lesson.titleEn) 
-                        : (lesson.title_en || lesson.titleEn || lesson.title_ar || lesson.titleAr)}
+                        ? (lesson.title_ar || lesson.titleAr || lesson.title_en || lesson.titleEn || "بدون عنوان") 
+                        : (lesson.title_en || lesson.titleEn || lesson.title_ar || lesson.titleAr || "Untitled Lesson")}
                     </span>
                     {lesson.isFreePreview && (
                       <Badge variant="outline" className="ml-auto text-[10px] h-5 px-1">{isAr ? "مجاني" : "Free"}</Badge>
