@@ -1,6 +1,6 @@
 "use client"
 
-import type { User } from "@/lib/auth"
+import type { User } from "@/lib/types"
 import { Bell, Search, LogOut, Menu, Moon, Sun, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,8 +13,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
 import { useLanguage } from "@/lib/language-context"
 import { useTheme } from "@/lib/theme-context"
 
@@ -31,11 +31,12 @@ interface AdminHeaderProps {
 
 export function AdminHeader({ user, mobileNav }: AdminHeaderProps) {
   const router = useRouter()
+  const { logout } = useAuth()
   const { language, setLanguage } = useLanguage()
   const { theme, toggleTheme } = useTheme()
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: "/auth/login" })
+    await logout()
   }
 
   return (

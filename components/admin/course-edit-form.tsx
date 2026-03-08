@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { Plus, X } from "lucide-react"
@@ -205,169 +206,185 @@ export function CourseEditForm({
   }
 
   return (
-    <div className="grid lg:grid-cols-3 gap-8">
+    <div className="grid lg:grid-cols-3 gap-8 pb-20">
       {/* Form Section */}
       <div className="lg:col-span-2">
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="title_en">{isAr ? "العنوان بالإنجليزية" : "Title (English)"}</Label>
-              <Input 
-                id="title_en" 
-                name="title_en" 
-                defaultValue={course.title_en} 
-                onChange={(e) => updatePreview("title_en", e.target.value)}
-                required 
-              />
-            </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>{isAr ? "المعلومات الأساسية" : "Basic Information"}</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-6">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="title_en">{isAr ? "العنوان بالإنجليزية" : "Title (English)"}</Label>
+                  <Input 
+                    id="title_en" 
+                    name="title_en" 
+                    defaultValue={course.title_en} 
+                    onChange={(e) => updatePreview("title_en", e.target.value)}
+                    required 
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="title_ar">{isAr ? "العنوان بالعربية" : "Title (Arabic)"}</Label>
-              <Input 
-                id="title_ar" 
-                name="title_ar" 
-                defaultValue={course.title_ar} 
-                onChange={(e) => updatePreview("title_ar", e.target.value)}
-                required 
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="title_ar">{isAr ? "العنوان بالعربية" : "Title (Arabic)"}</Label>
+                  <Input 
+                    id="title_ar" 
+                    name="title_ar" 
+                    defaultValue={course.title_ar} 
+                    onChange={(e) => updatePreview("title_ar", e.target.value)}
+                    required 
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="subtitle_en">{isAr ? "العنوان الفرعي بالإنجليزية" : "Subtitle (English)"}</Label>
-              <Input id="subtitle_en" name="subtitle_en" defaultValue={course.subtitle_en || ""} />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="subtitle_en">{isAr ? "العنوان الفرعي بالإنجليزية" : "Subtitle (English)"}</Label>
+                  <Input id="subtitle_en" name="subtitle_en" defaultValue={course.subtitle_en || ""} />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="subtitle_ar">{isAr ? "العنوان الفرعي بالعربية" : "Subtitle (Arabic)"}</Label>
-              <Input id="subtitle_ar" name="subtitle_ar" defaultValue={course.subtitle_ar || ""} />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="subtitle_ar">{isAr ? "العنوان الفرعي بالعربية" : "Subtitle (Arabic)"}</Label>
+                  <Input id="subtitle_ar" name="subtitle_ar" defaultValue={course.subtitle_ar || ""} />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="instructor_id">{isAr ? "المدرب" : "Instructor"}</Label>
-              <Select 
-                name="instructor_id" 
-                defaultValue={course.instructor_id.toString()}
-                onValueChange={(val) => updatePreview("instructor_id", val)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {instructors.map((instructor: any) => (
-                    <SelectItem key={instructor.id} value={instructor.id.toString()}>
-                      {instructor.name} ({instructor.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="instructor_id">{isAr ? "المدرب" : "Instructor"}</Label>
+                  <Select 
+                    name="instructor_id" 
+                    defaultValue={course.instructor_id.toString()}
+                    onValueChange={(val) => updatePreview("instructor_id", val)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {instructors.map((instructor: any) => (
+                        <SelectItem key={instructor.id} value={instructor.id.toString()}>
+                          {instructor.name} ({instructor.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="category_id">{isAr ? "التصنيف" : "Category"}</Label>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  type="button"
-                  onClick={() => setIsCategoryDialogOpen(true)}
-                  className="h-7 text-xs"
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  {isAr ? "جديد" : "New"}
-                </Button>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="category_id">{isAr ? "التصنيف" : "Category"}</Label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      type="button"
+                      onClick={() => setIsCategoryDialogOpen(true)}
+                      className="h-7 text-xs"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      {isAr ? "جديد" : "New"}
+                    </Button>
+                  </div>
+                  <Select 
+                    name="category_id" 
+                    value={selectedCategoryId} 
+                    onValueChange={(val) => {
+                      setSelectedCategoryId(val)
+                      updatePreview("category_id", val)
+                    }}
+                  >
+                    <SelectTrigger id="category_id">
+                      <SelectValue placeholder={isAr ? "اختر التصنيف" : "Select category"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {localCategories.map((category: any) => (
+                        <SelectItem key={category.id} value={category.id.toString()}>
+                          <div className="flex flex-col items-start">
+                            <span className="font-medium">{category.name_en || category.nameEn}</span>
+                            <span className="text-xs text-muted-foreground">{category.name_ar || category.nameAr}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="difficulty">{isAr ? "المستوى" : "Difficulty"}</Label>
+                  <Select 
+                    name="difficulty" 
+                    defaultValue={course.difficulty}
+                    onValueChange={(val) => updatePreview("difficulty", val)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="beginner">{isAr ? "مبتدئ" : "Beginner"}</SelectItem>
+                      <SelectItem value="intermediate">{isAr ? "متوسط" : "Intermediate"}</SelectItem>
+                      <SelectItem value="advanced">{isAr ? "متقدم" : "Advanced"}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="language">{isAr ? "لغة الدورة" : "Language"}</Label>
+                  <Select name="language" defaultValue={course.language || "ar"}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ar">{isAr ? "العربية" : "Arabic"}</SelectItem>
+                      <SelectItem value="en">{isAr ? "الإنجليزية" : "English"}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="duration">{isAr ? "المدة (بالدقائق)" : "Duration (minutes)"}</Label>
+                  <Input 
+                    id="duration" 
+                    name="duration" 
+                    type="number" 
+                    defaultValue={course.duration} 
+                    onChange={(e) => updatePreview("duration", Number(e.target.value))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="price">{isAr ? "السعر ($)" : "Price ($)"}</Label>
+                  <Input 
+                    id="price" 
+                    name="price" 
+                    type="number" 
+                    step="0.01" 
+                    defaultValue={course.price} 
+                    onChange={(e) => updatePreview("price", Number(e.target.value))}
+                  />
+                </div>
               </div>
-              <Select 
-                name="category_id" 
-                value={selectedCategoryId} 
-                onValueChange={(val) => {
-                  setSelectedCategoryId(val)
-                  updatePreview("category_id", val)
-                }}
-              >
-                <SelectTrigger id="category_id">
-                  <SelectValue placeholder={isAr ? "اختر التصنيف" : "Select category"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {localCategories.map((category: any) => (
-                    <SelectItem key={category.id} value={category.id.toString()}>
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium">{category.name_en || category.nameEn}</span>
-                        <span className="text-xs text-muted-foreground">{category.name_ar || category.nameAr}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="space-y-2">
-              <Label htmlFor="difficulty">{isAr ? "المستوى" : "Difficulty"}</Label>
-              <Select 
-                name="difficulty" 
-                defaultValue={course.difficulty}
-                onValueChange={(val) => updatePreview("difficulty", val)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="beginner">{isAr ? "مبتدئ" : "Beginner"}</SelectItem>
-                  <SelectItem value="intermediate">{isAr ? "متوسط" : "Intermediate"}</SelectItem>
-                  <SelectItem value="advanced">{isAr ? "متقدم" : "Advanced"}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>{isAr ? "الوصف" : "Description"}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="description_en">{isAr ? "الوصف بالإنجليزية" : "Description (English)"}</Label>
+                <Textarea id="description_en" name="description_en" defaultValue={course.description_en} rows={4} required />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="language">{isAr ? "لغة الدورة" : "Language"}</Label>
-              <Select name="language" defaultValue={course.language || "ar"}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ar">{isAr ? "العربية" : "Arabic"}</SelectItem>
-                  <SelectItem value="en">{isAr ? "الإنجليزية" : "English"}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="description_ar">{isAr ? "الوصف بالعربية" : "Description (Arabic)"}</Label>
+                <Textarea id="description_ar" name="description_ar" defaultValue={course.description_ar} rows={4} required />
+              </div>
+            </CardContent>
+          </Card>
 
-            <div className="space-y-2">
-              <Label htmlFor="duration">{isAr ? "المدة (بالدقائق)" : "Duration (minutes)"}</Label>
-              <Input 
-                id="duration" 
-                name="duration" 
-                type="number" 
-                defaultValue={course.duration} 
-                onChange={(e) => updatePreview("duration", Number(e.target.value))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="price">{isAr ? "السعر ($)" : "Price ($)"}</Label>
-              <Input 
-                id="price" 
-                name="price" 
-                type="number" 
-                step="0.01" 
-                defaultValue={course.price} 
-                onChange={(e) => updatePreview("price", Number(e.target.value))}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description_en">{isAr ? "الوصف بالإنجليزية" : "Description (English)"}</Label>
-            <Textarea id="description_en" name="description_en" defaultValue={course.description_en} rows={4} required />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description_ar">{isAr ? "الوصف بالعربية" : "Description (Arabic)"}</Label>
-            <Textarea id="description_ar" name="description_ar" defaultValue={course.description_ar} rows={4} required />
-          </div>
-
-          <div className="space-y-4 pt-4 border-t">
-            <h3 className="text-lg font-semibold">{isAr ? "تفاصيل الدورة" : "Course Details"}</h3>
-            <div className="grid gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>{isAr ? "تفاصيل الدورة" : "Course Details"}</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-6">
               <div className="space-y-2">
                 <Label>{isAr ? "المتطلبات" : "Requirements"}</Label>
                 <StringListInput 
@@ -394,12 +411,14 @@ export function CourseEditForm({
                   placeholder={isAr ? "أضف وسم..." : "Add tag..."}
                 />
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          <div className="space-y-4 pt-4 border-t">
-            <h3 className="text-lg font-semibold">{isAr ? "الوسائط" : "Media"}</h3>
-            <div className="grid gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>{isAr ? "الوسائط" : "Media"}</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-6">
               <MediaUploadField
                 id="thumbnail_url"
                 name="thumbnail_url"
@@ -423,34 +442,42 @@ export function CourseEditForm({
                 type="video"
                 onChange={(val) => updatePreview("video_url", val)}
               />
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2">
-              <Switch 
-                id="is_free" 
-                name="is_free" 
-                defaultChecked={course.is_free} 
-                onCheckedChange={(checked) => updatePreview("is_free", checked)}
-              />
-              <Label htmlFor="is_free">{isAr ? "دورة مجانية" : "Free Course"}</Label>
-            </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>{isAr ? "إعدادات النشر" : "Publishing Settings"}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-8">
+                <div className="flex items-center gap-2">
+                  <Switch 
+                    id="is_free" 
+                    name="is_free" 
+                    defaultChecked={course.is_free} 
+                    onCheckedChange={(checked) => updatePreview("is_free", checked)}
+                  />
+                  <Label htmlFor="is_free">{isAr ? "دورة مجانية" : "Free Course"}</Label>
+                </div>
 
-            <div className="flex items-center gap-2">
-              <Switch id="is_published" name="is_published" defaultChecked={course.is_published} />
-              <Label htmlFor="is_published">{isAr ? "منشور" : "Published"}</Label>
-            </div>
-          </div>
+                <div className="flex items-center gap-2">
+                  <Switch id="is_published" name="is_published" defaultChecked={course.is_published} />
+                  <Label htmlFor="is_published">{isAr ? "منشور" : "Published"}</Label>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          <div className="flex gap-2">
-            <Button type="submit" disabled={loading}>
+          <div className="flex gap-2 sticky bottom-6 bg-background/80 backdrop-blur-sm p-4 border rounded-lg shadow-sm z-10">
+            <Button type="submit" disabled={loading} size="lg" className="w-full sm:w-auto">
               {loading ? (isAr ? "جاري الحفظ..." : "Saving...") : (isAr ? "حفظ التغييرات" : "Save Changes")}
             </Button>
-            <Button type="button" variant="outline" onClick={() => router.back()}>
+            <Button type="button" variant="outline" size="lg" onClick={() => router.back()}>
               {isAr ? "إلغاء" : "Cancel"}
             </Button>
           </div>
+
 
           <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
             <DialogContent>

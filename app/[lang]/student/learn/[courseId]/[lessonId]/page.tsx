@@ -179,6 +179,8 @@ export default async function LearningPage({
               initialNotes={lessonNotes}
               quiz={quiz}
               quizSubmission={quizSubmission}
+              nextUrl={nextLessonId ? `/${lang}/student/learn/${courseAny.id}/${nextLessonId}` : `/${lang}/student/course/${courseAny.id}`}
+              courseId={courseAny.id}
             />
             
             {/* Action Bar (Complete, Notes) */}

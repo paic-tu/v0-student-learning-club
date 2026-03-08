@@ -36,6 +36,8 @@ export type Permission =
   | "settings:read"
   | "settings:write"
   | "audit:read"
+  | "reviews:read"
+  | "reviews:delete"
 
 export type Role = "student" | "instructor" | "admin" | "manager" | "support"
 
@@ -75,6 +77,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "settings:read",
     "settings:write",
     "audit:read",
+    "reviews:read",
+    "reviews:delete",
   ],
   manager: [
     // Content + store management, no system settings

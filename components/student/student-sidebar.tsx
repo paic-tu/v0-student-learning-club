@@ -34,7 +34,7 @@ export function StudentSidebar() {
       <aside className="hidden md:flex w-64 flex-col border-r bg-background h-screen sticky top-0">
         <div className="flex h-16 items-center border-b px-6">
           <Link href={`/${locale}/student/dashboard`} className="flex items-center gap-2 font-bold text-xl">
-            <span>Student Portal</span>
+            <span>{isAr ? "بوابة الطالب" : "Student Portal"}</span>
           </Link>
         </div>
         <StudentNav />
@@ -58,7 +58,7 @@ export function StudentSidebar() {
       <div className={cn("flex h-16 items-center border-b", isCollapsed ? "justify-center" : "px-6 justify-between")}>
         {!isCollapsed && (
           <Link href={`/${locale}/student/dashboard`} className="flex items-center gap-2 font-bold text-xl overflow-hidden whitespace-nowrap">
-            <span>Student Portal</span>
+            <span>{isAr ? "بوابة الطالب" : "Student Portal"}</span>
           </Link>
         )}
         
@@ -87,13 +87,14 @@ export function StudentMobileNav() {
   const pathname = usePathname()
   const segments = pathname.split("/")
   const locale = (segments[1] || "ar") as Language
+  const isAr = locale === "ar"
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex h-16 items-center border-b px-6">
         <Link href={`/${locale}/student/dashboard`} className="flex items-center gap-2 font-bold text-xl">
           {/* <Image src="/logo.svg" alt="Neon Logo" width={40} height={40} className="h-8 w-auto" /> */}
-          <span>Student Portal</span>
+          <span>{isAr ? "بوابة الطالب" : "Student Portal"}</span>
         </Link>
       </div>
       <StudentNav />

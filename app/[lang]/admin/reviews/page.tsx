@@ -1,25 +1,25 @@
 import { getCurrentUser } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { getInstructorReviews } from "@/lib/db/queries"
+import { getAllReviews } from "@/lib/db/queries"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Star } from "lucide-react"
 
-export default async function InstructorReviewsPage({ params }: { params: Promise<{ lang: string }> }) {
+export default async function AdminReviewsPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params
   const user = await getCurrentUser()
 
-  if (!user || user.role !== "instructor") {
+  if (!user || user.role !== "admin") {
     redirect(`/${lang}/login`)
   }
 
-  const reviews = await getInstructorReviews(user.id)
+  const reviews = await getAllReviews()
   const isAr = lang === "ar"
 
   return (
     <div className="container py-8 space-y-8">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">{isAr ? "مراجعات دوراتي" : "My Course Reviews"}</h1>
+        <h1 className="text-3xl font-bold">{isAr ? "كل المراجعات" : "All Reviews"}</h1>
       </div>
 
       <div className="grid gap-4">
@@ -45,6 +45,11 @@ export default async function InstructorReviewsPage({ params }: { params: Promis
                         <p className="text-sm text-muted-foreground">
                           {isAr ? "دورة:" : "Course:"} {isAr ? review.course.titleAr : review.course.titleEn}
                         </p>
+                        {review.course.instructor && (
+                           <p className="text-xs text-muted-foreground mt-1">
+                             {isAr ? "المدرب:" : "Instructor:"} {review.course.instructor.name}
+                           </p>
+                        )}
                       </div>
                       <div className="flex flex-col items-end gap-1">
                          <div className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-900/30 px-3 py-1 rounded-full border border-yellow-200 dark:border-yellow-800">

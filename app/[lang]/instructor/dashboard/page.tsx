@@ -56,7 +56,7 @@ export default async function InstructorDashboardPage({ params }: { params: Prom
             <BarChart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${analytics.totalRevenue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">${Number(analytics.totalRevenue || 0).toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">{isAr ? "إجمالي الأرباح" : "Total earnings"}</p>
           </CardContent>
         </Card>

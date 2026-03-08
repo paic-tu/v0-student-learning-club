@@ -24,11 +24,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="flex h-screen bg-muted/20">
+    <div className="flex min-h-screen bg-muted/20">
       <AdminSidebar user={user} />
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col">
         <AdminHeader user={user} mobileNav={<AdminMobileNav user={user} />} />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 p-6">{children}</main>
       </div>
     </div>
   )

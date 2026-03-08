@@ -218,6 +218,8 @@ export async function completeLessonAction(courseId: string, lessonId: string) {
     revalidatePath(`/courses/${courseId}`)
     revalidatePath(`/student/course/${courseId}`)
     revalidatePath(`/student/learn/${courseId}/${lessonId}`)
+    // Revalidate the entire learning path for this course to ensure next/prev lessons are updated
+    revalidatePath('/[lang]/student/learn/[courseId]/[lessonId]', 'page')
     
     return { success: true, progress: progressPct }
   } catch (error) {

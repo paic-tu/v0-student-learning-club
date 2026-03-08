@@ -59,16 +59,13 @@ export default function LoginPage() {
         let msg = ""
         if (result.error === "Invalid credentials.") {
           msg = language === "ar" ? "البريد الإلكتروني أو كلمة المرور غير صحيحة" : "Invalid email or password"
-        } else if (result.error.includes("Service unavailable") || result.error.includes("quota exceeded")) {
-          msg = language === "ar" ? "الخدمة غير متوفرة: تجاوز الحد المسموح لنقل البيانات" : result.error
         } else {
           msg = language === "ar" ? "فشل تسجيل الدخول" : "Login failed"
         }
         setError(msg)
         console.error("Login failed:", result.error)
       } else {
-        // If no error and no redirect thrown yet, force redirect manually
-        // This handles cases where loginAction might return success without throwing redirect
+        // If no error, force redirect manually
         window.location.href = callbackUrl
       }
     } catch (error: any) {

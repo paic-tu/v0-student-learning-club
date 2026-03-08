@@ -53,19 +53,22 @@ export default async function AnalyticsPage({ params }: { params: Promise<{ lang
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${analytics.totalRevenue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">${Number(analytics.totalRevenue || 0).toFixed(2)}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              {isAr ? "متوسط التقييم" : "Average Rating"}
+              {isAr ? "متوسط تقييم الدورات" : "Avg. Course Rating"}
             </CardTitle>
             <Star className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.averageRating}</div>
+            <div className="text-2xl font-bold">{analytics.rating}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {isAr ? "تقييم المدرب: " : "Instructor Rating: "} {analytics.instructorRating}
+            </p>
           </CardContent>
         </Card>
       </div>

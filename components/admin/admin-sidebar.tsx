@@ -20,6 +20,7 @@ import {
   ChevronRight,
   HelpCircle,
   MessageCircle,
+  MessageSquare,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { User } from "@/lib/auth"
@@ -34,6 +35,7 @@ function AdminNav({ user, isCollapsed }: AdminSidebarProps) {
   const pathname = usePathname()
   const segments = pathname.split("/")
   const locale = segments[1] || "ar"
+  const isAr = locale === "ar"
   
   // Helper to remove locale from path for comparison
   const pathWithoutLocale = "/" + segments.slice(2).join("/")
@@ -41,91 +43,97 @@ function AdminNav({ user, isCollapsed }: AdminSidebarProps) {
   const menuItems = [
     {
       href: "/admin",
-      label: "Dashboard",
+      label: isAr ? "لوحة التحكم" : "Dashboard",
       icon: LayoutDashboard,
       permission: null,
     },
     {
       href: "/admin/users",
-      label: "Users & Roles",
+      label: isAr ? "المستخدمين والصلاحيات" : "Users & Roles",
       icon: Users,
       permission: "users:read" as const,
     },
     {
       href: "/admin/categories",
-      label: "Categories",
+      label: isAr ? "الأقسام" : "Categories",
       icon: BookOpen,
       permission: "courses:write" as const,
     },
     {
       href: "/admin/courses",
-      label: "Courses",
+      label: isAr ? "الدورات" : "Courses",
       icon: GraduationCap,
       permission: "courses:read" as const,
     },
     {
       href: "/admin/lessons",
-      label: "Lessons",
+      label: isAr ? "الدروس" : "Lessons",
       icon: BookOpen,
       permission: "lessons:read" as const,
     },
     {
       href: "/admin/enrollments",
-      label: "Enrollments",
+      label: isAr ? "التسجيلات" : "Enrollments",
       icon: Users,
       permission: "enrollments:read" as const,
     },
     {
       href: "/admin/store",
-      label: "Store",
+      label: isAr ? "المتجر" : "Store",
       icon: ShoppingCart,
       permission: "store:read" as const,
     },
     {
       href: "/admin/orders",
-      label: "Orders",
+      label: isAr ? "الطلبات" : "Orders",
       icon: FileText,
       permission: "orders:read" as const,
     },
     {
       href: "/admin/challenges",
-      label: "Challenges",
+      label: isAr ? "التحديات" : "Challenges",
       icon: Zap,
       permission: "challenges:read" as const,
     },
     {
       href: "/admin/quizzes",
-      label: "Quizzes",
+      label: isAr ? "الكويزات" : "Quizzes",
       icon: HelpCircle,
       permission: "challenges:read" as const,
     },
     {
+      href: "/admin/reviews",
+      label: isAr ? "المراجعات" : "Reviews",
+      icon: MessageSquare,
+      permission: "reviews:read" as const,
+    },
+    {
       href: "/admin/chat",
-      label: "Chat",
+      label: isAr ? "المحادثات" : "Chat",
       icon: MessageCircle,
       permission: null,
     },
     {
       href: "/admin/contests",
-      label: "Contests",
+      label: isAr ? "المسابقات" : "Contests",
       icon: Trophy,
       permission: "contests:read" as const,
     },
     {
       href: "/admin/certificates",
-      label: "Certificates",
+      label: isAr ? "الشهادات" : "Certificates",
       icon: Award,
       permission: "certificates:read" as const,
     },
     {
       href: "/admin/settings",
-      label: "Settings",
+      label: isAr ? "الإعدادات" : "Settings",
       icon: Settings,
       permission: "settings:read" as const,
     },
     {
       href: "/admin/audit-logs",
-      label: "Audit Logs",
+      label: isAr ? "سجلات التدقيق" : "Audit Logs",
       icon: FileText,
       permission: "audit:read" as const,
     },

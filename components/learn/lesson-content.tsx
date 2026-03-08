@@ -122,9 +122,11 @@ interface LessonContentProps {
   initialNotes?: any[]
   quiz?: any
   quizSubmission?: any
+  nextUrl?: string
+  courseId?: string
 }
 
-export function LessonContent({ lesson, lang, userId, initialNotes = [], quiz, quizSubmission }: LessonContentProps) {
+export function LessonContent({ lesson, lang, userId, initialNotes = [], quiz, quizSubmission, nextUrl, courseId }: LessonContentProps) {
   const isAr = lang === "ar"
   const [notes, setNotes] = useState(initialNotes)
   const [newNote, setNewNote] = useState("")
@@ -307,7 +309,13 @@ export function LessonContent({ lesson, lang, userId, initialNotes = [], quiz, q
         
         <h1 className="text-3xl font-bold mb-6 text-start">{isAr ? lesson.titleAr : lesson.titleEn}</h1>
         
-        <QuizClient challenge={quiz} previousSubmission={quizSubmission} />
+        <QuizClient 
+          challenge={quiz} 
+          previousSubmission={quizSubmission} 
+          nextUrl={nextUrl}
+          courseId={courseId}
+          lessonId={lesson.id}
+        />
       </div>
     )
   }

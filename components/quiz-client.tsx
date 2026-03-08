@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { useLanguage } from "@/lib/language-context"
 import { submitQuizAction } from "@/lib/actions"
+import { completeLessonAction } from "@/lib/actions/course"
 import { useToast } from "@/hooks/use-toast"
 import { CheckCircle2, XCircle } from "lucide-react"
 import Link from "next/link"
@@ -21,9 +22,12 @@ interface Question {
 interface QuizClientProps {
   challenge: any
   previousSubmission: any
+  nextUrl?: string
+  courseId?: string
+  lessonId?: string
 }
 
-export function QuizClient({ challenge, previousSubmission }: QuizClientProps) {
+export function QuizClient({ challenge, previousSubmission, nextUrl, courseId, lessonId }: QuizClientProps) {
   const { language } = useLanguage()
   const { toast } = useToast()
   const [isPending, startTransition] = useTransition()
@@ -58,7 +62,14 @@ export function QuizClient({ challenge, previousSubmission }: QuizClientProps) {
     startTransition(async () => {
       const res = await submitQuizAction(challenge.id, answers)
       if (res.success) {
+        
+        // If passed and part of a lesson, mark as complete
+        if (res.isPassed && courseId && lessonId) {
+            await completeLessonAction(courseId, lessonId)
+        }
+
         setResult(res)
+
         toast({
           title: language === "ar" ? "تم الإرسال" : "Submitted",
           description: `${language === "ar" ? "النتيجة" : "Score"}: ${res.score}%`,
@@ -126,9 +137,9 @@ export function QuizClient({ challenge, previousSubmission }: QuizClientProps) {
 
           </CardContent>
           <CardFooter className="flex justify-center gap-4">
-            <Button asChild variant="outline">
-              <Link href={`/${language}/challenges`}>
-                {language === "ar" ? "عودة للتحديات" : "Back to Challenges"}
+            <Button asChild>
+              <Link href={nextUrl || `/${language}/challenges`}>
+                {language === "ar" ? "التالي" : "Next"}
               </Link>
             </Button>
             {!result.isPassed && (

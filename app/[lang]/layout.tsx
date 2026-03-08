@@ -7,7 +7,6 @@ import { LanguageProvider } from "@/lib/language-context"
 import { ThemeProvider } from "@/lib/theme-context"
 import { AuthProvider } from "@/lib/auth-context"
 import { Toaster } from "@/components/ui/toaster"
-import { auth } from "@/lib/auth"
 import { SWUnregister } from "@/components/sw-unregister"
 import { RotateDevicePrompt } from "@/components/rotate-device-prompt"
 
@@ -90,14 +89,13 @@ export default async function RootLayout({
 }>) {
   const { lang } = await params
   const dir = lang === "en" ? "ltr" : "rtl"
-  const session = await auth()
 
   return (
     <html lang={lang} dir={dir} suppressHydrationWarning>
       <body className={`${arabic.variable} ${inter.variable} ${playfair.variable} ${dancing.variable} font-sans antialiased`}>
         <ThemeProvider>
           <LanguageProvider defaultLang={lang as "ar" | "en"}>
-            <AuthProvider session={session}>
+            <AuthProvider>
               <SWUnregister />
               <RotateDevicePrompt />
               {children}

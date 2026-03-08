@@ -17,8 +17,8 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
 import { useLanguage } from "@/lib/language-context"
 import { useTheme } from "@/lib/theme-context"
 import { useState, useEffect } from "react"
@@ -37,6 +37,7 @@ interface PortalHeaderProps {
 
 export function PortalHeader({ user, mobileNav }: PortalHeaderProps) {
   const router = useRouter()
+  const { logout } = useAuth()
   const { language, setLanguage } = useLanguage()
   const { theme, toggleTheme } = useTheme()
   const [unreadCount, setUnreadCount] = useState(0)
@@ -58,7 +59,7 @@ export function PortalHeader({ user, mobileNav }: PortalHeaderProps) {
   }, [])
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: "/auth/login" })
+    await logout()
   }
 
   return (
