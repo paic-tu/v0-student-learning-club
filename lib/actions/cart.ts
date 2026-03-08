@@ -79,8 +79,8 @@ export async function getCartCountAction() {
   }
 }
 
-export async function addToCartAction(courseId: string) {
-  console.log("[Action] addToCartAction started", { courseId })
+export async function addToCartAction(itemId: string, type: "course" | "product" = "course") {
+  console.log("[Action] addToCartAction started", { itemId, type })
   try {
     const session = await auth()
     if (!session?.user?.id) {
@@ -101,11 +101,12 @@ export async function addToCartAction(courseId: string) {
     }
 
     // Check if item exists
+    const whereClause = type === "course" 
+      ? and(eq(cartItems.cartId, cart.id), eq(cartItems.courseId, itemId))
+      : and(eq(cartItems.cartId, cart.id), eq(cartItems.productId, itemId))
+
     const existingItem = await db.query.cartItems.findFirst({
-      where: and(
-        eq(cartItems.cartId, cart.id),
-        eq(cartItems.courseId, courseId)
-      )
+      where: whereClause
     })
 
     if (existingItem) {
@@ -114,7 +115,8 @@ export async function addToCartAction(courseId: string) {
 
     await db.insert(cartItems).values({
       cartId: cart.id,
-      courseId,
+      courseId: type === "course" ? itemId : null,
+      productId: type === "product" ? itemId : null,
       quantity: 1
     })
 
@@ -144,7 +146,7 @@ export async function removeFromCartAction(itemId: string) {
   }
 }
 
-export async function checkoutAction() {
+export async function checkoutAction(shippingAddress?: string, notes?: string) {
     console.log("[Action] checkoutAction started")
     try {
         const session = await auth()
@@ -182,8 +184,8 @@ export async function checkoutAction() {
                 price = parseFloat(item.course.price || "0")
                 validItems.push({ type: 'course', id: item.course.id, price, title: item.course.titleEn })
             } else if (item.product) {
-                 price = parseFloat(item.product.price || "0")
-                 validItems.push({ type: 'product', id: item.product.id, price, title: item.product.nameEn })
+                price = parseFloat(item.product.price || "0")
+                validItems.push({ type: 'product', id: item.product.id, price, title: item.product.nameEn })
             }
             total += price
         }
@@ -193,6 +195,8 @@ export async function checkoutAction() {
             userId,
             status: "paid", // Auto-pay for now
             totalAmount: total.toString(),
+            shippingAddress: shippingAddress || null,
+            notes: notes || null,
         }).returning()
 
         // Create Order Items and Enrollments

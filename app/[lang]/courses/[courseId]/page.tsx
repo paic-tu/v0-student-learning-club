@@ -2,7 +2,7 @@ import { NavBar } from "@/components/nav-bar"
 import { Suspense } from "react"
 import { notFound } from "next/navigation"
 import { getCourseById, checkEnrollmentStatus } from "@/lib/db/queries"
-import { checkBookmarkStatus } from "@/app/actions/bookmark"
+import { checkBookmarkStatus } from "@/lib/actions/bookmark"
 import { CourseDetailClient } from "@/components/course-detail-client"
 import { getCurrentUser } from "@/lib/auth"
 

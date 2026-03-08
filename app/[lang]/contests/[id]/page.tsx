@@ -6,11 +6,10 @@ import { NavBar } from "@/components/nav-bar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useLanguage } from "@/lib/language-context"
 import { useAuth } from "@/lib/auth-context"
-import { getContestById, joinContest } from "@/lib/db/queries"
-import { getContestParticipants } from "@/lib/actions"
+import { getContestById, joinContest, getContestParticipants } from "@/lib/db/queries"
 import { Calendar, Users, Trophy, Award, CheckCircle2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
@@ -33,7 +32,7 @@ export default function ContestPage() {
       setContest(data)
 
       // Load participants
-      const parts = await getContestParticipants(Number(id))
+      const parts = await getContestParticipants(String(id))
       setParticipants(parts)
 
       // Check if current user is participating
@@ -242,13 +241,14 @@ export default function ContestPage() {
                     >
                       <div className="w-8 text-center font-bold">#{index + 1}</div>
                       <Avatar>
+                        <AvatarImage src={participant.avatarUrl} />
                         <AvatarFallback>{participant.name.charAt(0).toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
                         <p className="font-semibold">{participant.name}</p>
                         <p className="text-sm text-muted-foreground">
                           {language === "ar" ? "انضم في" : "Joined"}{" "}
-                          {new Date(participant.joined_at).toLocaleDateString(language === "ar" ? "ar-SA" : "en-US")}
+                          {new Date(participant.joinedAt).toLocaleDateString(language === "ar" ? "ar-SA" : "en-US")}
                         </p>
                       </div>
                       {contest.status === "completed" && (

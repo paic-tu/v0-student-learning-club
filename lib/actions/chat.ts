@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { conversations, conversationParticipants, messages, users, enrollments, courses } from "@/lib/db/schema"
-import { eq, and, desc, or, sql, asc, gt, ne, count, inArray } from "drizzle-orm"
+import { eq, and, desc, or, sql, asc, gt, ne, count, inArray, isNotNull } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 export async function getConversations() {
@@ -21,18 +21,56 @@ export async function getConversations() {
       .from(conversationParticipants)
       .where(eq(conversationParticipants.userId, session.user.id))
 
-    if (userParticipations.length === 0) return []
+    let conversationIds = userParticipations.map(p => p.conversationId)
 
-    const conversationIds = userParticipations.map(p => p.conversationId)
+    // --- EXPANDED ACCESS FOR ADMIN & INSTRUCTOR ---
+    if (session.user.role === "admin") {
+      // Admins see all Community Chats and all Course Chats
+      const publicChats = await db
+        .select({ id: conversations.id })
+        .from(conversations)
+        .where(
+          or(
+            eq(conversations.type, "community"),
+            isNotNull(conversations.courseId)
+          )
+        )
+      
+      const publicChatIds = publicChats.map(c => c.id)
+      conversationIds = [...new Set([...conversationIds, ...publicChatIds])]
+    } else if (session.user.role === "instructor") {
+      // Instructors see chats for their courses
+      const myCourseChats = await db
+        .select({ id: conversations.id })
+        .from(conversations)
+        .innerJoin(courses, eq(conversations.courseId, courses.id))
+        .where(eq(courses.instructorId, session.user.id))
+
+      const myCourseChatIds = myCourseChats.map(c => c.id)
+      conversationIds = [...new Set([...conversationIds, ...myCourseChatIds])]
+    }
+
+    if (conversationIds.length === 0) return []
     
     // Debug logging
-    console.log(`[getConversations] Found ${conversationIds.length} conversations for user ${session.user.id}`)
+    console.log(`[getConversations] Found ${conversationIds.length} conversations for user ${session.user.id} (${session.user.role})`)
 
     // 2. Fetch conversations, participants, and latest messages in parallel
     try {
       const [convs, allParticipants, latestMessagesRaw, unreadCounts] = await Promise.all([
         // Get conversation details
-        db.select().from(conversations).where(inArray(conversations.id, conversationIds)),
+        db.select({
+          id: conversations.id,
+          type: conversations.type,
+          name: conversations.name,
+          courseId: conversations.courseId,
+          createdAt: conversations.createdAt,
+          updatedAt: conversations.updatedAt,
+          courseThumbnail: courses.thumbnailUrl
+        })
+        .from(conversations)
+        .leftJoin(courses, eq(conversations.courseId, courses.id))
+        .where(inArray(conversations.id, conversationIds)),
   
         // Get all participants for these conversations to determine names/avatars
         db.select({
@@ -113,6 +151,8 @@ export async function getConversations() {
           image = otherUser?.avatarUrl
         } else if (conv.type === "community") {
           name = "Community Chat"
+        } else if (conv.courseId) {
+          image = conv.courseThumbnail
         }
   
         return {
@@ -191,7 +231,7 @@ export async function getMessages(conversationId: string) {
   const session = await auth()
   if (!session?.user?.id) return []
 
-  // Verify participation
+  // Verify participation or Admin/Instructor Access
   const participant = await db.query.conversationParticipants.findFirst({
     where: and(
       eq(conversationParticipants.conversationId, conversationId),
@@ -199,7 +239,41 @@ export async function getMessages(conversationId: string) {
     ),
   })
 
-  if (!participant) return []
+  // If not a direct participant, check for Admin/Instructor access
+  if (!participant) {
+    if (session.user.role === "admin") {
+      // Admin allows access to group/community chats (but maybe not private ones unless specified)
+      // The user requirement said "Admin can look at all general chat and even course chats"
+      const conv = await db.query.conversations.findFirst({
+        where: eq(conversations.id, conversationId),
+        columns: { type: true, courseId: true }
+      })
+      
+      // If conversation is NOT found or is individual (private DM), deny access unless user explicitly asked for private DMs
+      // "all general chat and even course chats" -> likely excludes DMs
+      if (!conv || (conv.type === "individual")) {
+        return []
+      }
+      // Allow access
+    } else if (session.user.role === "instructor") {
+      // Check if this is a chat for their course
+      const conv = await db.query.conversations.findFirst({
+        where: eq(conversations.id, conversationId),
+        with: {
+          course: {
+            columns: { instructorId: true }
+          }
+        }
+      })
+      
+      if (!conv || !conv.course || conv.course.instructorId !== session.user.id) {
+        return []
+      }
+      // Allow access
+    } else {
+      return []
+    }
+  }
 
   // Fetch messages
   const chatMessages = await db.query.messages.findMany({

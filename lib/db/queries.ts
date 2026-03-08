@@ -112,6 +112,7 @@ export async function getCourseModules(courseId: string) {
   }
 }
 
+
 export async function getCourseLessons(courseId: string) {
   try {
     return await db.query.lessons.findMany({
@@ -149,6 +150,27 @@ export async function getInstructorCourses(instructorId: string) {
     })
   } catch (error) {
     console.error("Error fetching instructor courses:", error)
+    return []
+  }
+}
+
+export async function getUserOrders(userId: string) {
+  try {
+    const userOrders = await db.query.orders.findMany({
+      where: eq(orders.userId, userId),
+      with: {
+        items: {
+          with: {
+            product: true,
+            course: true
+          }
+        }
+      },
+      orderBy: [desc(orders.createdAt)]
+    })
+    return userOrders
+  } catch (error) {
+    console.error("Error fetching user orders:", error)
     return []
   }
 }
@@ -290,43 +312,170 @@ export async function getStudentDashboardData(userId: string) {
     })
 
     const completedCourses = enrolledCourses.filter(e => e.progress === 100).length
-    const inProgressCourses = enrolledCourses.length - completedCourses
+    const activeCourses = enrolledCourses.length - completedCourses
     
-    // Calculate total learning hours (approximate from completed lessons duration)
-    // This is complex without tracking time per lesson, so we'll just sum course durations for completed courses for now
-    // or rely on progress table if we want to be precise.
-    // For simplicity, let's use enrollment progress * course duration
-    let totalLearningHours = 0
-    enrolledCourses.forEach(e => {
-      const courseDuration = e.course.duration || 0
-      totalLearningHours += (courseDuration * (e.progress / 100)) / 60
+    // Get certificates count
+    const certsCount = await db.select({ count: count() })
+      .from(certificates)
+      .where(eq(certificates.userId, userId))
+      .then(res => res[0].count)
+
+    // Last activity logic
+    let lastActivity = null
+    const lastActiveEnrollment = enrolledCourses.find(e => e.progress < 100)
+    
+    if (lastActiveEnrollment) {
+        const courseLessons = await db.query.lessons.findMany({
+            where: eq(lessons.courseId, lastActiveEnrollment.courseId),
+            orderBy: [asc(lessons.orderIndex)],
+            columns: {
+                id: true,
+                titleEn: true,
+                titleAr: true,
+                orderIndex: true
+            }
+        })
+        
+        const completedLessonIds = lastActiveEnrollment.completedLessons as string[] || []
+        const nextLesson = courseLessons.find(l => !completedLessonIds.includes(l.id)) || courseLessons[courseLessons.length - 1]
+        
+        if (nextLesson) {
+            lastActivity = {
+                courseTitleAr: lastActiveEnrollment.course.titleAr,
+                courseTitleEn: lastActiveEnrollment.course.titleEn,
+                lessonTitleAr: nextLesson.titleAr,
+                lessonTitleEn: nextLesson.titleEn,
+                progress: lastActiveEnrollment.progress,
+                courseId: lastActiveEnrollment.courseId,
+                lessonId: nextLesson.id
+            }
+        }
+    }
+
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+      columns: {
+        points: true
+      }
     })
 
     return {
-      enrolledCourses: enrolledCourses.map(e => ({
-        ...e.course,
-        progress: e.progress,
-        lastAccessedAt: e.lastAccessedAt,
-        enrollmentId: e.id
-      })),
       stats: {
+        activeCourses,
         completedCourses,
-        inProgressCourses,
-        certificates: completedCourses, // Assuming 1 cert per completed course
-        learningHours: Math.round(totalLearningHours)
-      }
+        certificates: certsCount,
+        totalPoints: user?.points || 0
+      },
+      enrolledCourses,
+      lastActivity
     }
   } catch (error) {
     console.error("Error fetching student dashboard data:", error)
     return {
-      enrolledCourses: [],
       stats: {
+        activeCourses: 0,
         completedCourses: 0,
-        inProgressCourses: 0,
         certificates: 0,
-        learningHours: 0
-      }
+        totalPoints: 0
+      },
+      enrolledCourses: [],
+      lastActivity: null
     }
+  }
+}
+
+export async function getAllStoreItems() {
+  try {
+    return await db.query.products.findMany({
+      where: eq(products.isActive, true),
+      with: {
+        category: true
+      },
+      orderBy: [desc(products.createdAt)]
+    })
+  } catch (error) {
+    console.error("Error fetching store items:", error)
+    return []
+  }
+}
+
+export async function getAllContests() {
+  try {
+    return await db.query.contests.findMany({
+      orderBy: [desc(contests.startDate)]
+    })
+  } catch (error) {
+    console.error("Error fetching contests:", error)
+    return []
+  }
+}
+
+export async function getContestById(id: string) {
+  try {
+    return await db.query.contests.findFirst({
+      where: eq(contests.id, id)
+    })
+  } catch (error) {
+    console.error("Error fetching contest:", error)
+    return null
+  }
+}
+
+export async function joinContest(contestId: string, userId: string) {
+  try {
+    // Check if already joined
+    const existing = await db.query.contestParticipants.findFirst({
+      where: and(
+        eq(contestParticipants.contestId, contestId),
+        eq(contestParticipants.userId, userId)
+      )
+    })
+
+    if (existing) return { success: true }
+
+    await db.insert(contestParticipants).values({
+      contestId,
+      userId,
+      joinedAt: new Date()
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("Error joining contest:", error)
+    return { success: false, error: "Failed to join contest" }
+  }
+}
+
+export async function checkEnrollmentStatus(userId: string, courseId: string) {
+  try {
+    const enrollment = await getEnrollment(userId, courseId)
+    return !!enrollment
+  } catch (error) {
+    return false
+  }
+}
+
+export async function getCategoryById(id: string) {
+  try {
+    return await db.query.categories.findFirst({
+      where: eq(categories.id, id)
+    })
+  } catch (error) {
+    console.error("Error fetching category:", error)
+    return null
+  }
+}
+
+export async function getContestParticipants(contestId: string) {
+  try {
+    return await db.query.contestParticipants.findMany({
+      where: eq(contestParticipants.contestId, contestId),
+      with: {
+        user: true
+      }
+    })
+  } catch (error) {
+    console.error("Error fetching contest participants:", error)
+    return []
   }
 }
 
@@ -567,6 +716,34 @@ export async function deleteNote(noteId: string, userId: string) {
    }
 }
 
+export async function getUserNotes(userId: string) {
+  try {
+    const userNotes = await db
+      .select({
+        id: notes.id,
+        content: notes.content,
+        createdAt: notes.createdAt,
+        timestamp: notes.timestamp,
+        lessonId: notes.lessonId,
+        lessonTitleEn: lessons.titleEn,
+        lessonTitleAr: lessons.titleAr,
+        courseId: lessons.courseId,
+        courseTitleEn: courses.titleEn,
+        courseTitleAr: courses.titleAr,
+      })
+      .from(notes)
+      .innerJoin(lessons, eq(notes.lessonId, lessons.id))
+      .innerJoin(courses, eq(lessons.courseId, courses.id))
+      .where(eq(notes.userId, userId))
+      .orderBy(desc(notes.createdAt))
+      
+    return userNotes
+  } catch (error) {
+    console.error("Error fetching user notes:", error)
+    return []
+  }
+}
+
 export async function getUserLessonNotes(userId: string, lessonId: string) {
   try {
     return await db.query.notes.findMany({
@@ -726,5 +903,288 @@ export async function getInstructorCoursePerformance(instructorId: string) {
   } catch (error) {
     console.error("Error fetching instructor course performance:", error)
     return []
+  }
+}
+
+export async function getAllCohorts() {
+  try {
+    return await db.query.cohorts.findMany({
+      with: {
+        creator: true,
+        members: true
+      },
+      orderBy: [desc(cohorts.startsAt)]
+    })
+  } catch (error) {
+    console.error("Error fetching cohorts:", error)
+    return []
+  }
+}
+
+export async function getCohortById(cohortId: string) {
+  try {
+    return await db.query.cohorts.findFirst({
+      where: eq(cohorts.id, cohortId),
+      with: {
+        creator: true,
+        members: {
+          with: {
+            user: true
+          }
+        },
+        courses: {
+          with: {
+            course: true
+          }
+        },
+        schedule: true,
+        announcements: {
+            with: {
+                author: true
+            },
+            orderBy: [desc(cohortAnnouncements.createdAt)]
+        }
+      }
+    })
+  } catch (error) {
+    console.error("Error fetching cohort:", error)
+    return null
+  }
+}
+
+export async function joinCohort(cohortId: string, userId: string) {
+  try {
+    // Check if already a member
+    const existingMember = await db.query.cohortMembers.findFirst({
+      where: and(
+        eq(cohortMembers.cohortId, cohortId),
+        eq(cohortMembers.userId, userId)
+      )
+    })
+
+    if (existingMember) {
+      return { success: false, error: "Already a member", status: existingMember.role }
+    }
+
+    // Check capacity
+    const cohort = await db.query.cohorts.findFirst({
+        where: eq(cohorts.id, cohortId),
+        with: {
+            members: true
+        }
+    })
+
+    if (!cohort) return { success: false, error: "Cohort not found" }
+    
+    // Check if cohort is full
+    if (cohort.capacity && cohort.members.length >= cohort.capacity) {
+        return { success: false, error: "Cohort is full" }
+    }
+
+    await db.insert(cohortMembers).values({
+      cohortId,
+      userId,
+      role: "student",
+      joinedAt: new Date()
+    })
+
+    return { success: true, status: "student" }
+  } catch (error) {
+    console.error("Error joining cohort:", error)
+    return { success: false, error: "Failed to join cohort" }
+  }
+}
+
+export async function getMentorById(mentorId: string) {
+  try {
+    return await db.query.mentors.findFirst({
+      where: eq(mentors.id, mentorId),
+      with: {
+        user: true,
+        availability: true,
+        bookings: {
+           with: {
+             review: true
+           }
+        }
+      }
+    })
+  } catch (error) {
+    console.error("Error fetching mentor:", error)
+    return null
+  }
+}
+
+export async function createBooking(studentId: string, mentorId: string, startAt: Date, endAt: Date, topic: string, notes?: string) {
+  try {
+    const [booking] = await db.insert(bookings).values({
+      studentId,
+      mentorId,
+      startAt,
+      endAt,
+      topic,
+      notes,
+      status: "requested"
+    }).returning()
+    return booking
+  } catch (error) {
+    console.error("Error creating booking:", error)
+    throw error
+  }
+}
+
+export async function getUserBookings(userId: string, role: "student" | "mentor" = "student") {
+  try {
+    let actualWhereClause
+    
+    if (role === "mentor") {
+        const mentorRecord = await db.query.mentors.findFirst({
+            where: eq(mentors.userId, userId)
+        })
+        if (!mentorRecord) return []
+        actualWhereClause = eq(bookings.mentorId, mentorRecord.id)
+    } else {
+        actualWhereClause = eq(bookings.studentId, userId)
+    }
+
+    return await db.query.bookings.findMany({
+      where: actualWhereClause,
+      with: {
+        mentor: {
+          with: { user: true }
+        },
+        student: true
+      },
+      orderBy: [desc(bookings.startAt)]
+    })
+  } catch (error) {
+    console.error("Error fetching user bookings:", error)
+    return []
+  }
+}
+
+export async function updateBookingStatus(bookingId: string, status: "confirmed" | "completed" | "cancelled" | "requested", meetingUrl?: string) {
+  try {
+    const updateData: any = { status, updatedAt: new Date() }
+    if (meetingUrl) updateData.meetingUrl = meetingUrl
+
+    const [updated] = await db.update(bookings)
+      .set(updateData)
+      .where(eq(bookings.id, bookingId))
+      .returning()
+    return updated
+  } catch (error) {
+    console.error("Error updating booking status:", error)
+    throw error
+  }
+}
+
+// Renamed functions for Lesson Quizzes
+export async function getLessonQuiz(lessonId: string) {
+  try {
+    const lesson = await db.query.lessons.findFirst({
+      where: eq(lessons.id, lessonId)
+    })
+    
+    if (lesson && lesson.quizConfig) {
+      return lesson.quizConfig
+    }
+    
+    return null
+  } catch (error) {
+    console.error("Error fetching lesson quiz:", error)
+    return null
+  }
+}
+
+export async function getLessonQuizSubmission(lessonId: string, userId: string) {
+  try {
+    const userProgress = await db.query.progress.findFirst({
+        where: and(
+            eq(progress.lessonId, lessonId),
+            eq(progress.userId, userId)
+        )
+    })
+
+    if (userProgress && userProgress.isCompleted) {
+        return {
+            id: "submission-" + userProgress.id,
+            quizId: lessonId,
+            userId: userId,
+            score: 100, // Mock score
+            passed: true,
+            completedAt: userProgress.lastAccessed
+        }
+    }
+    return null
+  } catch (error) {
+    console.error("Error fetching lesson quiz submission:", error)
+    return null
+  }
+}
+
+
+export async function getAllMentors() {
+  try {
+    return await db.query.mentors.findMany({
+      with: {
+        user: true,
+        availability: true,
+        bookings: {
+          with: {
+            review: true
+          }
+        }
+      }
+    })
+  } catch (error) {
+    console.error("Error fetching mentors:", error)
+    return []
+  }
+}
+
+export async function updateUserProfile(userId: string, data: Partial<typeof users.$inferInsert>) {
+  try {
+    const [updated] = await db.update(users)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning()
+    return updated
+  } catch (error) {
+    console.error("Error updating user profile:", error)
+    throw error
+  }
+}
+
+export async function createCategory(data: typeof categories.$inferInsert) {
+  try {
+    const [category] = await db.insert(categories).values(data).returning()
+    return category
+  } catch (error) {
+    console.error("Error creating category:", error)
+    throw error
+  }
+}
+
+export async function updateCategory(id: string, data: Partial<typeof categories.$inferInsert>) {
+  try {
+    const [updated] = await db.update(categories)
+      .set(data)
+      .where(eq(categories.id, id))
+      .returning()
+    return updated
+  } catch (error) {
+    console.error("Error updating category:", error)
+    throw error
+  }
+}
+
+export async function deleteCategory(id: string) {
+  try {
+    await db.delete(categories).where(eq(categories.id, id))
+    return true
+  } catch (error) {
+    console.error("Error deleting category:", error)
+    throw error
   }
 }

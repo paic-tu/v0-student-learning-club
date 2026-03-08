@@ -40,8 +40,8 @@ export function NewChatDialog({ onChatCreated }: NewChatDialogProps) {
   const handleCreateChat = async (userId: string) => {
     try {
       const result = await createPrivateChat(userId || "")
-      if (result.error) {
-        toast.error(result.error)
+      if ('error' in result) {
+        toast.error(result.error || "Failed to create chat")
       } else {
         onChatCreated(result.conversationId)
         setOpen(false)

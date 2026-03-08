@@ -646,28 +646,7 @@ export const productsRelations = relations(products, ({ one, many }) => ({
   orderItems: many(orderItems),
 }))
 
-export const ordersRelations = relations(orders, ({ one, many }) => ({
-  user: one(users, {
-    fields: [orders.userId],
-    references: [users.id],
-  }),
-  items: many(orderItems),
-}))
 
-export const orderItemsRelations = relations(orderItems, ({ one }) => ({
-  order: one(orders, {
-    fields: [orderItems.orderId],
-    references: [orders.id],
-  }),
-  product: one(products, {
-    fields: [orderItems.productId],
-    references: [products.id],
-  }),
-  course: one(courses, {
-    fields: [orderItems.courseId],
-    references: [courses.id],
-  }),
-}))
 
 export const challengesRelations = relations(challenges, ({ one, many }) => ({
   category: one(categories, {
@@ -688,6 +667,21 @@ export const challengesRelations = relations(challenges, ({ one, many }) => ({
 export const certificatesRelations = relations(certificates, ({ one }) => ({
   user: one(users, { fields: [certificates.userId], references: [users.id] }),
   course: one(courses, { fields: [certificates.courseId], references: [courses.id] }),
+}))
+
+export const contestsRelations = relations(contests, ({ many }) => ({
+  participants: many(contestParticipants),
+}))
+
+export const contestParticipantsRelations = relations(contestParticipants, ({ one }) => ({
+  user: one(users, {
+    fields: [contestParticipants.userId],
+    references: [users.id],
+  }),
+  contest: one(contests, {
+    fields: [contestParticipants.contestId],
+    references: [contests.id],
+  }),
 }))
 
 export const cohortsRelations = relations(cohorts, ({ one, many }) => ({
@@ -743,6 +737,7 @@ export const conversations = pgTable("conversations", {
   id: uuid("id").defaultRandom().primaryKey(),
   type: conversationTypeEnum("type").notNull().default("individual"),
   name: varchar("name", { length: 255 }), // For group chats
+  courseId: uuid("course_id").references(() => courses.id, { onDelete: "cascade" }), // Link to course for automated group chats
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 })
@@ -777,9 +772,13 @@ export const messages = pgTable("messages", {
 })
 
 // Chat Relations
-export const conversationsRelations = relations(conversations, ({ many }) => ({
+export const conversationsRelations = relations(conversations, ({ one, many }) => ({
   participants: many(conversationParticipants),
   messages: many(messages),
+  course: one(courses, {
+    fields: [conversations.courseId],
+    references: [courses.id],
+  }),
 }))
 
 export const conversationParticipantsRelations = relations(conversationParticipants, ({ one }) => ({
@@ -801,6 +800,29 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   sender: one(users, {
     fields: [messages.senderId],
     references: [users.id],
+  }),
+}))
+
+export const ordersRelations = relations(orders, ({ one, many }) => ({
+  user: one(users, {
+    fields: [orders.userId],
+    references: [users.id],
+  }),
+  items: many(orderItems),
+}))
+
+export const orderItemsRelations = relations(orderItems, ({ one }) => ({
+  order: one(orders, {
+    fields: [orderItems.orderId],
+    references: [orders.id],
+  }),
+  product: one(products, {
+    fields: [orderItems.productId],
+    references: [products.id],
+  }),
+  course: one(courses, {
+    fields: [orderItems.courseId],
+    references: [courses.id],
   }),
 }))
 

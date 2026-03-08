@@ -34,7 +34,7 @@ export default async function InstructorProfilePage({ params }: { params: Promis
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-6 items-start">
             <Avatar className="w-24 h-24 border-4 border-background shadow-lg">
-              <AvatarImage src={profile?.image || "/default-avatar.svg"} alt={profile?.name || ""} />
+              <AvatarImage src={profile?.avatarUrl || "/default-avatar.svg"} alt={profile?.name || ""} />
               <AvatarFallback className="text-2xl">{profile?.name?.charAt(0).toUpperCase() || "I"}</AvatarFallback>
             </Avatar>
             <div className="flex-1 space-y-2">
@@ -72,7 +72,7 @@ export default async function InstructorProfilePage({ params }: { params: Promis
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalStudents}</div>
+            <div className="text-2xl font-bold">{stats.stats.students}</div>
           </CardContent>
         </Card>
         <Card>
@@ -81,7 +81,7 @@ export default async function InstructorProfilePage({ params }: { params: Promis
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalCourses}</div>
+            <div className="text-2xl font-bold">{stats.stats.courses}</div>
           </CardContent>
         </Card>
         <Card>
@@ -90,7 +90,7 @@ export default async function InstructorProfilePage({ params }: { params: Promis
             <Star className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.averageRating}</div>
+            <div className="text-2xl font-bold">{stats.stats.rating}</div>
           </CardContent>
         </Card>
         <Card>
@@ -99,7 +99,7 @@ export default async function InstructorProfilePage({ params }: { params: Promis
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalReviews}</div>
+            <div className="text-2xl font-bold">{stats.stats.reviews}</div>
           </CardContent>
         </Card>
       </div>

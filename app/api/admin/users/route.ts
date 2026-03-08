@@ -11,7 +11,7 @@ const createUserSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(8),
-  role: z.enum(["student", "instructor", "admin", "manager"]).default("student"),
+  role: z.enum(["student", "instructor", "admin"]).default("student"),
 })
 
 export async function POST(request: NextRequest) {
@@ -42,7 +42,6 @@ export async function POST(request: NextRequest) {
         email: data.email,
         passwordHash: hashedPassword,
         role: data.role,
-        isActive: true,
       })
       .returning()
 

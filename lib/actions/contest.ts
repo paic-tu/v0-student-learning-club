@@ -24,7 +24,7 @@ export async function getContestParticipants(contestId: string) {
     return participants.map(p => ({
       ...p,
       name: p.user.name,
-      avatar_url: p.user.avatarUrl
+      avatarUrl: p.user.avatarUrl
     }))
   } catch (error) {
     console.error("[Action] getContestParticipants error:", error)
@@ -52,7 +52,7 @@ export async function getLeaderboard() {
 
     return topUsers.map(u => ({
       ...u,
-      avatar_url: u.avatarUrl
+      avatarUrl: u.avatarUrl
     }))
   } catch (error) {
     console.error("[Action] getLeaderboard error:", error)

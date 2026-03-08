@@ -113,8 +113,8 @@ export function CourseEditForm({
         // Normalize the category object to match the component's expected shape (snake_case)
         const newCategory = {
           ...result.category,
-          name_en: result.category.nameEn || result.category.name_en,
-          name_ar: result.category.nameAr || result.category.name_ar,
+          name_en: result.category.nameEn || result.category.nameEn,
+          name_ar: result.category.nameAr || result.category.nameAr,
         }
         
         setLocalCategories([...localCategories, newCategory])

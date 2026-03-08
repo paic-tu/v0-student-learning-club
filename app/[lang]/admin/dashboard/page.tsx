@@ -15,36 +15,42 @@ async function DashboardStats({ lang }: { lang: Language }) {
 
   const statItems = [
     {
+      id: "students",
       title: t.students[lang],
       value: stats.student_count,
       icon: Users,
       color: "text-blue-500",
     },
     {
+      id: "courses",
       title: t.courses[lang],
       value: stats.course_count,
       icon: BookOpen,
       color: "text-green-500",
     },
     {
+      id: "enrollments",
       title: t.enrollments[lang],
       value: stats.enrollment_count,
       icon: Activity,
       color: "text-purple-500",
     },
     {
+      id: "certificates",
       title: t.certificates[lang],
       value: stats.certified_student_count,
       icon: Award,
       color: "text-yellow-500",
     },
     {
+      id: "challenges",
       title: t.challenges[lang],
       value: stats.challenge_count,
       icon: Trophy,
       color: "text-orange-500",
     },
     {
+      id: "contests",
       title: t.contests[lang],
       value: stats.contest_count,
       icon: Trophy,
@@ -55,7 +61,7 @@ async function DashboardStats({ lang }: { lang: Language }) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {statItems.map((item) => (
-        <Card key={item.title}>
+        <Card key={item.id}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{item.title}</CardTitle>
             <item.icon className={`h-4 w-4 ${item.color}`} />

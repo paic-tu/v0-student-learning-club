@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { useLanguage } from "@/lib/language-context"
 import { useAuth } from "@/lib/auth-context"
 import { t } from "@/lib/i18n"
-import { getUserOrders } from "@/lib/db/queries"
+import { getUserOrdersAction } from "@/lib/actions/order"
 import { Package, ShoppingBag } from "lucide-react"
 import { RequireAuth } from "@/components/require-auth"
 
@@ -22,7 +22,7 @@ export default function OrdersPage() {
       if (!user) return
 
       try {
-        const data = await getUserOrders(user.id)
+        const data = await getUserOrdersAction()
         setOrders(data)
       } catch (error) {
         console.error("[v0] Error loading orders:", error)
@@ -97,7 +97,7 @@ export default function OrdersPage() {
                             {language === "ar" ? "طلب رقم" : "Order"} #{order.id}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            {new Date(order.created_at).toLocaleDateString(language === "ar" ? "ar-SA" : "en-US", {
+                            {new Date(order.createdAt).toLocaleDateString(language === "ar" ? "ar-SA" : "en-US", {
                               year: "numeric",
                               month: "long",
                               day: "numeric",

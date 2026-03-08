@@ -83,17 +83,8 @@ export default async function StudentCourseEntryPage(props: { params: Promise<{ 
 
   // Parse completed lessons safely
   let completedLessonIds: string[] = []
-  if (enrollment) {
-      if (Array.isArray(enrollment.completed_lessons)) {
-        completedLessonIds = enrollment.completed_lessons
-      } else if (typeof enrollment.completed_lessons === 'string') {
-        try {
-          const parsed = JSON.parse(enrollment.completed_lessons)
-          if (Array.isArray(parsed)) completedLessonIds = parsed
-        } catch (e) {
-          console.error("Failed to parse completed_lessons", e)
-        }
-      }
+  if (enrollment && enrollment.completedLessons) {
+      completedLessonIds = enrollment.completedLessons as string[]
   }
 
   // Logic: Find the first lesson that is NOT completed
@@ -103,7 +94,7 @@ export default async function StudentCourseEntryPage(props: { params: Promise<{ 
   let nextLessonId = lessons[0].id
 
   // Sort lessons by order_index to be sure
-  const sortedLessons = [...lessons].sort((a, b) => a.order_index - b.order_index)
+  const sortedLessons = [...lessons].sort((a, b) => a.orderIndex - b.orderIndex)
 
   const firstUncompleted = sortedLessons.find(l => !completedLessonIds.includes(l.id))
 

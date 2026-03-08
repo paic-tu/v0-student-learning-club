@@ -39,7 +39,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ lang: 
   const stats = dashboardData.stats
 
   // Fallback if profile fetch fails
-  const user = userProfile || currentUser
+  const user: any = userProfile || currentUser
 
   const formatDate = (date: Date | string | null) => {
     if (!date) return isAr ? "غير محدد" : "N/A"

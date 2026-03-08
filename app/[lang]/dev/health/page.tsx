@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth-context"
 import { useToast } from "@/hooks/use-toast"
 import { runAllChecks, type HealthCheck } from "@/lib/db/health-checks"
 import { CheckCircle, XCircle, AlertCircle } from "lucide-react"
-import { authClient } from "@/lib/auth/client"
+import { signIn, signOut } from "next-auth/react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 
@@ -47,15 +47,16 @@ export default function HealthPage() {
 
   const handleLoginStudent = async () => {
     try {
-      const { error } = await authClient.signIn.email({
+      const result = await signIn("credentials", {
         email: "student@demo.com",
         password: "password123",
+        redirect: false,
       })
-      if (!error) {
+      if (result?.ok) {
         toast({ title: "Success", description: "Signed in as student" })
         window.location.reload()
       } else {
-        toast({ title: "Error", description: error.message || "Login failed", variant: "destructive" })
+        toast({ title: "Error", description: result?.error || "Login failed", variant: "destructive" })
       }
     } catch (error) {
       toast({ title: "Error", description: "Login failed", variant: "destructive" })
@@ -64,15 +65,16 @@ export default function HealthPage() {
 
   const handleLoginAdmin = async () => {
     try {
-      const { error } = await authClient.signIn.email({
+      const result = await signIn("credentials", {
         email: "admin@demo.com",
         password: "password123",
+        redirect: false,
       })
-      if (!error) {
+      if (result?.ok) {
         toast({ title: "Success", description: "Signed in as admin" })
         window.location.reload()
       } else {
-        toast({ title: "Error", description: error.message || "Login failed", variant: "destructive" })
+        toast({ title: "Error", description: result?.error || "Login failed", variant: "destructive" })
       }
     } catch (error) {
       toast({ title: "Error", description: "Login failed", variant: "destructive" })
@@ -80,7 +82,7 @@ export default function HealthPage() {
   }
 
   const handleLogout = async () => {
-    await authClient.signOut()
+    await signOut({ redirect: false })
     toast({ title: "Success", description: "Logged out" })
     window.location.reload()
   }

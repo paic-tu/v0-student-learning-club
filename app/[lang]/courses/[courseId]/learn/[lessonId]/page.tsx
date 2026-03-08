@@ -24,17 +24,18 @@ export default async function LessonPage(props: { params: Promise<{ lang: string
   }
 
   // Find current lesson
-  const lesson = course.lessons.find((l: any) => l.id === lessonId)
+  const allLessons = course.modules.flatMap((m: any) => m.lessons)
+  const lesson = allLessons.find((l: any) => l.id === lessonId)
   if (!lesson) {
     notFound()
   }
 
   let completedIds: string[] = []
-  if (Array.isArray(enrollment.completed_lessons)) {
-    completedIds = enrollment.completed_lessons
-  } else if (typeof enrollment.completed_lessons === 'string') {
+  if (Array.isArray(enrollment.completedLessons)) {
+    completedIds = enrollment.completedLessons
+  } else if (typeof enrollment.completedLessons === 'string') {
     try {
-      completedIds = JSON.parse(enrollment.completed_lessons)
+      completedIds = JSON.parse(enrollment.completedLessons)
     } catch (e) {
       console.error("Failed to parse completed_lessons", e)
     }
@@ -44,7 +45,7 @@ export default async function LessonPage(props: { params: Promise<{ lang: string
     <LessonPlayerClient 
       course={course}
       lesson={lesson}
-      allLessons={course.lessons}
+      allLessons={allLessons}
       completedLessonIds={completedIds}
     />
   )

@@ -13,7 +13,7 @@ import { getAllStoreItems } from "@/lib/db/queries"
 import { ShoppingCart, Package } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
-import { addToCart } from "@/lib/db/queries"
+import { addToCartAction } from "@/lib/actions/cart"
 
 export default function StorePage() {
   const { language } = useLanguage()
@@ -38,14 +38,14 @@ export default function StorePage() {
     loadItems()
   }, [])
 
-  const handleAddToCart = async (itemId: number) => {
+  const handleAddToCart = async (itemId: string) => {
     if (!user) {
       router.push("/auth/login")
       return
     }
 
     try {
-      await addToCart(user.id, itemId.toString(), "product")
+      await addToCartAction(itemId.toString(), "product")
 
       toast({
         title: language === "ar" ? "تمت الإضافة" : "Added to cart",
@@ -96,8 +96,8 @@ export default function StorePage() {
                 <CardHeader>
                   <div className="relative h-48 w-full bg-muted rounded-lg overflow-hidden mb-4">
                     <Image
-                      src={item.image_url || "/placeholder.svg?height=200&width=300&query=product"}
-                      alt={language === "ar" ? item.name_ar : item.name_en}
+                      src={item.imageUrl || "/placeholder.svg?height=200&width=300&query=product"}
+                      alt={language === "ar" ? item.nameAr : item.nameEn}
                       fill
                       className="object-cover"
                     />
@@ -110,11 +110,11 @@ export default function StorePage() {
                       {item.price} {language === "ar" ? "ر.س" : "SAR"}
                     </div>
                   </div>
-                  <CardTitle className="text-xl">{language === "ar" ? item.name_ar : item.name_en}</CardTitle>
+                  <CardTitle className="text-xl">{language === "ar" ? item.nameAr : item.nameEn}</CardTitle>
                 </CardHeader>
                 <CardContent className="flex-1">
                   <p className="text-sm text-muted-foreground">
-                    {language === "ar" ? item.description_ar : item.description_en}
+                    {language === "ar" ? item.descriptionAr : item.descriptionEn}
                   </p>
                   {item.points_cost && (
                     <p className="mt-2 text-sm font-semibold text-primary">
@@ -122,13 +122,13 @@ export default function StorePage() {
                     </p>
                   )}
                   <p className="mt-2 text-sm text-muted-foreground">
-                    {language === "ar" ? "المخزون:" : "Stock:"} {item.stock}
+                    {language === "ar" ? "المخزون:" : "Stock:"} {item.stockQuantity}
                   </p>
                 </CardContent>
                 <CardFooter>
-                  <Button className="w-full" onClick={() => handleAddToCart(item.id)} disabled={item.stock === 0}>
+                  <Button className="w-full" onClick={() => handleAddToCart(item.id)} disabled={item.stockQuantity === 0}>
                     <ShoppingCart className="mr-2 h-4 w-4" />
-                    {item.stock === 0 ? (language === "ar" ? "نفذ المخزون" : "Out of stock") : t("addToCart", language)}
+                    {item.stockQuantity === 0 ? (language === "ar" ? "نفذ المخزون" : "Out of stock") : t("addToCart", language)}
                   </Button>
                 </CardFooter>
               </Card>

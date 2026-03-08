@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Bookmark } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { toggleCourseBookmark } from "@/app/actions/bookmark"
+import { toggleCourseBookmark } from "@/lib/actions/bookmark"
 import { useToast } from "@/hooks/use-toast"
 import { useLanguage } from "@/lib/language-context"
 

@@ -88,7 +88,11 @@ export default async function VerifyPage({
     where: eq(certificates.certificateNumber, cert),
     with: {
       user: true,
-      course: true
+      course: {
+        with: {
+          instructor: true
+        }
+      }
     }
   })
 
@@ -175,10 +179,12 @@ export default async function VerifyPage({
 
               {/* Preview */}
               <div className="lg:col-span-2">
-                <CertificatePreview 
-                  studentName={certificate.user.name || ""}
-                  certificates={[previewCert]}
-                />
+                {previewCert && certificate && (
+                  <CertificatePreview 
+                    studentName={certificate.user.name || ""}
+                    certificates={[previewCert]}
+                  />
+                )}
               </div>
             </div>
 

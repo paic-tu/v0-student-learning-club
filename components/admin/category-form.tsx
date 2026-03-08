@@ -45,12 +45,12 @@ export function CategoryForm({ initialData, lang }: CategoryFormProps) {
     resolver: zodResolver(categorySchema),
     defaultValues: initialData
       ? {
-          nameEn: initialData.name_en,
-          nameAr: initialData.name_ar,
+          nameEn: initialData.nameEn || initialData.name_en,
+          nameAr: initialData.nameAr || initialData.name_ar,
           slug: initialData.slug,
-          descriptionEn: initialData.description_en || "",
-          descriptionAr: initialData.description_ar || "",
-          iconUrl: initialData.icon_url || "",
+          descriptionEn: initialData.descriptionEn || initialData.description_en || "",
+          descriptionAr: initialData.descriptionAr || initialData.description_ar || "",
+          iconUrl: initialData.iconUrl || initialData.icon_url || "",
         }
       : {
           nameEn: "",

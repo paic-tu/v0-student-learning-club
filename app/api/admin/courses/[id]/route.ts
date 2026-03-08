@@ -54,7 +54,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ id: s
             id: true,
             name: true,
             email: true,
-            image: true,
+            avatarUrl: true,
           }
         }
       }

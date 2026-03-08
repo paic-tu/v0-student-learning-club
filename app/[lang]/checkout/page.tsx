@@ -10,8 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useLanguage } from "@/lib/language-context"
 import { useAuth } from "@/lib/auth-context"
 import { t } from "@/lib/i18n"
-import { getCartWithItems, clearCart } from "@/lib/db/queries"
-import { createOrder } from "@/lib/db/queries"
+import { getCartAction, checkoutAction } from "@/lib/actions/cart"
 import { CreditCard } from "lucide-react"
 import { RequireAuth } from "@/components/require-auth"
 import { useToast } from "@/hooks/use-toast"
@@ -35,7 +34,7 @@ export default function CheckoutPage() {
   }, [user?.id])
 
   const loadCart = async (userId: string) => {
-    const cart = await getCartWithItems(userId)
+    const { cart } = await getCartAction()
     setCartItems(cart?.items ?? [])
   }
 
@@ -46,25 +45,17 @@ export default function CheckoutPage() {
 
     setLoading(true)
     try {
-      const orderItems = cartItems.map((item) => ({
-        price: Number(item.price),
-        quantity: item.quantity,
-        type: item.type,
-        courseId: item.courseId,
-        productId: item.productId,
-      }))
+      const result = await checkoutAction(shippingAddress, notes)
 
-      const order = await createOrder(user.id, { totalAmount: total, items: orderItems })
-
-      if (order) {
-        await clearCart(user.id)
-
+      if (result.success) {
         toast({
           title: language === "ar" ? "تم إنشاء الطلب" : "Order created",
           description: language === "ar" ? "تم إنشاء طلبك بنجاح" : "Your order has been created successfully",
         })
 
         router.push(`/orders`)
+      } else {
+        throw new Error(result.error)
       }
     } catch (error) {
       toast({

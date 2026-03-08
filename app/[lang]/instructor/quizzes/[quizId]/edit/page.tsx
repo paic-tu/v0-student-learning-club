@@ -41,6 +41,16 @@ export default async function EditQuizPage({ params }: { params: Promise<{ lang:
 
   const quiz = quizResult.quiz
   
+  if (!quiz) {
+    return (
+      <div className="p-6">
+        <div className="bg-destructive/15 text-destructive p-4 rounded-md">
+          {isAr ? "لم يتم العثور على الكويز" : "Quiz not found"}
+        </div>
+      </div>
+    )
+  }
+
   // Transform quiz data for the form
   const initialData = {
     titleEn: quiz.titleEn,

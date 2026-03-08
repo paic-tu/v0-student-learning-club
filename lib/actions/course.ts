@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { enrollments, progress, lessons, courses } from "@/lib/db/schema"
+import { enrollments, progress, lessons, courses, conversations, conversationParticipants } from "@/lib/db/schema"
 import { auth } from "@/lib/auth"
 import { eq, and, count, desc } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
@@ -40,6 +40,61 @@ export async function enrollAction(courseId: string) {
       progress: 0,
       completedLessons: [],
     })
+
+    // --- Add to Course Chat (Auto-Join) ---
+    try {
+      // 1. Check if a chat for this course already exists
+      let courseChat = await db.query.conversations.findFirst({
+        where: eq(conversations.courseId, courseId)
+      })
+
+      // 2. If not, create it
+      if (!courseChat) {
+        // Fetch course details for the name (using English title as requested) and instructor
+        const course = await db.query.courses.findFirst({
+          where: eq(courses.id, courseId),
+          columns: { titleEn: true, instructorId: true }
+        })
+
+        if (course) {
+          const [newChat] = await db.insert(conversations).values({
+            type: "group",
+            name: course.titleEn, // Use English title as requested
+            courseId: courseId,
+          }).returning()
+          courseChat = newChat
+
+          // Add Instructor to the chat automatically
+          if (course.instructorId) {
+            await db.insert(conversationParticipants).values({
+              conversationId: newChat.id,
+              userId: course.instructorId
+            })
+          }
+        }
+      }
+
+      // 3. Add user to the chat if not already participating
+      if (courseChat) {
+        const existingParticipant = await db.query.conversationParticipants.findFirst({
+          where: and(
+            eq(conversationParticipants.conversationId, courseChat.id),
+            eq(conversationParticipants.userId, userId)
+          )
+        })
+
+        if (!existingParticipant) {
+          await db.insert(conversationParticipants).values({
+            conversationId: courseChat.id,
+            userId: userId,
+          })
+          console.log(`[Action] User ${userId} auto-joined chat for course ${courseId}`)
+        }
+      }
+    } catch (chatError) {
+      console.error("Error auto-joining course chat:", chatError)
+      // Non-blocking error, we still return success for enrollment
+    }
 
     revalidatePath(`/courses/${courseId}`)
     revalidatePath(`/student/dashboard`)

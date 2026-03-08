@@ -24,7 +24,7 @@ export async function toggleCourseBookmark(courseId: string) {
     revalidatePath("/en/student/bookmarks")
     revalidatePath("/ar/student/bookmarks")
     
-    return { success: true, bookmarked: result.bookmarked }
+    return { success: true, bookmarked: result }
   } catch (error) {
     console.error("Error toggling bookmark:", error)
     return { error: "Failed to toggle bookmark" }

@@ -30,7 +30,7 @@ export async function getLandingPageStats() {
     return {
       courses: stats.course_count,
       students: stats.student_count,
-      certificates: stats.certificate_count,
+      certificates: stats.certified_student_count,
       satisfaction: rawSatisfaction
     }
   } catch (error) {

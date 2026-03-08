@@ -87,7 +87,7 @@ export function AdminHeader({ user, mobileNav }: AdminHeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={user.image || "/default-avatar.svg"} alt={user.name} />
+                <AvatarImage src={user.avatarUrl || "/default-avatar.svg"} alt={user.name} />
                 <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
               </Avatar>
               <div className="text-left">

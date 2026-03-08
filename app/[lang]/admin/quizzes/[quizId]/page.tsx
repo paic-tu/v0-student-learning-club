@@ -19,11 +19,11 @@ export default async function EditAdminQuizPage({ params }: { params: Promise<{ 
     getAllCoursesAction()
   ])
 
-  if (quizResult.error) {
+  if (quizResult.error || !quizResult.quiz) {
     return (
       <div className="p-6">
         <div className="bg-destructive/15 text-destructive p-4 rounded-md">
-          {isAr ? "حدث خطأ أثناء تحميل الكويز" : quizResult.error}
+          {isAr ? "حدث خطأ أثناء تحميل الكويز" : (quizResult.error || "Quiz not found")}
         </div>
       </div>
     )
