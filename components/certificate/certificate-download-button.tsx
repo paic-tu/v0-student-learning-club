@@ -19,6 +19,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { getOrCreateCertificate } from "@/lib/actions/certificate"
 
+import { checkUserRating } from "@/lib/actions/rating"
+import { RatingModal } from "@/components/rating-modal"
+
 // Configuration types
 type TextConfig = {
   x: number // cm
@@ -82,11 +85,36 @@ export function CertificateDownloadButton({
   const { language } = useLanguage()
   const [isGenerating, setIsGenerating] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+  const [showRatingModal, setShowRatingModal] = useState(false)
+  const [isCheckingRating, setIsCheckingRating] = useState(false)
   const [selectedDesign, setSelectedDesign] = useState("design-1")
   const isAr = language === "ar"
 
   const safeStudentName = studentName || "Student Name"
   const safeCourseName = courseName || "Course Name"
+
+  const handleCertificateClick = async () => {
+    if (skipRatingCheck) {
+      setIsOpen(true)
+      return
+    }
+    
+    try {
+      setIsCheckingRating(true)
+      const hasRated = await checkUserRating(courseId)
+      if (hasRated) {
+        setIsOpen(true)
+      } else {
+        setShowRatingModal(true)
+      }
+    } catch (error) {
+      console.error("Error checking rating", error)
+      // Fallback: open dialog to avoid blocking user completely in case of error
+      setIsOpen(true)
+    } finally {
+      setIsCheckingRating(false)
+    }
+  }
 
   const handleDownload = async () => {
     try {
@@ -261,20 +289,33 @@ export function CertificateDownloadButton({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button 
-          className={className}
-          variant="outline"
-          size="sm"
-        >
+    <>
+      <Button 
+        className={className}
+        variant="outline"
+        size="sm"
+        onClick={handleCertificateClick}
+        disabled={isCheckingRating}
+      >
+        {isCheckingRating ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
           <Download className="h-4 w-4" />
-          <span className="ms-2 hidden sm:inline">
-            {isAr ? "تحميل الشهادة" : "Download Certificate"}
-          </span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+        )}
+        <span className="ms-2 hidden sm:inline">
+          {isAr ? "تحميل الشهادة" : "Download Certificate"}
+        </span>
+      </Button>
+
+      <RatingModal
+        isOpen={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        courseId={courseId}
+        courseTitle={safeCourseName}
+      />
+
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{isAr ? "اختر تصميم الشهادة" : "Choose Certificate Design"}</DialogTitle>
           <DialogDescription>
@@ -342,5 +383,6 @@ export function CertificateDownloadButton({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   )
 }

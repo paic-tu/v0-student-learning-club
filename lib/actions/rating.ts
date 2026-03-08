@@ -90,3 +90,27 @@ export async function submitRating({
     return { error: "Failed to submit rating" }
   }
 }
+
+export async function checkUserRating(courseId: string) {
+  const session = await auth()
+  
+  if (!session?.user?.id) {
+    return false
+  }
+
+  const userId = session.user.id
+
+  try {
+    const existingReview = await db.query.reviews.findFirst({
+      where: and(
+        eq(reviews.userId, userId),
+        eq(reviews.courseId, courseId)
+      ),
+    })
+
+    return !!existingReview
+  } catch (error) {
+    console.error("Failed to check user rating:", error)
+    return false
+  }
+}

@@ -172,6 +172,7 @@ export default async function VerifyPage({
                       courseId={certificate.courseId || ""}
                       certificateNumber={certificate.certificateNumber}
                       className="w-full"
+                      skipRatingCheck={true}
                     />
                   </div>
                 </CardContent>
