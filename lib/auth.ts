@@ -59,6 +59,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           // Use Drizzle to fetch user
           const user = await db.query.users.findFirst({
             where: eq(users.email, email),
+            columns: {
+              id: true,
+              email: true,
+              name: true,
+              role: true,
+              avatarUrl: true,
+              passwordHash: true,
+            }
           })
 
           if (!user || !user.passwordHash) {
@@ -83,7 +91,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null
         } catch (error) {
           console.error("[Auth] Authorize error:", error)
-          return null
+          // Throw the error to let the client know it's a system error, not invalid credentials
+          throw error
         }
       },
     }),
