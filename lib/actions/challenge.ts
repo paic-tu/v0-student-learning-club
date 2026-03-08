@@ -119,7 +119,26 @@ export async function submitQuizAction(challengeId: string, answers: Record<numb
 
         questions.forEach((q, index) => {
             const userAnswer = answers[index]
-            const isCorrect = userAnswer === q.answer
+            
+            // Normalize for comparison (trim whitespace, handle type differences)
+            const normalize = (val: any) => String(val || "").trim()
+            
+            let isCorrect = normalize(userAnswer) === normalize(q.answer)
+            
+            // If strict match fails, try index-based matching if options exist
+            if (!isCorrect && Array.isArray(q.options)) {
+                // Check if q.answer is an index pointing to the user's answer string
+                const answerIndex = parseInt(String(q.answer), 10)
+                if (!isNaN(answerIndex) && q.options[answerIndex] === userAnswer) {
+                    isCorrect = true
+                }
+                
+                // Check if user's answer is an index pointing to the correct answer string
+                // (Less likely given the UI, but possible if UI changes)
+            }
+
+            console.log(`[Quiz Check] Q${index + 1}: User="${userAnswer}", Correct="${q.answer}", Match=${isCorrect}`)
+
             if (isCorrect) score++
             results.push({
                 questionIndex: index,
