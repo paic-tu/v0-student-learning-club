@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       action: "create",
       resource: "contest",
       resourceId: contest.id,
-      details: { title: contest.titleEn },
+      changes: { title: contest.titleEn },
       userId: session.user.id,
     })
 

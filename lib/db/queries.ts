@@ -148,7 +148,7 @@ export async function getCourseQuizzes(courseId: string, instructorId?: string) 
         or(
           eq(challenges.courseId, courseId),
           and(isNull(challenges.courseId), eq(challenges.instructorId, instructorId))
-        )
+        )!
       )
     } else {
       conditions.push(eq(challenges.courseId, courseId))
@@ -183,7 +183,7 @@ export async function getQuizSubmission(challengeId: string, userId: string) {
         eq(challengeSubmissions.challengeId, challengeId),
         eq(challengeSubmissions.userId, userId)
       ),
-      orderBy: [desc(challengeSubmissions.createdAt)]
+      orderBy: [desc(challengeSubmissions.submittedAt)]
     })
     return submission
   } catch (error) {
@@ -759,8 +759,8 @@ export async function getUserNotes(userId: string) {
     return userNotes.map(note => ({
       ...note,
       courseId: note.lesson.courseId,
-      courseTitleEn: note.lesson.course.titleEn,
-      courseTitleAr: note.lesson.course.titleAr,
+      courseTitleEn: note.lesson.course?.titleEn ?? "",
+      courseTitleAr: note.lesson.course?.titleAr ?? "",
       lessonTitleEn: note.lesson.titleEn,
       lessonTitleAr: note.lesson.titleAr,
       lessonSlug: note.lesson.slug,

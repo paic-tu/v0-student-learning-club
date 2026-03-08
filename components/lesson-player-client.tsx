@@ -12,6 +12,7 @@ import { RatingModal } from "@/components/rating-modal"
 import { Check, CheckCircle, Circle, Menu, ChevronLeft, ChevronRight, Star } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
+import ReactMarkdown from "react-markdown"
 
 export function LessonPlayerClient({ 
   course, 
@@ -31,7 +32,48 @@ export function LessonPlayerClient({
   const [completing, setCompleting] = useState(false)
   const [showRatingModal, setShowRatingModal] = useState(false)
 
+  // Helper to safely access properties that might be camelCase or snake_case
+  const getProp = (obj: any, camel: string, snake: string) => {
+    if (!obj) return undefined
+    return obj[camel] !== undefined ? obj[camel] : obj[snake]
+  }
+
+  const getTitle = (item: any) => {
+    if (!item) return ""
+    const ar = getProp(item, "titleAr", "title_ar")
+    const en = getProp(item, "titleEn", "title_en")
+    return language === "ar" ? (ar || en || "بدون عنوان") : (en || ar || "Untitled")
+  }
+
+  const getContent = (item: any) => {
+    if (!item) return ""
+    const ar = getProp(item, "contentAr", "content_ar")
+    const en = getProp(item, "contentEn", "content_en")
+    return language === "ar" ? (ar || en) : (en || ar)
+  }
+
   const isCompleted = completedLessonIds.includes(lesson.id)
+  const videoUrl = getProp(lesson, "videoUrl", "video_url")
+
+  const getEmbedUrl = (url: string) => {
+    if (!url) return null
+    
+    // YouTube
+    const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
+    const youtubeMatch = url.match(youtubeRegex)
+    if (youtubeMatch) {
+      return `https://www.youtube.com/embed/${youtubeMatch[1]}`
+    }
+    
+    // Vimeo
+    const vimeoRegex = /(?:vimeo\.com\/)([0-9]+)/
+    const vimeoMatch = url.match(vimeoRegex)
+    if (vimeoMatch) {
+      return `https://player.vimeo.com/video/${vimeoMatch[1]}`
+    }
+    
+    return url
+  }
 
   const currentLessonIndex = allLessons.findIndex(l => l.id === lesson.id)
   const prevLesson = currentLessonIndex > 0 ? allLessons[currentLessonIndex - 1] : null
@@ -81,7 +123,7 @@ export function LessonPlayerClient({
         </div>
         <ScrollArea className="h-[calc(100vh-3.5rem)]">
           <div className="p-4">
-            <h3 className="mb-4 font-semibold">{language === "ar" ? course.title_ar : course.title_en}</h3>
+            <h3 className="mb-4 font-semibold">{getTitle(course)}</h3>
             <div className="space-y-1">
               {allLessons.map((l, index) => {
                 const isCompleted = completedLessonIds.includes(l.id)
@@ -90,6 +132,11 @@ export function LessonPlayerClient({
                   <Link 
                     key={l.id} 
                     href={`/${language}/courses/${course.id}/learn/${l.id}`}
+                    onClick={() => {
+                      if (window.innerWidth < 768) {
+                        setSidebarOpen(false)
+                      }
+                    }}
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent",
                       isActive && "bg-accent text-accent-foreground font-medium"
@@ -100,7 +147,7 @@ export function LessonPlayerClient({
                     ) : (
                       <Circle className="h-4 w-4 text-muted-foreground" />
                     )}
-                    <span className="line-clamp-1">{index + 1}. {language === "ar" ? l.title_ar : l.title_en}</span>
+                    <span className="line-clamp-1">{index + 1}. {getTitle(l)}</span>
                   </Link>
                 )
               })}
@@ -116,7 +163,7 @@ export function LessonPlayerClient({
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex-1 text-center font-medium truncate px-4">
-             {language === "ar" ? lesson.title_ar : lesson.title_en}
+             {getTitle(lesson)}
           </div>
           <div className="w-10" /> {/* Spacer */}
         </header>
@@ -125,8 +172,16 @@ export function LessonPlayerClient({
           <div className="mx-auto max-w-4xl space-y-8">
             <div className="aspect-video bg-black rounded-lg overflow-hidden relative">
                 {/* Video Player */}
-                {lesson.video_url ? (
-                   <iframe src={lesson.video_url} className="absolute inset-0 w-full h-full" allowFullScreen />
+                {videoUrl ? (
+                   (videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be") || videoUrl.includes("vimeo.com")) ? (
+                     <iframe src={getEmbedUrl(videoUrl) || ""} className="absolute inset-0 w-full h-full" allowFullScreen />
+                   ) : (
+                     <video 
+                       src={videoUrl} 
+                       className="absolute inset-0 w-full h-full" 
+                       controls 
+                     />
+                   )
                 ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-white">No Video</div>
                 )}
@@ -134,7 +189,9 @@ export function LessonPlayerClient({
 
             <div className="prose dark:prose-invert max-w-none">
               <h3>{t("description", language)}</h3>
-              <p>{language === "ar" ? lesson.content_ar : lesson.content_en}</p>
+              <div className="markdown-content">
+                <ReactMarkdown>{getContent(lesson)}</ReactMarkdown>
+              </div>
             </div>
 
             <div className="flex justify-between items-center pt-8 pb-10">

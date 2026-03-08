@@ -15,7 +15,7 @@ import { Send, Loader2, ArrowLeft, Paperclip, Smile, File, Download, X } from "l
 import { getMessages, sendMessage, notifyTyping, getTypingUsers, markConversationAsRead } from "@/lib/actions/chat"
 import { cn } from "@/lib/utils"
 import { GifPicker } from "./gif-picker"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UserActionPopover } from "./user-action-popover"
 

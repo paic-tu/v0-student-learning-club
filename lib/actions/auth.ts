@@ -40,7 +40,7 @@ export async function loginAction(prevState: any, formData: FormData) {
 
     if (error instanceof AuthError) {
       // Check if the cause is the quota error
-      if (error.cause?.message?.includes("data transfer quota")) {
+      if ((error.cause as any)?.message?.includes("data transfer quota")) {
          return { error: "Service unavailable: Data transfer quota exceeded. Please try again later." }
       }
 
@@ -49,7 +49,7 @@ export async function loginAction(prevState: any, formData: FormData) {
           return { error: "Invalid credentials." }
         case "CallbackRouteError":
             // Check if the underlying error is the quota error
-            if (error.cause?.err?.message?.includes("data transfer quota")) {
+            if ((error.cause?.err as any)?.message?.includes("data transfer quota")) {
                 return { error: "Service unavailable: Data transfer quota exceeded. Please try again later." }
             }
             return { error: "Authentication failed." }

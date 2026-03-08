@@ -24,7 +24,7 @@ interface NotesSectionProps {
   setNewNote: (val: string) => void
   isSubmitting: boolean
   onAddNote: () => void
-  videoRef: React.RefObject<HTMLVideoElement>
+  videoRef: React.RefObject<HTMLVideoElement | null>
   notes: any[]
   onDeleteNote: (id: string) => void
   onSeek: (timestamp: number) => void
@@ -131,6 +131,46 @@ export function LessonContent({ lesson, lang, userId, initialNotes = [], quiz, q
   const [isSubmitting, setIsSubmitting] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
 
+  // Helper to safely access properties that might be camelCase or snake_case
+  const getProp = (obj: any, camel: string, snake: string) => {
+    if (!obj) return undefined
+    return obj[camel] !== undefined ? obj[camel] : obj[snake]
+  }
+
+  const getTitle = (item: any) => {
+    if (!item) return ""
+    const ar = getProp(item, "titleAr", "title_ar")
+    const en = getProp(item, "titleEn", "title_en")
+    return isAr ? (ar || en || "بدون عنوان") : (en || ar || "Untitled")
+  }
+
+  const getContent = (item: any) => {
+    if (!item) return ""
+    const ar = getProp(item, "contentAr", "content_ar")
+    const en = getProp(item, "contentEn", "content_en")
+    return isAr ? (ar || en) : (en || ar)
+  }
+
+  const getEmbedUrl = (url: string) => {
+    if (!url) return null
+    
+    // YouTube
+    const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
+    const youtubeMatch = url.match(youtubeRegex)
+    if (youtubeMatch) {
+      return `https://www.youtube.com/embed/${youtubeMatch[1]}`
+    }
+    
+    // Vimeo
+    const vimeoRegex = /(?:vimeo\.com\/)([0-9]+)/
+    const vimeoMatch = url.match(vimeoRegex)
+    if (vimeoMatch) {
+      return `https://player.vimeo.com/video/${vimeoMatch[1]}`
+    }
+    
+    return url
+  }
+
   // Update notes when initialNotes changes (e.g. navigation)
   useEffect(() => {
     setNotes(initialNotes)
@@ -174,17 +214,28 @@ export function LessonContent({ lesson, lang, userId, initialNotes = [], quiz, q
   }
 
   if (lesson.type === "video") {
+    const videoUrl = getProp(lesson, "videoUrl", "video_url")
+    const isExternalVideo = videoUrl && (videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be") || videoUrl.includes("vimeo.com"))
+    
     return (
       <div className="space-y-6">
         <div className="aspect-video bg-black rounded-lg overflow-hidden relative group">
-          {lesson.videoUrl ? (
-            <video 
-              ref={videoRef}
-              src={lesson.videoUrl} 
-              controls 
-              className="w-full h-full"
-              poster={lesson.thumbnailUrl}
-            />
+          {videoUrl ? (
+            isExternalVideo ? (
+               <iframe 
+                 src={getEmbedUrl(videoUrl) || ""} 
+                 className="absolute inset-0 w-full h-full" 
+                 allowFullScreen 
+               />
+            ) : (
+              <video 
+                ref={videoRef}
+                src={videoUrl} 
+                controls 
+                className="w-full h-full"
+                poster={getProp(lesson, "thumbnailUrl", "thumbnail_url")}
+              />
+            )
           ) : (
             <div className="w-full h-full flex items-center justify-center text-white/50">
               <div className="text-center">
@@ -202,13 +253,13 @@ export function LessonContent({ lesson, lang, userId, initialNotes = [], quiz, q
           </TabsList>
           
           <TabsContent value="overview" className="mt-6 text-start">
-            <h1 className="text-2xl font-bold mb-2">{isAr ? lesson.titleAr : lesson.titleEn}</h1>
+            <h1 className="text-2xl font-bold mb-2">{getTitle(lesson)}</h1>
             <div className="prose dark:prose-invert max-w-none mb-6">
-              <p>{isAr ? lesson.descriptionAr : lesson.descriptionEn}</p>
+              <p>{isAr ? getProp(lesson, "descriptionAr", "description_ar") : getProp(lesson, "descriptionEn", "description_en")}</p>
             </div>
-            {(isAr ? lesson.contentAr : lesson.contentEn) && (
+            {getContent(lesson) && (
               <div className="prose dark:prose-invert max-w-none border-t pt-6">
-                <ReactMarkdown>{isAr ? lesson.contentAr : lesson.contentEn || ""}</ReactMarkdown>
+                <ReactMarkdown>{getContent(lesson) || ""}</ReactMarkdown>
               </div>
             )}
           </TabsContent>

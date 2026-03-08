@@ -4,7 +4,7 @@ import { db } from "@/lib/db"
 import { users, contestParticipants } from "@/lib/db/schema"
 import { eq, desc, asc } from "drizzle-orm"
 
-export async function getContestParticipants(contestId: number) {
+export async function getContestParticipants(contestId: string) {
   console.log("[Action] getContestParticipants started", { contestId })
   try {
     const participants = await db.query.contestParticipants.findMany({

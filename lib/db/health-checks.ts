@@ -1,6 +1,7 @@
 "use server"
 
-import { client } from "@/lib/db"
+import { client, db } from "@/lib/db"
+import { sql } from "drizzle-orm"
 
 export interface HealthCheck {
   name: string
@@ -110,7 +111,7 @@ export async function checkCoreFlows(): Promise<HealthCheck> {
     // Check certificates
     const certificates = await db.execute(sql`SELECT COUNT(*) as count FROM certificates`)
 
-    const details = `Enrollments: ${enrollments[0].count} | Orders: ${orders[0].count} | Certificates: ${certificates[0].count}`
+    const details = `Enrollments: ${(enrollments as any).rows?.[0]?.count ?? 0} | Orders: ${(orders as any).rows?.[0]?.count ?? 0} | Certificates: ${(certificates as any).rows?.[0]?.count ?? 0}`
 
     return {
       name: "Core Flows",
@@ -136,7 +137,7 @@ export async function checkChallenges(): Promise<HealthCheck> {
     return {
       name: "Challenges",
       status: "PASS",
-      details: `Problems: ${challenges[0].count} | Submissions: ${submissions[0].count}`,
+      details: `Problems: ${(challenges as any).rows?.[0]?.count ?? 0} | Submissions: ${(submissions as any).rows?.[0]?.count ?? 0}`,
       timestamp: new Date().toISOString(),
     }
   } catch (error) {

@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 
-export function OrderActionsMenu({ orderId, currentStatus }: { orderId: number; currentStatus: string }) {
+export function OrderActionsMenu({ orderId, currentStatus }: { orderId: string; currentStatus: string }) {
   const router = useRouter()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)

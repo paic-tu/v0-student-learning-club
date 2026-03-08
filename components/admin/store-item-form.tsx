@@ -23,7 +23,7 @@ const storeItemSchema = z.object({
   price: z.number().min(0),
   pointsCost: z.number().int().min(0).optional().nullable(),
   stock: z.number().int().min(0),
-  categoryId: z.number().int().positive().optional().nullable(),
+  categoryId: z.string().optional().nullable(),
   imageUrl: z.string().optional().or(z.literal("")).nullable(),
   isActive: z.boolean().default(true),
 })
@@ -31,7 +31,7 @@ const storeItemSchema = z.object({
 type StoreItemFormData = z.infer<typeof storeItemSchema>
 
 interface StoreItemFormProps {
-  categories: Array<{ id: number; nameEn: string; nameAr: string }>
+  categories: Array<{ id: string; nameEn: string; nameAr: string }>
 }
 
 export function StoreItemForm({ categories }: StoreItemFormProps) {

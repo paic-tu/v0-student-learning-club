@@ -82,7 +82,7 @@ export default async function OrdersManagementPage() {
                   <TableCell>
                     <Badge
                       variant={
-                        order.status === "completed" || order.status === "paid" || order.status === "delivered"
+                        order.status === "paid" || order.status === "delivered"
                           ? "default"
                           : order.status === "cancelled"
                             ? "destructive"

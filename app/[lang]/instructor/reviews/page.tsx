@@ -55,7 +55,7 @@ export default async function InstructorReviewsPage({ params }: { params: Promis
               <CardContent>
                 <p className="text-sm mt-2">{review.comment}</p>
                 <p className="text-xs text-muted-foreground mt-4">
-                  {new Date(review.createdAt).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-US")}
+                  {new Date(review.created_at).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-US")}
                 </p>
               </CardContent>
             </Card>

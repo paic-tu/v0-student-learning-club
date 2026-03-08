@@ -71,7 +71,6 @@ export async function PUT(
         endDate: body.endDate ? new Date(body.endDate) : undefined,
         prizePool: body.prizePool,
         maxParticipants: body.maxParticipants,
-        updatedAt: new Date(),
       })
       .where(eq(contests.id, params.id))
       .returning()
@@ -84,7 +83,7 @@ export async function PUT(
       action: "update",
       resource: "contest",
       resourceId: updatedContest.id,
-      details: { title: updatedContest.titleEn, changes: body },
+      changes: { title: updatedContest.titleEn, changes: body },
       userId: session.user.id,
     })
 

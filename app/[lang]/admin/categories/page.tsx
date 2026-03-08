@@ -119,7 +119,7 @@ export default async function CategoriesPage({ params }: { params: Promise<{ lan
                   </TableCell>
                 </TableRow>
               ))}
-              {categories.length === 0 && (
+              {categoriesData.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center">
                     No categories found.

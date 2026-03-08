@@ -16,10 +16,24 @@ interface CurriculumSidebarProps {
   currentLessonId: string
   lang: string
   className?: string
+  onLessonSelect?: () => void
 }
 
-export function CurriculumSidebar({ course, currentLessonId, lang, className }: CurriculumSidebarProps) {
+export function CurriculumSidebar({ course, currentLessonId, lang, className, onLessonSelect }: CurriculumSidebarProps) {
   const isAr = lang === "ar"
+
+  // Helper to safely access properties that might be camelCase or snake_case
+  const getProp = (obj: any, camel: string, snake: string) => {
+    if (!obj) return undefined
+    return obj[camel] !== undefined ? obj[camel] : obj[snake]
+  }
+
+  const getTitle = (item: any) => {
+    if (!item) return ""
+    const ar = getProp(item, "titleAr", "title_ar")
+    const en = getProp(item, "titleEn", "title_en")
+    return isAr ? (ar || en || "بدون عنوان") : (en || ar || "Untitled")
+  }
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -34,13 +48,9 @@ export function CurriculumSidebar({ course, currentLessonId, lang, className }: 
       <div className="h-16 flex flex-col justify-center px-4 border-b shrink-0">
         <h2 
           className="font-semibold text-sm line-clamp-1" 
-          title={isAr 
-            ? (course.titleAr || course.title_ar || course.titleEn || course.title_en) 
-            : (course.titleEn || course.title_en || course.titleAr || course.title_ar)}
+          title={getTitle(course)}
         >
-          {isAr 
-            ? (course.titleAr || course.title_ar || course.titleEn || course.title_en) 
-            : (course.titleEn || course.title_en || course.titleAr || course.title_ar)}
+          {getTitle(course)}
         </h2>
         <p className="text-xs text-muted-foreground">
           {course.enrollmentCount} {isAr ? "طالب" : "Students"}
@@ -54,9 +64,7 @@ export function CurriculumSidebar({ course, currentLessonId, lang, className }: 
               <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50">
                 <div className="text-start w-full">
                   <div className="font-medium text-sm">
-                    {isAr 
-                      ? (module.titleAr || module.title_ar || module.titleEn || module.title_en || "بدون عنوان") 
-                      : (module.titleEn || module.title_en || module.titleAr || module.title_ar || "Untitled Module")}
+                    {getTitle(module)}
                   </div>
                   <div className="text-xs text-muted-foreground font-normal mt-0.5">
                     {module.lessons?.length || 0} {isAr ? "دروس" : "Lessons"}
@@ -74,6 +82,7 @@ export function CurriculumSidebar({ course, currentLessonId, lang, className }: 
                       <Link
                         key={lesson.id}
                         href={`/${lang}/student/learn/${course.id}/${lesson.id}`}
+                        onClick={onLessonSelect}
                         className={cn(
                           "flex items-center gap-3 px-6 py-3 text-sm transition-colors border-s-4 border-transparent",
                           isActive 
@@ -87,9 +96,7 @@ export function CurriculumSidebar({ course, currentLessonId, lang, className }: 
                           <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
                         )}
                         <span className="line-clamp-1 flex-1 text-start">
-                          {isAr 
-                            ? (lesson.titleAr || lesson.title_ar || lesson.titleEn || lesson.title_en || "بدون عنوان") 
-                            : (lesson.titleEn || lesson.title_en || lesson.titleAr || lesson.title_ar || "Untitled Lesson")}
+                          {getTitle(lesson)}
                         </span>
                         {lesson.durationMinutes && (
                           <span className="text-xs text-muted-foreground/70">

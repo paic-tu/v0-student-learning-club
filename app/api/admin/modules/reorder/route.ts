@@ -46,11 +46,7 @@ export async function PUT(req: NextRequest) {
         action: "update",
         resource: "course" as AuditResource,
         resourceId: firstModule.courseId,
-        details: { action: "reorder_modules", count: items.length },
-        changes: {
-            before: null,
-            after: items
-        }
+        changes: { action: "reorder_modules", count: items.length },
       })
     }
 

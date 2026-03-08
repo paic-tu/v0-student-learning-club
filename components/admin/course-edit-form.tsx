@@ -58,7 +58,7 @@ export function CourseEditForm({
   })
 
   const updatePreview = (field: string, value: any) => {
-    setPreviewData(prev => ({ ...prev, [field]: value }))
+    setPreviewData((prev: any) => ({ ...prev, [field]: value }))
   }
 
   // Derive preview course object
@@ -68,8 +68,8 @@ export function CourseEditForm({
   const previewCourse = {
     ...previewData,
     id: course.id, // Keep original ID
-    category_name_en: selectedCategory?.name_en || selectedCategory?.nameEn || "",
-    category_name_ar: selectedCategory?.name_ar || selectedCategory?.nameAr || "",
+    category_name_en: selectedCategory?.nameEn || (selectedCategory as any)?.name_en || "",
+    category_name_ar: selectedCategory?.nameAr || (selectedCategory as any)?.name_ar || "",
     instructor_name: selectedInstructor?.name || "",
   }
 
@@ -290,9 +290,10 @@ export function CourseEditForm({
                 <SelectContent>
                   {localCategories.map((category: any) => (
                     <SelectItem key={category.id} value={category.id.toString()}>
-                      {isAr 
-                        ? category.name_ar || category.nameAr || category.name_en || category.nameEn || `تصنيف ${category.id}`
-                        : category.name_en || category.nameEn || category.name_ar || category.nameAr || `Category ${category.id}`}
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium">{category.name_en || category.nameEn}</span>
+                        <span className="text-xs text-muted-foreground">{category.name_ar || category.nameAr}</span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -2,11 +2,11 @@ import { getCurrentUser } from "@/lib/auth"
 import { getLearningData, getUserLessonNotes, getQuizById, getQuizSubmission } from "@/lib/db/queries"
 import { redirect, notFound } from "next/navigation"
 import { CurriculumSidebar } from "@/components/learn/curriculum-sidebar"
+import { MobileCurriculumSidebar } from "@/components/learn/mobile-curriculum-sidebar"
 import { LessonContent } from "@/components/learn/lesson-content"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, Menu } from "lucide-react"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { CompleteLessonButton } from "@/components/learn/complete-button"
 
 export default async function LearningPage({ 
@@ -80,13 +80,13 @@ export default async function LearningPage({
     titleAr: courseAny.title_ar ?? courseAny.titleAr,
     modules: courseContent.map((module: any) => ({
       ...module,
-      titleEn: module.title_en,
-      titleAr: module.title_ar,
+      titleEn: module.title_en ?? module.titleEn,
+      titleAr: module.title_ar ?? module.titleAr,
       lessons: module.lessons.map((lesson: any) => ({
         ...lesson,
-        titleEn: lesson.title_en,
-        titleAr: lesson.title_ar,
-        durationMinutes: lesson.duration_minutes,
+        titleEn: lesson.title_en ?? lesson.titleEn,
+        titleAr: lesson.title_ar ?? lesson.titleAr,
+        durationMinutes: lesson.duration_minutes ?? lesson.durationMinutes,
         progress: completedLessons.includes(lesson.id) ? [{ isCompleted: true }] : []
       }))
     }))
@@ -107,21 +107,11 @@ export default async function LearningPage({
         {/* Top Navigation Bar */}
         <header className="flex items-center justify-between h-16 px-4 border-b bg-background shrink-0 gap-4">
           <div className="flex items-center gap-2 min-w-0">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden shrink-0">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side={isAr ? "right" : "left"} className="p-0 w-80">
-                <CurriculumSidebar 
-                  course={sidebarCourse} 
-                  currentLessonId={currentLessonAny.id} 
-                  lang={lang} 
-                  className="w-full h-full pt-12"
-                />
-              </SheetContent>
-            </Sheet>
+            <MobileCurriculumSidebar 
+              course={sidebarCourse} 
+              currentLessonId={currentLessonAny.id} 
+              lang={lang} 
+            />
             
             <Link 
               href={`/${lang}/student/course/${courseAny.id}`}

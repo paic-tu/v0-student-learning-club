@@ -39,7 +39,7 @@ export function NewChatDialog({ onChatCreated }: NewChatDialogProps) {
 
   const handleCreateChat = async (userId: string) => {
     try {
-      const result = await createPrivateChat(userId)
+      const result = await createPrivateChat(userId || "")
       if (result.error) {
         toast.error(result.error)
       } else {
