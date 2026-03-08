@@ -3,97 +3,131 @@
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { conversations, conversationParticipants, messages, users, enrollments, courses } from "@/lib/db/schema"
-import { eq, and, desc, or, sql, asc, gt, ne, count } from "drizzle-orm"
+import { eq, and, desc, or, sql, asc, gt, ne, count, inArray } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 export async function getConversations() {
-  const session = await auth()
-  if (!session?.user?.id) return []
+  try {
+    const session = await auth()
+    if (!session?.user?.id) return []
 
-  // Get conversations where the user is a participant
-  const userConversations = await db.query.conversationParticipants.findMany({
-    where: eq(conversationParticipants.userId, session.user.id),
-    with: {
-      conversation: {
-        with: {
-          participants: {
-            with: {
-              user: {
-                columns: {
-                  id: true,
-                  name: true,
-                  avatarUrl: true,
-                  email: true,
-                  role: true,
-                },
-              },
-            },
-          },
-          messages: {
-            orderBy: [desc(messages.createdAt)],
-            limit: 1,
-          },
-        },
-      },
-    },
-  })
+    // 1. Get conversations where the user is a participant
+    // Instead of using db.query which generates complex lateral joins that fail on Neon/Vercel
+    // we fetch IDs first and then fetch related data in parallel manually.
+    const userParticipations = await db
+      .select({
+        conversationId: conversationParticipants.conversationId,
+      })
+      .from(conversationParticipants)
+      .where(eq(conversationParticipants.userId, session.user.id))
 
-  // Get unread counts for all conversations
-  const unreadCounts = await db
-    .select({
-      conversationId: conversationParticipants.conversationId,
-      count: count(),
-    })
-    .from(messages)
-    .innerJoin(
-      conversationParticipants,
-      eq(messages.conversationId, conversationParticipants.conversationId)
-    )
-    .where(
-      and(
-        eq(conversationParticipants.userId, session.user.id),
-        ne(messages.senderId, session.user.id),
-        gt(
-          messages.createdAt,
-          sql`COALESCE(${conversationParticipants.lastReadAt}, ${conversationParticipants.joinedAt})`
+    if (userParticipations.length === 0) return []
+
+    const conversationIds = userParticipations.map(p => p.conversationId)
+
+    // 2. Fetch conversations, participants, and latest messages in parallel
+    const [convs, allParticipants, latestMessages, unreadCounts] = await Promise.all([
+      // Get conversation details
+      db.select().from(conversations).where(inArray(conversations.id, conversationIds)),
+
+      // Get all participants for these conversations to determine names/avatars
+      db.select({
+        conversationId: conversationParticipants.conversationId,
+        userId: conversationParticipants.userId,
+        user: {
+          id: users.id,
+          name: users.name,
+          avatarUrl: users.avatarUrl,
+          email: users.email,
+          role: users.role,
+        }
+      })
+      .from(conversationParticipants)
+      .innerJoin(users, eq(conversationParticipants.userId, users.id))
+      .where(inArray(conversationParticipants.conversationId, conversationIds)),
+
+      // Get latest message for each conversation
+      // Using DISTINCT ON to get the most recent message per conversation efficiently
+      db.select()
+        .distinctOn(messages.conversationId)
+        .from(messages)
+        .where(inArray(messages.conversationId, conversationIds))
+        .orderBy(messages.conversationId, desc(messages.createdAt)),
+
+      // Get unread counts
+      db.select({
+        conversationId: conversationParticipants.conversationId,
+        count: count(),
+      })
+      .from(messages)
+      .innerJoin(
+        conversationParticipants,
+        eq(messages.conversationId, conversationParticipants.conversationId)
+      )
+      .where(
+        and(
+          eq(conversationParticipants.userId, session.user.id),
+          ne(messages.senderId, session.user.id),
+          inArray(messages.conversationId, conversationIds),
+          gt(
+            messages.createdAt,
+            sql`COALESCE(${conversationParticipants.lastReadAt}, ${conversationParticipants.joinedAt})`
+          )
         )
       )
-    )
-    .groupBy(conversationParticipants.conversationId)
+      .groupBy(conversationParticipants.conversationId)
+    ])
 
-  const unreadMap = new Map(unreadCounts.map((u) => [u.conversationId, u.count]))
+    // 3. Assemble the data
+    const unreadMap = new Map(unreadCounts.map((u) => [u.conversationId, u.count]))
+    
+    // Group participants by conversation
+    const participantsByConv = new Map<string, typeof allParticipants>()
+    allParticipants.forEach(p => {
+      const list = participantsByConv.get(p.conversationId) || []
+      list.push(p)
+      participantsByConv.set(p.conversationId, list)
+    })
 
-  // Transform data for UI
-  return userConversations.map((p) => {
-    const conv = p.conversation
-    const otherParticipants = conv.participants.filter((cp) => cp.userId !== session.user.id)
-    const lastMessage = conv.messages[0]
+    // Map latest messages
+    const messageMap = new Map(latestMessages.map(m => [m.conversationId, m]))
 
-    let name = conv.name
-    let image = null
+    // Transform data for UI
+    return convs.map((conv) => {
+      const participants = participantsByConv.get(conv.id) || []
+      const otherParticipants = participants.filter((p) => p.userId !== session.user.id)
+      const lastMessage = messageMap.get(conv.id)
 
-    if (conv.type === "individual") {
-      const otherUser = otherParticipants[0]?.user
-      name = otherUser?.name || "Unknown User"
-      image = otherUser?.avatarUrl
-    } else if (conv.type === "community") {
-      name = "Community Chat"
-    }
+      let name = conv.name
+      let image = null
 
-    return {
-      id: conv.id,
-      type: conv.type,
-      name,
-      image,
-      lastMessage: lastMessage ? {
-        content: lastMessage.content,
-        createdAt: lastMessage.createdAt,
-        senderId: lastMessage.senderId,
-      } : null,
-      updatedAt: conv.updatedAt,
-      unreadCount: unreadMap.get(conv.id) || 0,
-    }
-  }).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      if (conv.type === "individual") {
+        const otherUser = otherParticipants[0]?.user
+        name = otherUser?.name || "Unknown User"
+        image = otherUser?.avatarUrl
+      } else if (conv.type === "community") {
+        name = "Community Chat"
+      }
+
+      return {
+        id: conv.id,
+        type: conv.type,
+        name,
+        image,
+        lastMessage: lastMessage ? {
+          content: lastMessage.content,
+          createdAt: lastMessage.createdAt,
+          senderId: lastMessage.senderId,
+        } : null,
+        updatedAt: conv.updatedAt,
+        unreadCount: unreadMap.get(conv.id) || 0,
+      }
+    }).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+
+  } catch (error) {
+    console.error("Failed to get conversations:", error)
+    return []
+  }
 }
 
 export async function getUnreadMessageCount() {
