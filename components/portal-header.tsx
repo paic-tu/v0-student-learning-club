@@ -41,6 +41,7 @@ export function PortalHeader({ user, mobileNav }: PortalHeaderProps) {
   const { language, setLanguage } = useLanguage()
   const { theme, toggleTheme } = useTheme()
   const [unreadCount, setUnreadCount] = useState(0)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     const fetchCount = async () => {
@@ -66,7 +67,7 @@ export function PortalHeader({ user, mobileNav }: PortalHeaderProps) {
     <header className="flex h-16 items-center justify-between border-b bg-background px-6">
       <div className="flex flex-1 items-center gap-4">
         {mobileNav && (
-          <Sheet>
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="md:hidden">
                 <Menu className="h-5 w-5" />
@@ -74,7 +75,17 @@ export function PortalHeader({ user, mobileNav }: PortalHeaderProps) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0 w-72">
-              {mobileNav}
+              <div 
+                className="h-full" 
+                onClick={(e) => {
+                  // Close sidebar when a link is clicked
+                  if ((e.target as HTMLElement).closest('a')) {
+                    setIsMobileMenuOpen(false)
+                  }
+                }}
+              >
+                {mobileNav}
+              </div>
             </SheetContent>
           </Sheet>
         )}

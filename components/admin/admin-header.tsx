@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+import { useState } from "react"
 import type { User } from "@/lib/types"
 import { Bell, Search, LogOut, Menu, Moon, Sun, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
