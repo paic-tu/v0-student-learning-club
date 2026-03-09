@@ -10,6 +10,7 @@ import { DataPacket_Kind, RoomEvent } from "livekit-client"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Hand, Loader2, MicOff, VideoOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 
@@ -17,10 +18,9 @@ interface UserInfo {
   id: string
   name: string
   role: string
+  image?: string
 }
 
-const LiveKitRoomAny = LiveKitRoom as any
-const VideoConferenceAny = VideoConference as any
 
 export default function LiveClassroomClient({
   roomName,
@@ -81,7 +81,7 @@ export default function LiveClassroomClient({
   const shouldAutoEnableAv = effectiveMode === "instructor"
 
   return (
-    <LiveKitRoomAny
+    <LiveKitRoom
       video={shouldAutoEnableAv}
       audio={shouldAutoEnableAv}
       token={token}
@@ -96,7 +96,7 @@ export default function LiveClassroomClient({
       }}
     >
       <ClassroomLayout isAr={isAr} user={user} effectiveMode={effectiveMode} />
-    </LiveKitRoomAny>
+    </LiveKitRoom>
   )
 }
 
@@ -118,18 +118,17 @@ function ClassroomLayout({
 
   const isInstructorView = effectiveMode === "instructor"
 
+  // Initial mute for students
   useEffect(() => {
     if (effectiveMode !== "student") return
 
     const applyDefaultMute = async () => {
       try {
         await room.localParticipant.setMicrophoneEnabled(false)
-      } catch {
-      }
+      } catch {}
       try {
         await room.localParticipant.setCameraEnabled(false)
-      } catch {
-      }
+      } catch {}
     }
 
     const onConnected = () => {
@@ -144,6 +143,7 @@ function ClassroomLayout({
     }
   }, [room, effectiveMode])
 
+  // Data channel handlers (Raise Hand, Mute All)
   useEffect(() => {
     const handleData = (payload: Uint8Array, participant?: any, _kind?: DataPacket_Kind) => {
       const str = new TextDecoder().decode(payload)
@@ -182,8 +182,7 @@ function ClassroomLayout({
           })
           return
         }
-      } catch {
-      }
+      } catch {}
     }
 
     room.on(RoomEvent.DataReceived, handleData)
@@ -218,6 +217,7 @@ function ClassroomLayout({
       })
       const mimeType = "video/webm"
       const recorder = new MediaRecorder(displayStream, { mimeType })
+
       recordedChunksRef.current = []
       recorder.ondataavailable = (e: BlobEvent) => {
         if (e.data && e.data.size > 0) recordedChunksRef.current.push(e.data)
@@ -237,6 +237,7 @@ function ClassroomLayout({
           description: isAr ? "تم تنزيل الفيديو على جهازك" : "Video downloaded to your device",
         })
       }
+
       recorder.start()
       mediaRecorderRef.current = recorder
       setIsRecording(true)
@@ -282,8 +283,9 @@ function ClassroomLayout({
 
   return (
     <div className="relative h-full w-full">
-      <VideoConferenceAny />
+      <VideoConference />
       
+      {/* Student Controls */}
       {!isInstructorView && (
         <div
           className={cn(
@@ -303,6 +305,7 @@ function ClassroomLayout({
         </div>
       )}
 
+      {/* Instructor Controls */}
       {isInstructorView && (
         <aside
           className={cn(
@@ -365,3 +368,5 @@ function ClassroomLayout({
     </div>
   )
 }
+
+

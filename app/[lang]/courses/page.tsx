@@ -43,7 +43,8 @@ export default function CoursesPage() {
   ]
 
   const filteredCourses = courses.filter((course) => {
-    const title = (language === "ar" ? course.title_ar : course.title_en) || ""
+    const title =
+      (language === "ar" ? course.title_ar || course.titleAr : course.title_en || course.titleEn) || ""
     const instructorName = course.instructor_name || ""
     const matchesSearch =
       title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -119,7 +120,7 @@ export default function CoursesPage() {
                   <div className="relative h-48 w-full bg-muted rounded-t-lg overflow-hidden">
                     <Image
                       src={course.thumbnailUrl || course.thumbnail_url || "/placeholder.svg?height=200&width=300&query=course"}
-                      alt={language === "ar" ? course.title_ar : course.title_en}
+                      alt={(language === "ar" ? course.title_ar || course.titleAr : course.title_en || course.titleEn) || ""}
                       fill
                       className="object-cover"
                       unoptimized
@@ -134,7 +135,7 @@ export default function CoursesPage() {
                     <Badge variant="outline">{t(course.difficulty, language)}</Badge>
                   </div>
                   <h3 className="font-semibold text-lg mb-2 line-clamp-2">
-                    {language === "ar" ? course.title_ar : course.title_en}
+                    {(language === "ar" ? course.title_ar || course.titleAr : course.title_en || course.titleEn) || (language === "ar" ? "عنوان الدورة" : "Course Title")}
                   </h3>
                   <p className="text-sm text-muted-foreground mb-3">{course.instructor_name}</p>
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">

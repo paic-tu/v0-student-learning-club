@@ -15,9 +15,20 @@ export default async function InstructorDashboardPage({ params }: { params: Prom
     redirect(`/${lang}/dashboard`)
   }
 
-  const analytics = await getInstructorAnalytics(user?.id!)
-  const recentReviews = await getInstructorReviews(user?.id!)
-  const coursePerformance = await getInstructorCoursePerformance(user?.id!)
+  let analytics = { totalCourses: 0, totalStudents: 0, totalReviews: 0, rating: "0.0", instructorRating: "0.0", totalRevenue: 0 }
+  let recentReviews: any[] = []
+  let coursePerformance: any[] = []
+
+  try {
+    if (user.id) {
+      analytics = await getInstructorAnalytics(user.id)
+      recentReviews = await getInstructorReviews(user.id)
+      coursePerformance = await getInstructorCoursePerformance(user.id)
+    }
+  } catch (error) {
+    console.error("Error fetching instructor dashboard data:", error)
+  }
+  
   const isAr = lang === "ar"
 
   return (

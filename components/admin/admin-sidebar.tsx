@@ -43,6 +43,27 @@ function AdminNav({ user, isCollapsed }: AdminSidebarProps) {
   // Helper to remove locale from path for comparison
   const pathWithoutLocale = "/" + segments.slice(2).join("/")
 
+  useEffect(() => {
+    const controller = new AbortController()
+    const fetchLive = async () => {
+      try {
+        setLoadingLive(true)
+        const res = await fetch("/api/live/courses", { signal: controller.signal })
+        const data = await res.json()
+        setLiveCourses((data?.courses || []).slice(0, 10))
+      } catch {
+      } finally {
+        setLoadingLive(false)
+      }
+    }
+    fetchLive()
+    const interval = setInterval(fetchLive, 12000)
+    return () => {
+      controller.abort()
+      clearInterval(interval)
+    }
+  }, [])
+
   const menuItems = [
     {
       href: "/admin",

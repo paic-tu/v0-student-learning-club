@@ -50,8 +50,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Server misconfigured" }, { status: 500 })
   }
 
-  const identity = username || session.user.name || session.user.id
-  const at = new AccessToken(apiKey, apiSecret, { identity })
+  const displayName = username || session.user.name || session.user.id
+  const identity = session.user.id
+  const at = new AccessToken(apiKey, apiSecret, {
+    identity,
+    name: displayName,
+    metadata: JSON.stringify({ 
+      role, 
+      userId: session.user.id,
+      avatarUrl: session.user.image 
+    }),
+  })
 
   at.addGrant({
     room,

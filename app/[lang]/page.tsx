@@ -8,7 +8,7 @@ import { AnimatedCounter } from "@/components/animated-counter"
 import { StarfieldBackground } from "@/components/starfield-background"
 import { GlowBlob } from "@/components/glow-blob"
 import Link from "next/link"
-import { BookOpen, Award, Users, Sparkles, Target, Zap } from "lucide-react"
+import { BookOpen, Award, Users, Sparkles, Target, Zap, Clock } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
 import { t } from "@/lib/i18n"
 import { getLandingPageStats } from "@/lib/actions/stats"
@@ -205,24 +205,27 @@ export default function HomePage() {
                   description: isRTL
                     ? "دورات تعليمية من خبراء في مجالاتهم مع محتوى محدث باستمرار"
                     : "Educational courses from field experts with continuously updated content",
-                  icon: "📚",
+                  Icon: BookOpen,
                   gradient: "from-blue-500/10 to-cyan-500/10",
+                  color: "text-blue-600",
                 },
                 {
                   title: isRTL ? "شهادات معتمدة" : "Certified Certificates",
                   description: isRTL
                     ? "احصل على شهادات معتمدة عند إتمام الدورات لتعزيز سيرتك الذاتية"
                     : "Earn certified certificates upon course completion to enhance your resume",
-                  icon: "🏆",
+                  Icon: Award,
                   gradient: "from-purple-500/10 to-pink-500/10",
+                  color: "text-purple-600",
                 },
                 {
                   title: isRTL ? "تعلم بمرونة" : "Flexible Learning",
                   description: isRTL
                     ? "ادرس في أي وقت ومن أي مكان بما يناسب جدولك اليومي"
                     : "Study anytime, anywhere to fit your daily schedule",
-                  icon: "⏰",
+                  Icon: Clock,
                   gradient: "from-amber-500/10 to-orange-500/10",
+                  color: "text-amber-600",
                 },
               ].map((feature, i) => (
                 <Card
@@ -230,7 +233,7 @@ export default function HomePage() {
                   className={`text-center card-hover bg-gradient-to-br ${feature.gradient} border-muted/50 backdrop-blur-sm`}
                 >
                   <CardContent className="pt-10 pb-8 space-y-4">
-                    <div className="text-6xl mb-2">{feature.icon}</div>
+                    <feature.Icon className={`h-12 w-12 mx-auto ${feature.color}`} strokeWidth={1.6} />
                     <h3 className="text-xl md:text-2xl font-bold">{feature.title}</h3>
                     <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
                   </CardContent>

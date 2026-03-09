@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { IBM_Plex_Sans_Arabic, Inter, Playfair_Display, Dancing_Script } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
+import Script from "next/script"
 import "../globals.css"
 import { LanguageProvider } from "@/lib/language-context"
 import { ThemeProvider } from "@/lib/theme-context"
@@ -93,6 +94,9 @@ export default async function RootLayout({
   return (
     <html lang={lang} dir={dir} suppressHydrationWarning>
       <body className={`${arabic.variable} ${inter.variable} ${playfair.variable} ${dancing.variable} font-sans antialiased`}>
+        <Script id="silence-console" strategy="beforeInteractive">
+          {`(function(){var n=function(){};var c=window.console||{};c.log=n;c.debug=n;c.info=n;c.warn=n;c.error=n;window.console=c})();`}
+        </Script>
         <ThemeProvider>
           <LanguageProvider defaultLang={lang as "ar" | "en"}>
             <AuthProvider>

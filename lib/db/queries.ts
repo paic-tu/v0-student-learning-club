@@ -298,28 +298,34 @@ export async function getUserProfile(userId: string) {
 
 export async function getStudentDashboardData(userId: string) {
   try {
-    const enrolledCourses = await db.query.enrollments.findMany({
-      where: eq(enrollments.userId, userId),
-      with: {
-        course: {
-          with: {
-            instructor: true,
-            category: true,
+    const [enrolledCourses, certsCount, user] = await Promise.all([
+      db.query.enrollments.findMany({
+        where: eq(enrollments.userId, userId),
+        with: {
+          course: {
+            with: {
+              instructor: true,
+              category: true,
+            }
           }
+        },
+        orderBy: [desc(enrollments.lastAccessedAt)]
+      }),
+      db.select({ count: count() })
+        .from(certificates)
+        .where(eq(certificates.userId, userId))
+        .then(res => res[0].count),
+      db.query.users.findFirst({
+        where: eq(users.id, userId),
+        columns: {
+          points: true
         }
-      },
-      orderBy: [desc(enrollments.lastAccessedAt)]
-    })
+      })
+    ])
 
     const completedCourses = enrolledCourses.filter(e => e.progress === 100).length
     const activeCourses = enrolledCourses.length - completedCourses
     
-    // Get certificates count
-    const certsCount = await db.select({ count: count() })
-      .from(certificates)
-      .where(eq(certificates.userId, userId))
-      .then(res => res[0].count)
-
     // Last activity logic
     let lastActivity = null
     const lastActiveEnrollment = enrolledCourses.find(e => e.progress < 100)
@@ -351,13 +357,6 @@ export async function getStudentDashboardData(userId: string) {
             }
         }
     }
-
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-      columns: {
-        points: true
-      }
-    })
 
     return {
       stats: {

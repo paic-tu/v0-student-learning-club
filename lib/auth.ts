@@ -103,6 +103,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 export const getCurrentUser = async () => {
   const session = await auth()
   if (!session?.user?.id) return null
+  
+  // Optimization: Trust session data for fast access
+  // Uncomment the DB fetch if you need real-time role/profile updates that bypass session duration
+  /*
   try {
     const fresh = await db.query.users.findFirst({
       where: eq(users.id, session.user.id),
@@ -123,9 +127,11 @@ export const getCurrentUser = async () => {
         image: fresh.avatarUrl ?? session.user.image,
       }
     }
-  } catch (e) {
-    console.warn("[Auth] Failed to fetch fresh user from DB, falling back to session", e)
+  } catch (e: any) {
+    console.warn("[Auth] Failed to fetch fresh user from DB, falling back to session. Error:", e.message || e)
   }
+  */
+  
   return session.user
 }
 

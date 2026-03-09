@@ -15,6 +15,12 @@ export async function checkEnvironment(): Promise<HealthCheck> {
     { key: "DATABASE_URL", present: !!process.env.DATABASE_URL },
     { key: "DATABASE_URL_POOLED", present: !!process.env.DATABASE_URL_POOLED },
     { key: "NODE_ENV", present: !!process.env.NODE_ENV },
+    { key: "AUTH_SECRET|NEXTAUTH_SECRET", present: !!(process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET) },
+    { key: "AUTH_URL|NEXTAUTH_URL", present: !!(process.env.AUTH_URL || process.env.NEXTAUTH_URL) },
+    { key: "NEXT_PUBLIC_APP_URL", present: !!process.env.NEXT_PUBLIC_APP_URL },
+    { key: "LIVEKIT_API_KEY", present: !!process.env.LIVEKIT_API_KEY },
+    { key: "LIVEKIT_API_SECRET", present: !!process.env.LIVEKIT_API_SECRET },
+    { key: "NEXT_PUBLIC_LIVEKIT_URL", present: !!process.env.NEXT_PUBLIC_LIVEKIT_URL },
   ]
 
   const allPresent = checks.every((c) => c.present)
