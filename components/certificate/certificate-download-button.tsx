@@ -72,6 +72,7 @@ interface CertificateTemplateProps {
   courseId: string
   certificateNumber?: string | null
   className?: string
+  skipRatingCheck?: boolean
 }
 
 export function CertificateDownloadButton({

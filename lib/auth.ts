@@ -102,7 +102,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
 export const getCurrentUser = async () => {
   const session = await auth()
-  return session?.user
+  if (!session?.user?.id) return null
+  try {
+    const fresh = await db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+      columns: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        avatarUrl: true,
+      },
+    })
+    if (fresh) {
+      return {
+        ...session.user,
+        role: fresh.role || session.user.role,
+        name: fresh.name ?? session.user.name,
+        email: fresh.email ?? session.user.email,
+        image: fresh.avatarUrl ?? session.user.image,
+      }
+    }
+  } catch (e) {
+    console.warn("[Auth] Failed to fetch fresh user from DB, falling back to session", e)
+  }
+  return session.user
 }
 
 export const currentRole = async () => {

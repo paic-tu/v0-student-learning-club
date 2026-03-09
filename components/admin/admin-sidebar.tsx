@@ -20,6 +20,7 @@ import {
   ChevronRight,
   HelpCircle,
   MessageCircle,
+  Video,
   MessageSquare,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -36,6 +37,8 @@ function AdminNav({ user, isCollapsed }: AdminSidebarProps) {
   const segments = pathname.split("/")
   const locale = segments[1] || "ar"
   const isAr = locale === "ar"
+  const [liveCourses, setLiveCourses] = useState<Array<{ id: string; titleEn: string; titleAr: string }>>([])
+  const [loadingLive, setLoadingLive] = useState(false)
   
   // Helper to remove locale from path for comparison
   const pathWithoutLocale = "/" + segments.slice(2).join("/")
@@ -170,6 +173,45 @@ function AdminNav({ user, isCollapsed }: AdminSidebarProps) {
           </Link>
         )
       })}
+      
+      {!isCollapsed && (
+        <div className="mt-4 pt-4 border-t">
+          <div className="px-3 pb-2 text-xs font-semibold text-muted-foreground">
+            {isAr ? "الدورات المباشرة" : "Live Courses"}
+          </div>
+          {loadingLive && (
+            <div className="px-3 py-2 text-xs text-muted-foreground">
+              {isAr ? "جاري التحميل..." : "Loading..."}
+            </div>
+          )}
+          {liveCourses.map((c) => {
+            const hrefWithLocale = `/${locale}/instructor/courses/${c.id}/live`
+            const isActive = pathWithoutLocale.startsWith(`/instructor/courses/${c.id}/live`)
+            return (
+              <Link
+                key={c.id}
+                href={hrefWithLocale}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                  isActive
+                    ? "bg-red-50 text-red-700"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <Video className="h-4 w-4 text-red-600" />
+                <span className="truncate">
+                  {isAr ? c.titleAr : c.titleEn}
+                </span>
+              </Link>
+            )
+          })}
+          {!loadingLive && liveCourses.length === 0 && (
+            <div className="px-3 py-2 text-xs text-muted-foreground">
+              {isAr ? "لا يوجد بث مباشر الآن" : "No live courses now"}
+            </div>
+          )}
+        </div>
+      )}
     </nav>
   )
 }

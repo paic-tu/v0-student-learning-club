@@ -319,6 +319,20 @@ export function CourseSidebar({ course, modules, lessons, lang }: CourseSidebarP
             {course.isPublished ? (isAr ? "منشور" : "Published") : (isAr ? "مسودة" : "Draft")}
           </Badge>
         </div>
+        {course.isLive && (
+          <Link
+            href={`/${lang}/instructor/courses/${course.id}/live`}
+            className="flex items-center gap-3 mt-3 text-red-600"
+          >
+            <div className="relative flex h-4 w-4 shrink-0 items-center justify-center">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+            </div>
+            <span className="font-medium">
+              {isAr ? "البث المباشر" : "Live Stream"}
+            </span>
+          </Link>
+        )}
       </div>
       
       <div className="flex-1 overflow-y-auto p-4 space-y-4">

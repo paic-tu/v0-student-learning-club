@@ -16,7 +16,9 @@ export function useAuth() {
     isAuthenticated: status === "authenticated",
     logout: async () => {
       const isEn = typeof window !== 'undefined' && window.location.pathname.startsWith('/en')
-      await signOut({ callbackUrl: isEn ? "/en" : "/ar" })
+      const origin = typeof window !== 'undefined' ? window.location.origin : process.env.NEXTAUTH_URL || ''
+      const url = `${origin}${isEn ? "/en" : "/ar"}`
+      await signOut({ callbackUrl: url })
     },
     isAdmin: (session?.user as any)?.role === "admin",
   }

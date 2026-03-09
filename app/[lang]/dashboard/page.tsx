@@ -1,16 +1,16 @@
-import { auth } from "@/lib/auth"
+import { getCurrentUser } from "@/lib/auth"
 import { redirect } from "next/navigation"
 
 export default async function DashboardRouting({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params
-  const session = await auth()
+  const user = await getCurrentUser()
   
-  if (!session?.user) {
+  if (!user) {
     console.log("[Dashboard] No user in session, redirecting to login")
     redirect(`/${lang}/auth/login`)
   }
 
-  const role = session.user.role || "student" // Fallback to student if role is missing
+  const role = user.role || "student"
   console.log("[Dashboard] User role:", role)
 
   if (role === "admin") {

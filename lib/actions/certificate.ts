@@ -6,6 +6,26 @@ import { eq, and } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import { nanoid } from "nanoid"
 
+import { revalidatePath } from "next/cache"
+
+export async function approveCertificateAction(certificateId: string) {
+  const session = await auth()
+  if (!session?.user || session.user.role !== "admin") {
+    throw new Error("Unauthorized")
+  }
+
+  await db
+    .update(certificates)
+    .set({ 
+      status: "issued",
+      issuedAt: new Date()
+    })
+    .where(eq(certificates.id, certificateId))
+
+  revalidatePath("/admin/certificates")
+  revalidatePath("/[lang]/admin/certificates", "page")
+}
+
 export async function getOrCreateCertificate(courseId: string) {
   const session = await auth()
   if (!session?.user?.id) {

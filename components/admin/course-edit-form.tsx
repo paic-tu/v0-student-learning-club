@@ -175,6 +175,7 @@ export function CourseEditForm({
         duration,
         price,
         is_free: formData.get("is_free") === "on",
+        is_live: formData.get("is_live") === "on",
         is_published: formData.get("is_published") === "on",
         thumbnail_url: formData.get("thumbnail_url") || null,
         video_url: formData.get("video_url") || null,
@@ -459,6 +460,16 @@ export function CourseEditForm({
                     onCheckedChange={(checked) => updatePreview("is_free", checked)}
                   />
                   <Label htmlFor="is_free">{isAr ? "دورة مجانية" : "Free Course"}</Label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="is_live"
+                    name="is_live"
+                    defaultChecked={course.is_live}
+                    onCheckedChange={(checked) => updatePreview("is_live", checked)}
+                  />
+                  <Label htmlFor="is_live">{isAr ? "بث مباشر (Live)" : "Live Stream"}</Label>
                 </div>
 
                 <div className="flex items-center gap-2">

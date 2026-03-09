@@ -39,6 +39,7 @@ const getCourseSchema = (isAr: boolean) => z.object({
   duration: z.number().int().min(0),
   price: z.number().min(0),
   isFree: z.boolean().default(false),
+  isLive: z.boolean().default(false),
   isPublished: z.boolean().default(false),
   thumbnailUrl: z.string().optional().or(z.literal("")),
   videoUrl: z.string().optional().or(z.literal("")),
@@ -124,6 +125,7 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
       duration: 0,
       price: 0,
       isFree: true,
+      isLive: false,
       isPublished: false,
       thumbnailUrl: "",
       videoUrl: "",
@@ -688,17 +690,33 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                         <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>{isAr ? "دورة مجانية" : "Free Course"}</FormLabel>
-                        <p className="text-xs text-muted-foreground">{isAr ? "جعل هذه الدورة مجانية" : "Mark this course as free"}</p>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-              </div>
+                      <FormLabel>{isAr ? "دورة مجانية" : "Free Course"}</FormLabel>
+                      <p className="text-xs text-muted-foreground">{isAr ? "جعل هذه الدورة مجانية" : "Mark this course as free"}</p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
 
-              <FormField
-                control={form.control}
-                name="isPublished"
+            <FormField
+              control={form.control}
+              name="isLive"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>{isAr ? "بث مباشر (Live)" : "Live Stream"}</FormLabel>
+                    <p className="text-xs text-muted-foreground">{isAr ? "تفعيل ميزة البث المباشر لهذه الدورة" : "Enable live streaming for this course"}</p>
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="isPublished"
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                     <FormControl>

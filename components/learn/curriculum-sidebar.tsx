@@ -57,8 +57,26 @@ export function CurriculumSidebar({ course, currentLessonId, lang, className, on
       </div>
       
       <div className="flex-1 overflow-y-auto min-h-0 scrollbar-hide">
-          <Accordion type="multiple" defaultValue={course.modules.map((m: any) => m.id)} className="w-full">
-            {course.modules.map((module: any) => (
+          {course.isLive && (
+            <Link
+              href={`/${lang}/student/course/${course.id}/live`}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 border-b hover:bg-red-50/50 transition-colors",
+                currentLessonId === "live" && "bg-red-50 text-red-600 border-l-4 border-l-red-600"
+              )}
+            >
+              <div className="relative flex h-4 w-4 shrink-0 items-center justify-center">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+              </div>
+              <div className="flex-1 font-medium text-red-600">
+                {isAr ? "البث المباشر" : "Live Stream"}
+              </div>
+            </Link>
+          )}
+
+          <Accordion type="multiple" defaultValue={course.modules?.map((m: any) => m.id) || []} className="w-full">
+            {course.modules?.map((module: any) => (
               <AccordionItem key={module.id} value={module.id}>
                 <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50">
                   <div className="text-start w-full">

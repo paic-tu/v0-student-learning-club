@@ -11,11 +11,12 @@ type DiagnosticResult = {
   message: string
 }
 
-export default async function DiagnosticsPage() {
+export default async function DiagnosticsPage(props: { params: Promise<{ lang: string }> }) {
+  const { lang } = await props.params
   const user = await getCurrentUser()
 
   if (!user || user.role !== "admin") {
-    redirect("/admin")
+    redirect(`/${lang}/auth/login`)
   }
 
   const results: DiagnosticResult[] = []

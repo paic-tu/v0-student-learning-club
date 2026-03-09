@@ -98,6 +98,7 @@ export const courses = pgTable("courses", {
   duration: integer("duration"), // in minutes
   price: decimal("price", { precision: 10, scale: 2 }).notNull().default("0"),
   isFree: boolean("is_free").notNull().default(true),
+  isLive: boolean("is_live").notNull().default(false),
   isPublished: boolean("is_published").notNull().default(false),
   tags: jsonb("tags").$type<string[]>().default([]),
   requirements: jsonb("requirements").$type<string[]>().default([]),

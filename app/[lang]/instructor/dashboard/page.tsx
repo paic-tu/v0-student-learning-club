@@ -12,7 +12,7 @@ export default async function InstructorDashboardPage({ params }: { params: Prom
   const user = await getCurrentUser()
 
   if (!user || user.role !== "instructor") {
-    // handled by middleware
+    redirect(`/${lang}/dashboard`)
   }
 
   const analytics = await getInstructorAnalytics(user?.id!)

@@ -15,9 +15,7 @@ export default async function StudentDashboardPage({ params }: { params: Promise
   const user = await getCurrentUser()
   
   if (!user || user.role !== "student") {
-    // This should be handled by middleware but as a safeguard
-    // redirect(`/${lang}/auth/login`)
-    return null
+    redirect(`/${lang}/dashboard`)
   }
 
   const data = await getStudentDashboardData(user.id)

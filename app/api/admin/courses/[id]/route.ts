@@ -23,6 +23,7 @@ const updateCourseSchema = z.object({
   duration: z.number().finite().nonnegative().optional(),
   price: z.coerce.number().min(0).optional(),
   is_free: z.boolean().optional(),
+  is_live: z.boolean().optional(),
   is_published: z.boolean().optional(),
   thumbnail_url: z
     .string()
@@ -108,6 +109,7 @@ export async function PATCH(request: NextRequest, props: { params: Promise<{ id:
     if (data.duration !== undefined) updateData.duration = data.duration
     if (data.price !== undefined) updateData.price = data.price.toString() // Drizzle expects string for decimal
     if (data.is_free !== undefined) updateData.isFree = data.is_free
+    if (data.is_live !== undefined) updateData.isLive = data.is_live
     if (data.is_published !== undefined) updateData.isPublished = data.is_published
     if (data.thumbnail_url !== undefined) updateData.thumbnailUrl = data.thumbnail_url
     if (data.video_url !== undefined) updateData.previewVideoUrl = data.video_url

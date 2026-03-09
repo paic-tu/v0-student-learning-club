@@ -46,6 +46,7 @@ export default async function InstructorCourseEditPage({ params }: { params: Pro
     thumbnail_url: courseRaw.thumbnailUrl,
     video_url: courseRaw.previewVideoUrl,
     is_free: courseRaw.isFree,
+    is_live: courseRaw.isLive,
     is_published: courseRaw.isPublished,
     learning_outcomes: courseRaw.learningOutcomes,
   }
