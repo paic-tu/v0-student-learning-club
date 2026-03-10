@@ -3,6 +3,7 @@ import { SiteFooter } from "@/components/site-footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Mail, Phone, MessageCircle } from "lucide-react"
+import { ContactSheetForm } from "@/components/contact/contact-sheet-form"
 
 export default async function ContactPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params
@@ -62,6 +63,10 @@ export default async function ContactPage({ params }: { params: Promise<{ lang: 
                   </a>
                 </CardContent>
               </Card>
+            </div>
+
+            <div className="max-w-3xl mx-auto mt-6">
+              <ContactSheetForm lang={isAr ? "ar" : "en"} />
             </div>
           </div>
         </section>
