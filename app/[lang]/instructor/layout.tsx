@@ -14,9 +14,12 @@ export default async function InstructorLayout({
   const { lang } = await params
   const session = await auth()
 
-  if (!session?.user || session.user.role !== "instructor") {
-    // Middleware handles this, but as safeguard
+  if (!session?.user?.id) {
     redirect(`/${lang}/auth/login`)
+  }
+
+  if (session.user.role !== "instructor" && session.user.role !== "admin") {
+    redirect(`/${lang}/access-denied`)
   }
 
   const user = {

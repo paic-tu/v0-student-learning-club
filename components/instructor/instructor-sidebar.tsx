@@ -137,6 +137,23 @@ function InstructorNav({ isCollapsed, unreadCount = 0 }: { isCollapsed?: boolean
       {!isCollapsed && (
         <div className="mt-4 pt-4 border-t">
           <div className="px-3 pb-2 text-xs font-semibold text-muted-foreground">
+            {isAr ? "الاستشارات" : "Consultations"}
+          </div>
+          <Link
+            href={`/${locale}/instructor/consultations?room=consultation-tech`}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+              pathWithoutLocale.startsWith("/instructor/consultations")
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+          >
+            <MessageCircle className="h-4 w-4" />
+            <span className="truncate">{isAr ? "استشارات تقنية" : "Tech Consultation"}</span>
+          </Link>
+
+          <div className="mt-4 pt-4 border-t">
+          <div className="px-3 pb-2 text-xs font-semibold text-muted-foreground">
             {isAr ? "الدورات المباشرة" : "Live Courses"}
           </div>
           {loadingLive && (
@@ -170,6 +187,7 @@ function InstructorNav({ isCollapsed, unreadCount = 0 }: { isCollapsed?: boolean
               {isAr ? "لا يوجد بث مباشر الآن" : "No live courses now"}
             </div>
           )}
+          </div>
         </div>
       )}
     </nav>

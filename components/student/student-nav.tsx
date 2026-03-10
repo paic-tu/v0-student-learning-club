@@ -86,6 +86,11 @@ export function StudentNav({ isCollapsed }: { isCollapsed?: boolean }) {
       icon: MessageCircle,
     },
     {
+      href: "/student/consultations?room=consultation-tech",
+      label: locale === "ar" ? "استشارات تقنية" : "Tech Consultation",
+      icon: Video,
+    },
+    {
       href: "/student/profile",
       label: t("profile", locale),
       icon: User,
@@ -101,7 +106,8 @@ export function StudentNav({ isCollapsed }: { isCollapsed?: boolean }) {
     <nav className="flex-1 overflow-y-auto py-4">
       {menuItems.map((item) => {
         const Icon = item.icon
-        const isActive = pathWithoutLocale === item.href || pathWithoutLocale.startsWith(item.href + "/")
+        const itemPath = item.href.split("?")[0]
+        const isActive = pathWithoutLocale === itemPath || pathWithoutLocale.startsWith(itemPath + "/")
         const hrefWithLocale = `/${locale}${item.href}`
 
         return (
