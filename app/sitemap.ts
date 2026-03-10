@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next'
 import { getAllCourses } from '@/lib/db/queries'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://neon-platform.vercel.app'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://neonedu.org'
   const courses = await getAllCourses()
 
   const staticRoutes = [

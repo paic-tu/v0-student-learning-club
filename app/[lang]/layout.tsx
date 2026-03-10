@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   const isAr = lang === "ar"
 
   return {
-    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://neon-platform.vercel.app'),
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://neonedu.org'),
     title: {
       default: isAr ? "Neon | نيون التعليمية - منصة التعلم الإلكتروني" : "Neon | E-Learning Platform",
       template: isAr ? "%s | Neon - نيون" : "%s | Neon"
@@ -63,10 +63,10 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
       siteName: isAr ? "Neon | نيون" : "Neon",
       images: [
         {
-          url: '/placeholder-logo.png',
-          width: 800,
-          height: 600,
-          alt: 'Neon Logo',
+          url: '/web-development-concept.png',
+          width: 1200,
+          height: 630,
+          alt: 'Neon Learning Platform',
         },
       ],
     },
@@ -77,7 +77,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
         ? "منصة نيون التعليمية للدورات والشهادات المعتمدة" 
         : "Neon educational platform for accredited courses and certificates",
       creator: "@neon_edu", // Update if there is a real handle
-      images: ['/placeholder-logo.png'],
+      images: ['/web-development-concept.png'],
     },
     robots: {
       index: true,
