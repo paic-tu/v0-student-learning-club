@@ -34,6 +34,8 @@ export function CourseCard({ course, hideBookmark = false, isPreview = false }: 
   const thumbnailUrl = course.thumbnail_url || course.thumbnailUrl || "/placeholder.svg?height=200&width=300&query=course"
   const videoUrl = course.video_url || course.videoUrl
   const courseId = course.id
+  const isLive = course.isLive || course.is_live || false
+  const isStreaming = course.isStreaming || course.is_streaming || false
 
   const courseLink = isPreview ? "#" : `/${language}/student/course/${courseId}`
 
@@ -54,6 +56,21 @@ export function CourseCard({ course, hideBookmark = false, isPreview = false }: 
     <Card className="flex flex-col hover:shadow-lg transition-shadow group relative overflow-hidden h-full bg-card">
       <CardHeader className="p-0">
         <div className="relative h-48 w-full bg-muted rounded-t-lg overflow-hidden">
+          <div className="absolute top-2 left-2 z-10">
+            {isStreaming ? (
+              <Badge variant="destructive" className="animate-pulse shadow-md">
+                {isAr ? "بث مباشر الآن" : "LIVE NOW"}
+              </Badge>
+            ) : isLive ? (
+              <Badge className="bg-blue-600 hover:bg-blue-700 text-white border-none shadow-md">
+                {isAr ? "دورة لايف" : "Live Course"}
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="bg-black/50 text-white hover:bg-black/70 border-none backdrop-blur-sm shadow-md">
+                {isAr ? "مسجلة" : "Recorded"}
+              </Badge>
+            )}
+          </div>
           {isPlaying && videoUrl ? (
             <div className="w-full h-full bg-black relative z-20">
               <Button
@@ -165,12 +182,10 @@ export function CourseCard({ course, hideBookmark = false, isPreview = false }: 
               ? t("free", language)
               : `${price} ${isAr ? "ر.س" : "SAR"}`}
           </div>
-          {enrollmentCount > 0 && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Users className="h-3 w-3" />
-              <span>{enrollmentCount}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Users className="h-3 w-3" />
+            <span>{enrollmentCount} {isAr ? "طالب" : "Students"}</span>
+          </div>
         </div>
       </CardContent>
       <CardFooter className="pt-0">

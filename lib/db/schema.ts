@@ -99,6 +99,7 @@ export const courses = pgTable("courses", {
   price: decimal("price", { precision: 10, scale: 2 }).notNull().default("0"),
   isFree: boolean("is_free").notNull().default(true),
   isLive: boolean("is_live").notNull().default(false),
+  isStreaming: boolean("is_streaming").notNull().default(false), // Indicates if the live stream is currently active
   isPublished: boolean("is_published").notNull().default(false),
   tags: jsonb("tags").$type<string[]>().default([]),
   requirements: jsonb("requirements").$type<string[]>().default([]),

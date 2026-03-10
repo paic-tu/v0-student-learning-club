@@ -8,7 +8,7 @@ import {
 import "@livekit/components-styles"
 import { DataPacket_Kind, RoomEvent } from "livekit-client"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Hand, Loader2, MicOff, VideoOff } from "lucide-react"
+import { Hand, Loader2, MicOff, VideoOff, ChevronLeft, ChevronRight, Minimize2, Maximize2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
@@ -113,6 +113,7 @@ function ClassroomLayout({
   const { toast } = useToast()
   const [raisedHands, setRaisedHands] = useState<string[]>([])
   const [isRecording, setIsRecording] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const recordedChunksRef = useRef<BlobPart[]>([])
 
@@ -151,14 +152,14 @@ function ClassroomLayout({
         const data = JSON.parse(str)
 
         if (data.type === "RAISE_HAND") {
+          const whoName = participant?.name || participant?.identity || "Unknown"
           toast({
             title: isAr ? "رفع اليد" : "Hand Raised",
-            description: `${participant?.identity || "Someone"} ${isAr ? "رفع يده" : "raised their hand"}`,
+            description: `${whoName} ${isAr ? "رفع يده" : "raised their hand"}`,
           })
-          const who = participant?.identity || "Unknown"
           setRaisedHands((prev) => {
-            if (prev.includes(who)) return prev
-            return [...prev, who]
+            if (prev.includes(whoName)) return prev
+            return [...prev, whoName]
           })
           return
         }
@@ -309,59 +310,77 @@ function ClassroomLayout({
       {isInstructorView && (
         <aside
           className={cn(
-            "absolute top-4 right-4 z-50 w-64 rounded-lg border bg-background/80 backdrop-blur-sm shadow-lg",
-            isAr && "right-auto left-4"
+            "absolute top-4 right-4 z-50 rounded-lg border bg-background/80 backdrop-blur-sm shadow-lg transition-all duration-300",
+            isAr ? "right-auto left-4" : "right-4 left-auto",
+            isCollapsed ? "w-12" : "w-64"
           )}
         >
-          <div className="p-3 border-b text-sm font-semibold">
-            {isAr ? "تحكم البث" : "Live Controls"}
-          </div>
-          <div className="p-3 space-y-2">
+          <div className={cn("p-3 border-b flex items-center justify-between", isCollapsed && "justify-center p-2")}>
+            {!isCollapsed && <span className="text-sm font-semibold">{isAr ? "تحكم البث" : "Live Controls"}</span>}
             <Button
-              variant="secondary"
-              size="sm"
-              className="w-full justify-start"
-              onClick={handleMuteAll}
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={() => setIsCollapsed(!isCollapsed)}
             >
-              <MicOff className={cn("mr-2 h-4 w-4", isAr && "mr-0 ml-2")} />
-              {isAr ? "كتم الطلاب" : "Mute Students"}
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full justify-start"
-              onClick={handleCameraOffAll}
-            >
-              <VideoOff className={cn("mr-2 h-4 w-4", isAr && "mr-0 ml-2")} />
-              {isAr ? "إيقاف الكاميرات" : "Stop Cameras"}
-            </Button>
-            <Button
-              variant={isRecording ? "destructive" : "secondary"}
-              size="sm"
-              className="w-full justify-start"
-              onClick={isRecording ? stopRecording : startRecording}
-            >
-              <div
-                className={cn(
-                  "mr-2 h-3 w-3 rounded-full",
-                  isAr && "mr-0 ml-2",
-                  isRecording ? "bg-red-600 animate-pulse" : "bg-green-600"
-                )}
-              />
-              {isRecording ? (isAr ? "إيقاف التسجيل" : "Stop Recording") : (isAr ? "بدء التسجيل" : "Start Recording")}
+              {isCollapsed ? (
+                 isAr ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />
+              ) : (
+                 isAr ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
+              )}
             </Button>
           </div>
-          {raisedHands.length > 0 && (
-            <div className="p-3 border-t text-xs text-muted-foreground">
-              <div className="font-medium mb-1">
-                {isAr ? "أيدي مرفوعة:" : "Raised Hands:"}
+          
+          {!isCollapsed && (
+            <>
+              <div className="p-3 space-y-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={handleMuteAll}
+                >
+                  <MicOff className={cn("mr-2 h-4 w-4", isAr && "mr-0 ml-2")} />
+                  {isAr ? "كتم الطلاب" : "Mute Students"}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={handleCameraOffAll}
+                >
+                  <VideoOff className={cn("mr-2 h-4 w-4", isAr && "mr-0 ml-2")} />
+                  {isAr ? "إيقاف الكاميرات" : "Stop Cameras"}
+                </Button>
+                <Button
+                  variant={isRecording ? "destructive" : "secondary"}
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={isRecording ? stopRecording : startRecording}
+                >
+                  <div
+                    className={cn(
+                      "mr-2 h-3 w-3 rounded-full",
+                      isAr && "mr-0 ml-2",
+                      isRecording ? "bg-red-600 animate-pulse" : "bg-green-600"
+                    )}
+                  />
+                  {isRecording ? (isAr ? "إيقاف التسجيل" : "Stop Recording") : (isAr ? "بدء التسجيل" : "Start Recording")}
+                </Button>
               </div>
-              <div className="space-y-1">
-                {raisedHands.map((n) => (
-                  <div key={n} className="truncate">{n}</div>
-                ))}
-              </div>
-            </div>
+              {raisedHands.length > 0 && (
+                <div className="p-3 border-t text-xs text-muted-foreground">
+                  <div className="font-medium mb-1">
+                    {isAr ? "أيدي مرفوعة:" : "Raised Hands:"}
+                  </div>
+                  <div className="space-y-1">
+                    {raisedHands.map((n) => (
+                      <div key={n} className="truncate">{n}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </aside>
       )}

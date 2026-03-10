@@ -45,19 +45,19 @@ function AdminNav({ user, isCollapsed }: AdminSidebarProps) {
 
   useEffect(() => {
     const controller = new AbortController()
-    const fetchLive = async () => {
+    const fetchLive = async (isInitial = false) => {
       try {
-        setLoadingLive(true)
+        if (isInitial) setLoadingLive(true)
         const res = await fetch("/api/live/courses", { signal: controller.signal })
         const data = await res.json()
         setLiveCourses((data?.courses || []).slice(0, 10))
       } catch {
       } finally {
-        setLoadingLive(false)
+        if (isInitial) setLoadingLive(false)
       }
     }
-    fetchLive()
-    const interval = setInterval(fetchLive, 12000)
+    fetchLive(true)
+    const interval = setInterval(() => fetchLive(false), 5000)
     return () => {
       controller.abort()
       clearInterval(interval)

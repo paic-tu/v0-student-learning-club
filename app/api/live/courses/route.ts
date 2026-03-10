@@ -23,19 +23,19 @@ export async function GET() {
       })
       .from(enrollments)
       .innerJoin(courses, eq(enrollments.courseId, courses.id))
-      .where(and(eq(enrollments.userId, session.user.id), eq(courses.isLive, true)))
+      .where(and(eq(enrollments.userId, session.user.id), eq(courses.isStreaming, true)))
       .orderBy(desc(courses.updatedAt))
     rows = result
   } else if (role === "instructor") {
     const result = await db.query.courses.findMany({
-      where: and(eq(courses.instructorId, session.user.id), eq(courses.isLive, true)),
+      where: and(eq(courses.instructorId, session.user.id), eq(courses.isStreaming, true)),
       orderBy: [desc(courses.updatedAt)],
       columns: { id: true, titleEn: true, titleAr: true, isLive: true },
     })
     rows = result
   } else if (role === "admin") {
     const result = await db.query.courses.findMany({
-      where: eq(courses.isLive, true),
+      where: eq(courses.isStreaming, true),
       orderBy: [desc(courses.updatedAt)],
       columns: { id: true, titleEn: true, titleAr: true, isLive: true },
     })

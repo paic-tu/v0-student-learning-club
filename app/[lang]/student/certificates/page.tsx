@@ -145,6 +145,8 @@ export default async function CertificatesPage({ params }: { params: Promise<{ l
                 <CertificateDownloadButton
                   studentName={user.name || "Student"}
                   courseName={isAr ? item.titleAr : item.titleEn}
+                  courseNameAr={item.titleAr}
+                  courseNameEn={item.titleEn}
                   instructorName={item.instructorName || (isAr ? "محسن الغامدي" : "Mohsen Alghamdi")}
                   completionDate={new Date(item.issuedAt).toLocaleDateString('en-US', {
                     year: 'numeric',

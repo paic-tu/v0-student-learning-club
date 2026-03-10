@@ -758,33 +758,73 @@ export async function getUserLessonNotes(userId: string, lessonId: string) {
 // Learning Data
 export async function getLearningData(userId: string, courseId: string, lessonId: string, role?: string) {
   try {
-     // Get Course with Modules and Lessons
-     const course = await getCourseById(courseId)
-     if (!course) return { error: "Course not found" }
+     // Run queries in parallel
+     const [course, courseModules, enrollment, currentLesson] = await Promise.all([
+       // 1. Get Course Basic Info
+       db.query.courses.findFirst({
+         where: eq(courses.id, courseId),
+         with: {
+           instructor: true,
+           category: true,
+         },
+       }),
+       
+       // 2. Get Course Modules with Lightweight Lessons (Metadata only)
+       db.query.modules.findMany({
+         where: eq(modules.courseId, courseId),
+         orderBy: [asc(modules.orderIndex)],
+         with: {
+           lessons: {
+             orderBy: [asc(lessons.orderIndex)],
+             columns: {
+               id: true,
+               titleEn: true,
+               titleAr: true,
+               slug: true,
+               durationMinutes: true,
+               orderIndex: true,
+               type: true,
+               moduleId: true,
+               courseId: true,
+               isPreview: true,
+               status: true
+             }
+           },
+         },
+       }),
 
-     // Get Enrollment
-     let enrollment = await getEnrollment(userId, courseId)
+       // 3. Get Enrollment
+       getEnrollment(userId, courseId),
+
+       // 4. Get Current Lesson (Full details)
+       getLessonById(lessonId)
+     ])
+
+     if (!course) return { error: "Course not found" }
      
+     // Combine course and modules
+     const fullCourse = {
+       ...course,
+       modules: courseModules
+     }
+
      // If not enrolled and not instructor/admin, return error
      if (!enrollment && role !== "instructor" && role !== "admin") {
        return { error: "Not enrolled" }
      }
-
-     // Get Current Lesson
-     const currentLesson = await getLessonById(lessonId)
      
      // Calculate navigation
      // @ts-ignore
-     const allLessons = course.modules?.flatMap((m: any) => m.lessons) || []
+     const allLessons = courseModules?.flatMap((m: any) => m.lessons) || []
      // @ts-ignore
      const currentIndex = allLessons.findIndex((l: any) => l.id === lessonId)
      const prev = currentIndex > 0 ? allLessons[currentIndex - 1] : null
      const next = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null
 
      return {
-       course,
+       course: fullCourse,
        // @ts-ignore
-       courseContent: course.modules || [],
+       courseContent: courseModules || [],
        enrollment,
        currentLesson,
        userProgress: {
@@ -806,7 +846,7 @@ export async function getLearningData(userId: string, courseId: string, lessonId
 export async function getPlatformStats() {
   try {
     const course_count = await db.select({ count: count() }).from(courses).then(res => res[0].count)
-    const student_count = await db.select({ count: count() }).from(users).where(eq(users.role, 'student')).then(res => res[0].count)
+    const student_count = await db.select({ count: count() }).from(users).then(res => res[0].count)
     const enrollment_count = await db.select({ count: count() }).from(enrollments).then(res => res[0].count)
     const certified_student_count = await db.select({ count: count() }).from(certificates).then(res => res[0].count)
     const challenge_count = await db.select({ count: count() }).from(challenges).then(res => res[0].count)

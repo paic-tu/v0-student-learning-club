@@ -16,7 +16,7 @@ export const translations = {
   verifyCertificate: { ar: "تحقق من الشهادة", en: "Verify Certificate" },
   adminPanel: { ar: "لوحة التحكم", en: "Admin Panel" },
   dashboard: { ar: "لوحة التحكم", en: "Dashboard" },
-  students: { ar: "الطلاب", en: "Students" },
+  students: { ar: "الأعضاء المسجلين", en: "Registered Members" },
   enrollments: { ar: "التسجيلات", en: "Enrollments" },
   contests: { ar: "المسابقات", en: "Contests" },
   browse: { ar: "تصفح الدورات", en: "Browse Courses" },

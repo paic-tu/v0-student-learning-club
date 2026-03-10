@@ -21,14 +21,15 @@ export function CertificatePreview({ studentName, certificates }: CertificatePre
   const [selectedCertId, setSelectedCertId] = useState<string>(certificates.length > 0 ? certificates[0].id : "")
   const [previewStudentName, setPreviewStudentName] = useState(studentName)
   const [selectedDesign, setSelectedDesign] = useState("design-1")
+  const [selectedLanguage, setSelectedLanguage] = useState(language)
   
   // Get the selected certificate object
   const selectedCert = certificates.find(c => c.id === selectedCertId)
   
   // Determine the course name to display
   const previewCourseName = selectedCert 
-    ? (isAr ? selectedCert.course_title_ar || selectedCert.title_ar : selectedCert.course_title_en || selectedCert.title_en)
-    : (isAr ? "اسم الدورة التدريبية" : "Course Name")
+    ? (selectedLanguage === "ar" ? selectedCert.course_title_ar || selectedCert.title_ar : selectedCert.course_title_en || selectedCert.title_en)
+    : (selectedLanguage === "ar" ? "اسم الدورة التدريبية" : "Course Name")
 
   // Update student name when prop changes
   useEffect(() => {
@@ -84,7 +85,7 @@ export function CertificatePreview({ studentName, certificates }: CertificatePre
       <CardContent className="space-y-6">
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Main Content: Inputs & Preview */}
-          <div className="flex-1 space-y-6 order-2 lg:order-1">
+          <div className="flex-1 space-y-6">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>{isAr ? "اسم الطالب" : "Student Name"}</Label>
@@ -180,7 +181,25 @@ export function CertificatePreview({ studentName, certificates }: CertificatePre
           </div>
 
           {/* Sidebar: Design Selector */}
-          <div className="w-full lg:w-40 space-y-3 order-1 lg:order-2">
+          <div className="w-full lg:w-40 space-y-3">
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">{isAr ? "لغة الشهادة" : "Certificate Language"}</Label>
+              <RadioGroup 
+                value={selectedLanguage} 
+                onValueChange={setSelectedLanguage}
+                className="grid grid-cols-2 lg:grid-cols-1 gap-3"
+              >
+                <div className="flex items-center space-x-2 border rounded-md p-2 hover:bg-muted cursor-pointer">
+                  <RadioGroupItem value="ar" id="preview-lang-ar" />
+                  <Label htmlFor="preview-lang-ar" className="cursor-pointer flex-1">{isAr ? "العربية" : "Arabic"}</Label>
+                </div>
+                <div className="flex items-center space-x-2 border rounded-md p-2 hover:bg-muted cursor-pointer">
+                  <RadioGroupItem value="en" id="preview-lang-en" />
+                  <Label htmlFor="preview-lang-en" className="cursor-pointer flex-1">{isAr ? "الإنجليزية" : "English"}</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
             <Label className="text-base font-semibold">{isAr ? "تصميم الشهادة" : "Certificate Design"}</Label>
             <RadioGroup 
               value={selectedDesign} 

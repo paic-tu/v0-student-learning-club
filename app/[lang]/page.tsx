@@ -148,7 +148,7 @@ export default function HomePage() {
                     icon: Users,
                     value: stats.students,
                     suffix: "+",
-                    label: isRTL ? "طالب وطالبة" : "Students",
+                    label: isRTL ? "عضو مسجل" : "Registered Members",
                     color: "text-green-500",
                   },
                   {

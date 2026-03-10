@@ -22,7 +22,10 @@ export default async function LearningPage({
     return null
   }
 
-  const data = await getLearningData(user.id, courseId, lessonId, user.role)
+  const [data, lessonNotes] = await Promise.all([
+    getLearningData(user.id, courseId, lessonId, user.role),
+    getUserLessonNotes(user.id, lessonId)
+  ])
 
   if (data.error || !data.course || !data.currentLesson) {
     // Handle specific errors (not enrolled vs not found)
@@ -46,7 +49,7 @@ export default async function LearningPage({
     redirect(`/${lang}/student/learn/${courseId}/${prevLessonId}`)
   }
 
-  const lessonNotes = await getUserLessonNotes(user.id, currentLessonAny.id)
+  // const lessonNotes = await getUserLessonNotes(user.id, currentLessonAny.id)
 
   let quiz = null
   let quizSubmission = null

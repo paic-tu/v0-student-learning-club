@@ -73,6 +73,8 @@ interface CertificateTemplateProps {
   certificateNumber?: string | null
   className?: string
   skipRatingCheck?: boolean
+  courseNameAr?: string
+  courseNameEn?: string
 }
 
 export function CertificateDownloadButton({
@@ -84,6 +86,8 @@ export function CertificateDownloadButton({
   certificateNumber: initialCertificateNumber,
   className,
   skipRatingCheck = false,
+  courseNameAr,
+  courseNameEn,
 }: CertificateTemplateProps) {
   const { language } = useLanguage()
   const { toast } = useToast()
@@ -92,10 +96,13 @@ export function CertificateDownloadButton({
   const [showRatingModal, setShowRatingModal] = useState(false)
   const [isCheckingRating, setIsCheckingRating] = useState(false)
   const [selectedDesign, setSelectedDesign] = useState("design-1")
+  const [selectedLanguage, setSelectedLanguage] = useState(language)
   const isAr = language === "ar"
 
   const safeStudentName = studentName || "Student Name"
-  const safeCourseName = courseName || "Course Name"
+  const safeCourseName = selectedLanguage === "ar" 
+    ? (courseNameAr || courseName || "اسم الدورة") 
+    : (courseNameEn || courseName || "Course Name")
 
   const handleCertificateClick = async () => {
     if (skipRatingCheck) {
@@ -343,45 +350,60 @@ export function CertificateDownloadButton({
           </DialogDescription>
         </DialogHeader>
         
-        <div className="grid gap-4 py-4">
-          <RadioGroup 
-            value={selectedDesign} 
-            onValueChange={setSelectedDesign}
-            className="grid grid-cols-1 md:grid-cols-3 gap-4"
-          >
-            {[1, 2, 3].map((num) => (
-              <div key={num}>
-                <RadioGroupItem
-                  value={`design-${num}`}
-                  id={`design-${num}`}
-                  className="peer sr-only"
-                />
-                <Label
-                  htmlFor={`design-${num}`}
-                  className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all h-full"
-                >
-                  <div className="relative w-full aspect-[1.41] bg-muted mb-2 rounded overflow-hidden border">
-                     {/* Preview Image - using the SVG itself */}
-                     <NextImage
-                       src={`/certificates/design-${num}.svg`}
-                       alt={`Design ${num}`}
-                       fill
-                       className="object-cover"
-                       unoptimized
-                     />
-                     {selectedDesign === `design-${num}` && (
-                       <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-0.5">
-                         <Check className="w-3 h-3" />
-                       </div>
-                     )}
-                  </div>
-                  <span className="text-sm font-medium">
-                    {isAr ? `تصميم ${num}` : `Design ${num}`}
-                  </span>
-                </Label>
+        <div className="space-y-4 py-4">
+          <div className="space-y-3">
+            <Label>{isAr ? "لغة الشهادة" : "Certificate Language"}</Label>
+            <RadioGroup 
+              value={selectedLanguage} 
+              onValueChange={setSelectedLanguage}
+              className="flex gap-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="ar" id="cert-lang-ar" />
+                <Label htmlFor="cert-lang-ar" className="cursor-pointer">{isAr ? "العربية" : "Arabic"}</Label>
               </div>
-            ))}
-          </RadioGroup>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="en" id="cert-lang-en" />
+                <Label htmlFor="cert-lang-en" className="cursor-pointer">{isAr ? "الإنجليزية" : "English"}</Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          <div className="space-y-3">
+            <Label>{isAr ? "تصميم الشهادة" : "Certificate Design"}</Label>
+            <RadioGroup 
+              value={selectedDesign} 
+              onValueChange={setSelectedDesign}
+              className="grid grid-cols-3 gap-4"
+            >
+              {[1, 2, 3].map((num) => (
+                <div key={num} className="w-full">
+                  <RadioGroupItem
+                    value={`design-${num}`}
+                    id={`design-${num}`}
+                    className="peer sr-only"
+                  />
+                  <Label
+                    htmlFor={`design-${num}`}
+                    className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all h-full shadow-sm"
+                  >
+                    <div className="relative w-full aspect-[1.414/1] mb-2 rounded overflow-hidden border">
+                      <NextImage
+                        src={`/certificates/design-${num}.svg`}
+                        alt={`Design ${num}`}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </div>
+                    <span className="text-sm font-medium">
+                      {isAr ? `تصميم ${num}` : `Design ${num}`}
+                    </span>
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+          </div>
         </div>
 
         <DialogFooter>
