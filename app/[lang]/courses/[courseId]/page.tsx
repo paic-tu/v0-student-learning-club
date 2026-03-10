@@ -24,7 +24,7 @@ export async function generateMetadata(
   const title = lang === 'ar' ? (c.titleAr || c.title) : (c.titleEn || c.title)
   const description = lang === 'ar' ? (c.descriptionAr || c.description) : (c.descriptionEn || c.description)
   // Ensure we have a valid absolute URL for the image if possible, or relative
-  const image = c.thumbnailUrl || c.image || '/placeholder-logo.png'
+  const image = c.thumbnailUrl || c.image || '/og-image.png'
 
   return {
     title: title,

@@ -52,6 +52,10 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     authors: [{ name: "Neon Team" }],
     creator: "Neon Team",
     publisher: "Neon Team",
+    icons: {
+      icon: '/icon.svg',
+      apple: '/apple-icon.png',
+    },
     openGraph: {
       type: "website",
       locale: isAr ? "ar_SA" : "en_US",
@@ -63,7 +67,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
       siteName: isAr ? "Neon | نيون" : "Neon",
       images: [
         {
-          url: '/web-development-concept.png',
+          url: '/og-image.png',
           width: 1200,
           height: 630,
           alt: 'Neon Learning Platform',
@@ -77,7 +81,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
         ? "منصة نيون التعليمية للدورات والشهادات المعتمدة" 
         : "Neon educational platform for accredited courses and certificates",
       creator: "@neon_edu", // Update if there is a real handle
-      images: ['/web-development-concept.png'],
+      images: ['/og-image.png'],
     },
     robots: {
       index: true,
