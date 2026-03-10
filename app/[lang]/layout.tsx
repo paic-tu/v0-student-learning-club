@@ -32,49 +32,72 @@ const dancing = Dancing_Script({
   variable: "--font-dancing",
 })
 
-export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://neon-platform.vercel.app'),
-  title: {
-    default: "Neon | نيون التعليمية - منصة التعلم الإلكتروني",
-    template: "%s | Neon - نيون"
-  },
-  description: "منصة نيون التعليمية للدورات والشهادات المعتمدة في البرمجة والتقنية. انضم إلينا لتعلم مهارات المستقبل.",
-  keywords: ["تعليم", "دورات", "برمجة", "نيون", "education", "courses", "programming", "neon", "web development", "tech", "learning platform"],
-  authors: [{ name: "Neon Team" }],
-  creator: "Neon Team",
-  publisher: "Neon Team",
-  openGraph: {
-    type: "website",
-    locale: "ar_SA",
-    url: "/",
-    title: "Neon | نيون التعليمية",
-    description: "منصة نيون التعليمية للدورات والشهادات المعتمدة في البرمجة والتقنية",
-    siteName: "Neon | نيون",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Neon | نيون التعليمية",
-    description: "منصة نيون التعليمية للدورات والشهادات المعتمدة",
-    creator: "@neon_edu",
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params
+  const isAr = lang === "ar"
+
+  return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://neon-platform.vercel.app'),
+    title: {
+      default: isAr ? "Neon | نيون التعليمية - منصة التعلم الإلكتروني" : "Neon | E-Learning Platform",
+      template: isAr ? "%s | Neon - نيون" : "%s | Neon"
+    },
+    description: isAr 
+      ? "منصة نيون التعليمية للدورات والشهادات المعتمدة في البرمجة والتقنية. انضم إلينا لتعلم مهارات المستقبل." 
+      : "Neon educational platform for accredited courses and certificates in programming and technology. Join us to learn future skills.",
+    keywords: [
+      "تعليم", "دورات", "برمجة", "نيون", "education", "courses", "programming", "neon", 
+      "web development", "tech", "learning platform", "online courses", "elearning", "منصة تعليمية"
+    ],
+    authors: [{ name: "Neon Team" }],
+    creator: "Neon Team",
+    publisher: "Neon Team",
+    openGraph: {
+      type: "website",
+      locale: isAr ? "ar_SA" : "en_US",
+      url: `/${lang}`,
+      title: isAr ? "Neon | نيون التعليمية" : "Neon | E-Learning Platform",
+      description: isAr 
+        ? "منصة نيون التعليمية للدورات والشهادات المعتمدة في البرمجة والتقنية" 
+        : "Neon educational platform for accredited courses and certificates in programming and technology",
+      siteName: isAr ? "Neon | نيون" : "Neon",
+      images: [
+        {
+          url: '/placeholder-logo.png',
+          width: 800,
+          height: 600,
+          alt: 'Neon Logo',
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: isAr ? "Neon | نيون التعليمية" : "Neon | E-Learning Platform",
+      description: isAr 
+        ? "منصة نيون التعليمية للدورات والشهادات المعتمدة" 
+        : "Neon educational platform for accredited courses and certificates",
+      creator: "@neon_edu", // Update if there is a real handle
+      images: ['/placeholder-logo.png'],
+    },
+    robots: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
     },
-  },
-  alternates: {
-    canonical: '/',
-    languages: {
-      'en-US': '/en',
-      'ar-SA': '/ar',
+    alternates: {
+      canonical: `/${lang}`,
+      languages: {
+        'en-US': '/en',
+        'ar-SA': '/ar',
+      },
     },
-  },
+  }
 }
 
 export async function generateStaticParams() {

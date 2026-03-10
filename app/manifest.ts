@@ -1,0 +1,35 @@
+import { MetadataRoute } from 'next'
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: 'Neon | نيون التعليمية',
+    short_name: 'Neon',
+    description: 'منصة نيون التعليمية للدورات والشهادات المعتمدة',
+    start_url: '/',
+    display: 'standalone',
+    background_color: '#ffffff',
+    theme_color: '#000000',
+    icons: [
+      {
+        src: '/icon.svg',
+        sizes: 'any',
+        type: 'image/svg+xml',
+      },
+      {
+        src: '/apple-icon.png',
+        sizes: '180x180',
+        type: 'image/png',
+      },
+      {
+        src: '/placeholder-logo.png',
+        sizes: '192x192',
+        type: 'image/png',
+      },
+      {
+        src: '/placeholder-logo.png',
+        sizes: '512x512',
+        type: 'image/png',
+      },
+    ],
+  }
+}
