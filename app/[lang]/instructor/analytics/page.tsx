@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { getInstructorAnalytics } from "@/lib/db/queries"
+import { getInstructorAnalytics, getInstructorCoursePerformance } from "@/lib/db/queries"
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { Users, BookOpen, DollarSign, Star } from "lucide-react"
+import { InstructorAnalyticsCharts } from "@/components/instructor/instructor-analytics-charts"
 
 export default async function AnalyticsPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params
@@ -12,7 +13,10 @@ export default async function AnalyticsPage({ params }: { params: Promise<{ lang
     redirect(`/${lang}/auth/login`)
   }
 
-  const analytics = await getInstructorAnalytics(session.user.id)
+  const [analytics, coursePerformance] = await Promise.all([
+    getInstructorAnalytics(session.user.id),
+    getInstructorCoursePerformance(session.user.id),
+  ])
   
   const isAr = lang === "ar"
 
@@ -78,11 +82,14 @@ export default async function AnalyticsPage({ params }: { params: Promise<{ lang
           <CardTitle>{isAr ? "نظرة عامة على الأداء" : "Performance Overview"}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">
-            {isAr 
-              ? "سيتم إضافة رسوم بيانية تفصيلية هنا قريباً." 
-              : "Detailed analytics charts will go here soon."}
-          </p>
+          <div className="space-y-3">
+            <div className="text-sm text-muted-foreground">
+              {isAr ? "طلاب كل دورة" : "Students per course"}
+              <span className="mx-2">•</span>
+              {isAr ? "الإيراد لكل دورة" : "Revenue per course"}
+            </div>
+            <InstructorAnalyticsCharts courses={coursePerformance as any} isAr={isAr} />
+          </div>
         </CardContent>
       </Card>
     </div>

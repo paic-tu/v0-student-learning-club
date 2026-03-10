@@ -8,10 +8,12 @@ import { AnimatedCounter } from "@/components/animated-counter"
 import { StarfieldBackground } from "@/components/starfield-background"
 import { GlowBlob } from "@/components/glow-blob"
 import Link from "next/link"
-import { BookOpen, Award, Users, Sparkles, Target, Zap, Clock } from "lucide-react"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { BookOpen, Award, Users, Sparkles, Target, Zap, Clock, Star, HelpCircle } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
 import { t } from "@/lib/i18n"
-import { getLandingPageStats } from "@/lib/actions/stats"
+import { getLandingPageReviews, getLandingPageStats } from "@/lib/actions/stats"
+import { getFaqItems } from "@/lib/content/faq"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
@@ -27,9 +29,33 @@ export default function HomePage() {
     certificates: 0,
     satisfaction: 0
   })
+  const [reviews, setReviews] = useState<
+    Array<{
+      id: string
+      rating: number
+      comment: string | null
+      userName: string | null
+      userAvatarUrl: string | null
+      courseTitleAr: string | null
+      courseTitleEn: string | null
+      createdAt: any
+    }>
+  >([])
 
   useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const data = await getLandingPageReviews(8)
+        setReviews(data as any)
+      } catch {
+      }
+    }
+
     getLandingPageStats().then(setStats)
+    fetchReviews()
+
+    const interval = setInterval(fetchReviews, 30000)
+    return () => clearInterval(interval)
   }, [])
 
   return (
@@ -110,7 +136,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <style jsx>{`
+          <style jsx global>{`
             @keyframes gradient {
               0%, 100% { background-position: 0% 50%; }
               50% { background-position: 100% 50%; }
@@ -118,6 +144,80 @@ export default function HomePage() {
             @media (prefers-reduced-motion: no-preference) {
               .animate-gradient {
                 animation: gradient 8s ease infinite;
+              }
+            }
+
+            .reviews-marquee {
+              position: relative;
+              overflow: hidden;
+              padding: 2px;
+              direction: ltr;
+            }
+
+            .reviews-track {
+              display: flex;
+              gap: 12px;
+              width: max-content;
+              animation: marquee-ltr 32s linear infinite;
+              will-change: transform;
+            }
+
+            .reviews-marquee:hover .reviews-track {
+              animation-play-state: paused;
+            }
+
+            .reviews-card {
+              width: 280px;
+              min-width: 280px;
+            }
+
+            @media (min-width: 768px) {
+              .reviews-card {
+                width: 320px;
+                min-width: 320px;
+              }
+            }
+
+            @keyframes marquee-ltr {
+              0% {
+                transform: translateX(0);
+              }
+              100% {
+                transform: translateX(-50%);
+              }
+            }
+
+            .reviews-fade-left,
+            .reviews-fade-right {
+              position: absolute;
+              top: 0;
+              bottom: 0;
+              width: 60px;
+              pointer-events: none;
+            }
+
+            .reviews-fade-left {
+              left: 0;
+              background: linear-gradient(
+                to right,
+                color-mix(in oklch, var(--background) 80%, transparent),
+                transparent
+              );
+            }
+
+            .reviews-fade-right {
+              right: 0;
+              background: linear-gradient(
+                to left,
+                color-mix(in oklch, var(--background) 80%, transparent),
+                transparent
+              );
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+              .reviews-track {
+                animation: none;
+                transform: none;
               }
             }
           `}</style>
@@ -243,6 +343,49 @@ export default function HomePage() {
           </div>
         </section>
 
+        <section className="py-24 border-t border-b bg-gradient-to-b from-background to-muted/20">
+          <div className="container mx-auto px-4" dir={isRTL ? "rtl" : "ltr"}>
+            <div className="max-w-6xl mx-auto grid gap-10 lg:grid-cols-2 items-start">
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                  <HelpCircle className="h-4 w-4 text-primary" />
+                  {isRTL ? "الأسئلة الشائعة" : "FAQ"}
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold">
+                  {isRTL ? "إجابات سريعة قبل أن تبدأ" : "Quick Answers Before You Start"}
+                </h2>
+                <p className="text-muted-foreground text-lg leading-relaxed">
+                  {isRTL
+                    ? "جمعنا لك أكثر الأسئلة شيوعًا حول NEON: التسجيل، الدورات، الشهادات، والدعم."
+                    : "A short list of the most common questions about NEON: signup, courses, certificates, and support."}
+                </p>
+                <div className="pt-2">
+                  <Link href={`/${language}/faq`}>
+                    <Button variant="outline" className="font-semibold">
+                      {isRTL ? "عرض كل الأسئلة" : "View All FAQs"}
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border bg-background/50 backdrop-blur-sm">
+                <Accordion type="single" collapsible>
+                  {getFaqItems(isRTL ? "ar" : "en")
+                    .slice(0, 5)
+                    .map((item, idx) => (
+                      <AccordionItem key={idx} value={`home-faq-${idx}`}>
+                        <AccordionTrigger className="px-5">{item.q}</AccordionTrigger>
+                        <AccordionContent className="px-5 text-muted-foreground leading-relaxed">
+                          {item.a}
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                </Accordion>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="py-24 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/10 to-primary/5 z-0" />
           <GlowBlob className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0" color="primary" size="800px" />
@@ -263,6 +406,59 @@ export default function HomePage() {
                   {isRTL ? "تصفح الدورات الآن" : "Browse Courses Now"}
                 </Button>
               </Link>
+
+              {reviews.length > 0 && (
+                <div className="pt-8 border-t border-primary/10 text-start" dir={isRTL ? "rtl" : "ltr"}>
+                  <div className="flex items-center justify-between gap-4 mb-4">
+                    <div className="font-semibold text-base">{isRTL ? "آراء الطلاب" : "Student Reviews"}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {isRTL ? "أحدث التقييمات" : "Latest ratings"}
+                    </div>
+                  </div>
+
+                  <div className="reviews-marquee">
+                    <div className="reviews-track">
+                      {[...reviews, ...reviews].map((r, idx) => (
+                        <Card
+                          key={`${r.id}-${idx}`}
+                          className="reviews-card border-primary/10 bg-background/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:bg-background/80"
+                        >
+                          <CardContent className="p-4 space-y-3" dir={isRTL ? "rtl" : "ltr"}>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="font-medium text-sm truncate">
+                                {r.userName || (isRTL ? "طالب" : "Student")}
+                              </div>
+                              <div className="flex items-center gap-0.5 shrink-0">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={[
+                                      "h-3.5 w-3.5",
+                                      i < Number((r as any).rating || 0)
+                                        ? "text-amber-500 fill-amber-500"
+                                        : "text-muted-foreground/40",
+                                    ].join(" ")}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="text-xs text-muted-foreground truncate">
+                              {(isRTL ? r.courseTitleAr : r.courseTitleEn) || (isRTL ? "دورة" : "Course")}
+                            </div>
+
+                            <div className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
+                              {r.comment}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                    <div className="reviews-fade-left" />
+                    <div className="reviews-fade-right" />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -270,10 +466,47 @@ export default function HomePage() {
 
       <footer className="border-t py-12 bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="text-center space-y-4">
-            <div className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              {isRTL ? "نيون" : "Neon"}
+          <div className="grid gap-10 md:grid-cols-3">
+            <div className="space-y-3">
+              <div className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                {isRTL ? "نيون" : "Neon"}
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {isRTL
+                  ? "منصة تعلم إلكتروني تساعدك على تطوير مهاراتك عبر دورات عالية الجودة."
+                  : "An e-learning platform to help you grow your skills through high-quality courses."}
+              </p>
             </div>
+
+            <div className="space-y-3">
+              <div className="text-sm font-semibold">{isRTL ? "روابط" : "Links"}</div>
+              <div className="grid gap-2 text-sm">
+                <Link className="text-muted-foreground hover:text-foreground transition-colors" href={`/${language}/about`}>
+                  {isRTL ? "من نحن" : "About Us"}
+                </Link>
+                <Link className="text-muted-foreground hover:text-foreground transition-colors" href={`/${language}/privacy`}>
+                  {isRTL ? "سياسة الخصوصية" : "Privacy Policy"}
+                </Link>
+                <Link className="text-muted-foreground hover:text-foreground transition-colors" href={`/${language}/terms`}>
+                  {isRTL ? "شروط الاستخدام" : "Terms of Use"}
+                </Link>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="text-sm font-semibold">{isRTL ? "الدعم" : "Support"}</div>
+              <div className="grid gap-2 text-sm">
+                <Link className="text-muted-foreground hover:text-foreground transition-colors" href={`/${language}/faq`}>
+                  {isRTL ? "الأسئلة الشائعة" : "FAQ"}
+                </Link>
+                <Link className="text-muted-foreground hover:text-foreground transition-colors" href={`/${language}/contact`}>
+                  {isRTL ? "تواصل معنا" : "Contact"}
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 border-t pt-6 text-center">
             <p className="text-sm text-muted-foreground">
               {isRTL
                 ? "© 2025 Neon | نيون التعليمية. جميع الحقوق محفوظة."

@@ -2,8 +2,8 @@
 
 import { getPlatformStats } from "@/lib/db/queries"
 import { db } from "@/lib/db"
-import { reviews } from "@/lib/db/schema"
-import { avg } from "drizzle-orm"
+import { courses, reviews, users } from "@/lib/db/schema"
+import { and, avg, desc, eq, isNotNull, sql } from "drizzle-orm"
 
 export async function getLandingPageStats() {
   try {
@@ -41,5 +41,38 @@ export async function getLandingPageStats() {
       certificates: 0,
       satisfaction: 0
     }
+  }
+}
+
+export async function getLandingPageReviews(limit = 6) {
+  try {
+    const rows = await db
+      .select({
+        id: reviews.id,
+        rating: reviews.rating,
+        comment: reviews.comment,
+        createdAt: reviews.createdAt,
+        userName: users.name,
+        userAvatarUrl: users.avatarUrl,
+        courseTitleAr: courses.titleAr,
+        courseTitleEn: courses.titleEn,
+      })
+      .from(reviews)
+      .innerJoin(users, eq(reviews.userId, users.id))
+      .innerJoin(courses, eq(reviews.courseId, courses.id))
+      .where(
+        and(
+          eq(reviews.isPublished, true),
+          isNotNull(reviews.comment),
+          sql`length(${reviews.comment}) > 0`
+        )
+      )
+      .orderBy(desc(reviews.createdAt))
+      .limit(Math.max(1, Math.min(12, Number(limit) || 6)))
+
+    return rows
+  } catch (error) {
+    console.error("Error fetching landing page reviews:", error)
+    return []
   }
 }
