@@ -4,7 +4,6 @@ import { getUserCertificates, getStudentCourses } from "@/lib/db/queries"
 import { getCurrentUser } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { CertificateDownloadButton } from "@/components/certificate/certificate-download-button"
-import { CertificatePreview } from "@/components/certificate/certificate-preview"
 import { Award, Calendar, Hash, BookOpen } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
@@ -162,11 +161,6 @@ export default async function CertificatesPage({ params }: { params: Promise<{ l
           ))}
         </div>
       )}
-
-      <CertificatePreview 
-        studentName={user.name || "Student Name"} 
-        certificates={previewCertificates}
-      />
     </div>
   )
 }

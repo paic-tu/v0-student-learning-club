@@ -22,6 +22,13 @@
       "when": 1772691400000,
       "tag": "0002_add_phone_number",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1773108289199,
+      "tag": "0003_add_instructor_rating",
+      "breakpoints": true
     }
   ]
 }

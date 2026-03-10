@@ -53,9 +53,24 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     creator: "Neon Team",
     publisher: "Neon Team",
     icons: {
-      icon: '/icon.svg',
-      apple: '/apple-icon.png',
+      icon: [
+        { url: '/icon.svg', type: 'image/svg+xml' },
+        { url: '/icon-dark-32x32.png', sizes: '32x32', type: 'image/png', media: '(prefers-color-scheme: dark)' },
+        { url: '/icon-light-32x32.png', sizes: '32x32', type: 'image/png', media: '(prefers-color-scheme: light)' },
+      ],
+      shortcut: '/icon.svg',
+      apple: [
+        { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
+      ],
+      other: [
+        {
+          rel: 'mask-icon',
+          url: '/icon.svg',
+          color: '#5bbad5' // You can customize this color
+        },
+      ],
     },
+    manifest: '/manifest.json',
     openGraph: {
       type: "website",
       locale: isAr ? "ar_SA" : "en_US",
