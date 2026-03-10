@@ -44,21 +44,21 @@ const DESIGNS: Record<string, CertificateDesignConfig> = {
   'design-1': {
     width: 842.25, // A4 Landscape
     height: 595.5,
-    studentName: { x: 3.0, y: 9.2, maxWidth: 21.68, fontSize: 30, align: 'left' },
+    studentName: { x: 3.0, y: 8.7, maxWidth: 21.68, fontSize: 30, align: 'left' },
     courseName: { x: 3.0, y: 12.48, maxWidth: 19.82, fontSize: 24, align: 'left' },
     certificateNumber: { x: 21.0, y: 19.17, maxWidth: 7.33, fontSize: 14.1, align: 'center' } // Shifted left ~1cm (approx 4 spaces)
   },
   'design-2': {
     width: 842.25, // A4 Landscape
     height: 595.5,
-    studentName: { x: 3.0, y: 9.2, maxWidth: 21.68, fontSize: 30, align: 'left' },
+    studentName: { x: 3.0, y: 8.7, maxWidth: 21.68, fontSize: 30, align: 'left' },
     courseName: { x: 3.0, y: 12.48, maxWidth: 19.82, fontSize: 24, align: 'left' },
     certificateNumber: { x: 21.0, y: 19.17, maxWidth: 7.33, fontSize: 14.1, align: 'center' } // Shifted left ~1cm
   },
   'design-3': {
     width: 842.25, // A4 Landscape
     height: 595.5,
-    studentName: { x: 3.0, y: 9.2, maxWidth: 21.68, fontSize: 30, align: 'left' },
+    studentName: { x: 3.0, y: 8.7, maxWidth: 21.68, fontSize: 30, align: 'left' },
     courseName: { x: 3.0, y: 12.48, maxWidth: 19.82, fontSize: 24, align: 'left' },
     certificateNumber: { x: 21.0, y: 19.17, maxWidth: 7.33, fontSize: 14.1, align: 'center' } // Shifted left ~1cm
   }
@@ -355,7 +355,7 @@ export function CertificateDownloadButton({
             <Label>{isAr ? "لغة الشهادة" : "Certificate Language"}</Label>
             <RadioGroup 
               value={selectedLanguage} 
-              onValueChange={setSelectedLanguage}
+              onValueChange={(value) => setSelectedLanguage(value as "ar" | "en")}
               className="flex gap-4"
             >
               <div className="flex items-center space-x-2">
