@@ -7,8 +7,9 @@ import {
   carts, cartItems, products, orders, orderItems, reviews,
   certificates, challenges, contests, categories, challengeSubmissions, contestParticipants,
   cohorts, cohortMembers, cohortCourses, cohortSchedule, cohortAnnouncements,
-  mentors, bookings, bookingReviews, mentorAvailability
+  mentors, bookings, bookingReviews, mentorAvailability, siteSettings
 } from "@/lib/db/schema"
+import { revalidatePath } from "next/cache"
 
 // Courses
 export async function getAllCourses() {
@@ -1225,5 +1226,80 @@ export async function deleteCategory(id: string) {
   } catch (error) {
     console.error("Error deleting category:", error)
     throw error
+  }
+}
+
+// Site Settings
+export async function getSiteSettings() {
+  try {
+    const row = await db.query.siteSettings.findFirst({
+      where: eq(siteSettings.id, "global"),
+    })
+    return row ?? {
+      id: "global",
+      siteName: "Neon Educational Platform",
+      supportEmail: "support@neon.edu",
+      maintenanceMode: false,
+      allowRegistration: true,
+      currency: "SAR",
+      email: { notifications: true },
+      features: { showStore: true, showMentors: true, enableLive: true },
+    }
+  } catch (e) {
+    console.error("Error fetching site settings:", e)
+    return {
+      id: "global",
+      siteName: "Neon Educational Platform",
+      supportEmail: "support@neon.edu",
+      maintenanceMode: false,
+      allowRegistration: true,
+      currency: "SAR",
+      email: { notifications: true },
+      features: { showStore: true, showMentors: true, enableLive: true },
+    }
+  }
+}
+
+export async function updateSiteSettings(values: {
+  siteName: string
+  supportEmail: string
+  maintenanceMode: boolean
+  allowRegistration: boolean
+  currency: string
+  email: { smtpHost?: string; smtpPort?: number; notifications?: boolean }
+  features: { showStore?: boolean; showMentors?: boolean; enableLive?: boolean }
+}) {
+  try {
+    await db
+      .insert(siteSettings)
+      .values({
+        id: "global",
+        siteName: values.siteName,
+        supportEmail: values.supportEmail,
+        maintenanceMode: values.maintenanceMode,
+        allowRegistration: values.allowRegistration,
+        currency: values.currency,
+        email: values.email,
+        features: values.features,
+      })
+      .onConflictDoUpdate({
+        target: siteSettings.id,
+        set: {
+          siteName: values.siteName,
+          supportEmail: values.supportEmail,
+          maintenanceMode: values.maintenanceMode,
+          allowRegistration: values.allowRegistration,
+          currency: values.currency,
+          email: values.email as any,
+          features: values.features as any,
+          updatedAt: new Date(),
+        },
+      })
+    revalidatePath("/ar/admin/settings")
+    revalidatePath("/en/admin/settings")
+    return { ok: true }
+  } catch (e: any) {
+    console.error("Error updating site settings:", e)
+    return { ok: false, error: e?.message || "Failed to update settings" }
   }
 }

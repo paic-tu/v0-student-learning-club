@@ -29,6 +29,19 @@ export const scheduleTypeEnum = pgEnum("schedule_type", ["live", "deadline", "ex
 export const bookingStatusEnum = pgEnum("booking_status", ["requested", "confirmed", "completed", "cancelled"])
 export const conversationTypeEnum = pgEnum("conversation_type", ["individual", "group", "community"])
 
+// Site Settings (single-row key/value)
+export const siteSettings = pgTable("site_settings", {
+  id: varchar("id", { length: 64 }).primaryKey().default("global"),
+  siteName: varchar("site_name", { length: 255 }).notNull().default("Neon Educational Platform"),
+  supportEmail: varchar("support_email", { length: 255 }).notNull().default("support@neon.edu"),
+  maintenanceMode: boolean("maintenance_mode").notNull().default(false),
+  allowRegistration: boolean("allow_registration").notNull().default(true),
+  currency: varchar("currency", { length: 16 }).notNull().default("SAR"),
+  email: jsonb("email").$type<{ smtpHost?: string; smtpPort?: number; notifications?: boolean }>().default({}),
+  features: jsonb("features").$type<{ showStore?: boolean; showMentors?: boolean; enableLive?: boolean }>().default({}),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
 // Users table
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
