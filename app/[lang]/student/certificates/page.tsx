@@ -26,7 +26,7 @@ export default async function CertificatesPage({ params }: { params: Promise<{ l
   const completedCourses = allCourses.filter((enrollment: any) => enrollment.progress === 100)
 
   // Create a set of course IDs that already have certificates
-  const certifiedCourseIds = new Set(certificates.map((cert: any) => cert.course_id))
+  const certifiedCourseIds = new Set(certificates.map((cert: any) => cert.courseId))
 
   // Filter completed courses that don't have certificates yet
   const completedCoursesWithoutCert = completedCourses.filter((enrollment: any) => 
@@ -38,12 +38,12 @@ export default async function CertificatesPage({ params }: { params: Promise<{ l
   const displayItems = [
     ...certificates.map((cert: any) => ({
       id: cert.id,
-      courseId: cert.course_id,
-      titleEn: cert.course_title_en || cert.title_en,
-      titleAr: cert.course_title_ar || cert.title_ar,
-      instructorName: cert.instructor_name,
-      issuedAt: cert.issued_at,
-      certificateNumber: cert.certificate_number,
+      courseId: cert.courseId,
+      titleEn: cert.course?.titleEn || cert.titleEn,
+      titleAr: cert.course?.titleAr || cert.titleAr,
+      instructorName: cert.course?.instructor?.name,
+      issuedAt: cert.issuedAt,
+      certificateNumber: cert.certificateNumber,
       isOfficial: true
     })),
     ...completedCoursesWithoutCert.map((enrollment: any) => ({
@@ -63,6 +63,8 @@ export default async function CertificatesPage({ params }: { params: Promise<{ l
     id: item.id,
     title_en: item.titleEn,
     title_ar: item.titleAr,
+    course_title_en: item.titleEn,
+    course_title_ar: item.titleAr,
     certificate_number: item.certificateNumber
   }))
 

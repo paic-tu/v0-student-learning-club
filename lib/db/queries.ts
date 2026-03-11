@@ -680,7 +680,15 @@ export async function getUserCertificates(userId: string) {
     return await db.query.certificates.findMany({
       where: eq(certificates.userId, userId),
       with: {
-        course: true
+        course: {
+          with: {
+            instructor: {
+              columns: {
+                name: true,
+              },
+            },
+          },
+        },
       },
       orderBy: [desc(certificates.issuedAt)]
     })

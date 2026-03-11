@@ -5,7 +5,15 @@ import { AnimatePresence, motion } from "framer-motion"
 
 type Word = { text: string; className?: string }
 
-export function RotatingWords({ words, interval = 2600 }: { words: Word[]; interval?: number }) {
+export function RotatingWords({
+  words,
+  interval = 2600,
+  marginInlineStart = "-2.20em",
+}: {
+  words: Word[]
+  interval?: number
+  marginInlineStart?: string
+}) {
   const [index, setIndex] = useState(0)
 
   useEffect(() => {
@@ -26,7 +34,7 @@ export function RotatingWords({ words, interval = 2600 }: { words: Word[]; inter
         minWidth: `${minWidthCh}ch`,
         height: "1.35em",
         lineHeight: "1.23em",
-        marginInlineStart: "-2.20em", 
+        marginInlineStart,
         letterSpacing: "normal",
         textAlign: "left",
       }}

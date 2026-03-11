@@ -33,7 +33,6 @@ export default async function CertificatesManagementPage({ params }: { params: P
       }
     },
     orderBy: [desc(certificates.issuedAt)],
-    limit: 100
   })
 
   const [issuedStats, revokedStats, pendingStats] = await Promise.all([
@@ -121,7 +120,7 @@ export default async function CertificatesManagementPage({ params }: { params: P
             <TableBody>
               {certificatesList.map((cert: any) => (
                 <TableRow key={cert.id}>
-                  <TableCell className="font-mono text-sm">{cert.certificate_number}</TableCell>
+                  <TableCell className="font-mono text-sm">{cert.certificateNumber}</TableCell>
                   <TableCell>
                     <div>
                       <p className="font-medium">{cert.user_name}</p>
@@ -135,12 +134,12 @@ export default async function CertificatesManagementPage({ params }: { params: P
                     </Badge>
                   </TableCell>
                   <TableCell dir="ltr" className={isAr ? "text-right" : ""}>
-                    {cert.issued_at ? format(new Date(cert.issued_at), "dd/MM/yyyy", { locale: isAr ? arSA : enUS }) : "-"}
+                    {cert.issuedAt ? format(new Date(cert.issuedAt), "dd/MM/yyyy", { locale: isAr ? arSA : enUS }) : "-"}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/${lang}/verify?cert=${cert.certificate_number}`} target="_blank">
+                        <Link href={`/${lang}/verify?cert=${cert.certificateNumber}`} target="_blank">
                           {isAr ? "عرض" : "View"}
                         </Link>
                       </Button>

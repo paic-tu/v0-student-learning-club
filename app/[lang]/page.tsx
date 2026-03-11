@@ -73,17 +73,83 @@ export default function HomePage() {
 
       <main>
         <section className="relative overflow-hidden py-24 md:py-40">
+          <div className="pointer-events-none absolute inset-x-0 top-36 md:top-44 h-80 md:h-96 z-0">
+            <div className="absolute top-0 right-4 md:right-14 floating-drift-right" style={{ animationDuration: "18s", animationDelay: "-3s" }}>
+              <div className="floating-float" style={{ animationDuration: "4.8s", animationDelay: "-1.2s" }}>
+                <Badge className="backdrop-blur-sm bg-background/70 border-primary/20 opacity-85" variant="secondary">
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  {isRTL ? "تعلّم تفاعلي" : "Interactive Learning"}
+                </Badge>
+              </div>
+            </div>
+
+            <div className="absolute top-16 right-7 md:right-24 floating-drift-right" style={{ animationDuration: "22s", animationDelay: "-9s" }}>
+              <div className="floating-float" style={{ animationDuration: "5.6s", animationDelay: "-2.4s" }}>
+                <Badge className="backdrop-blur-sm bg-background/70 border-primary/20 opacity-85" variant="secondary">
+                  <Award className="h-3 w-3 mr-1" />
+                  {isRTL ? "دورات معتمدة" : "Certified Courses"}
+                </Badge>
+              </div>
+            </div>
+
+            <div className="absolute top-32 right-4 md:right-16 floating-drift-right" style={{ animationDuration: "20s", animationDelay: "-14s" }}>
+              <div className="floating-float" style={{ animationDuration: "4.2s", animationDelay: "-3.0s" }}>
+                <Badge className="backdrop-blur-sm bg-background/70 border-primary/20 opacity-85" variant="secondary">
+                  <Users className="h-3 w-3 mr-1" />
+                  {isRTL ? "مدربون خبراء" : "Expert Instructors"}
+                </Badge>
+              </div>
+            </div>
+
+            <div className="absolute top-0 left-4 md:left-14 floating-drift-left" style={{ animationDuration: "19s", animationDelay: "-6s" }}>
+              <div className="floating-float" style={{ animationDuration: "5.0s", animationDelay: "-0.8s" }}>
+                <Badge className="backdrop-blur-sm bg-background/70 border-primary/20 opacity-85" variant="secondary">
+                  <Zap className="h-3 w-3 mr-1" />
+                  {isRTL ? "جلسات مباشرة" : "Live Sessions"}
+                </Badge>
+              </div>
+            </div>
+
+            <div className="absolute top-16 left-7 md:left-24 floating-drift-left" style={{ animationDuration: "23s", animationDelay: "-11s" }}>
+              <div className="floating-float" style={{ animationDuration: "5.4s", animationDelay: "-2.0s" }}>
+                <Badge className="backdrop-blur-sm bg-background/70 border-primary/20 opacity-85" variant="secondary">
+                  <Target className="h-3 w-3 mr-1" />
+                  {isRTL ? "تحديات" : "Challenges"}
+                </Badge>
+              </div>
+            </div>
+
+            <div className="absolute top-32 left-4 md:left-16 floating-drift-left" style={{ animationDuration: "21s", animationDelay: "-16s" }}>
+              <div className="floating-float" style={{ animationDuration: "4.4s", animationDelay: "-3.4s" }}>
+                <Badge className="backdrop-blur-sm bg-background/70 border-primary/20 opacity-85" variant="secondary">
+                  <Star className="h-3 w-3 mr-1" />
+                  {isRTL ? "شهادات" : "Certificates"}
+                </Badge>
+              </div>
+            </div>
+
+            <div className="absolute top-48 left-7 md:left-28 floating-drift-left hidden sm:block" style={{ animationDuration: "25s", animationDelay: "-7s" }}>
+              <div className="floating-float" style={{ animationDuration: "6.0s", animationDelay: "-1.6s" }}>
+                <Badge className="backdrop-blur-sm bg-background/70 border-primary/20 opacity-85" variant="secondary">
+                  <Clock className="h-3 w-3 mr-1" />
+                  {isRTL ? "تعلّم مرن" : "Flexible Learning"}
+                </Badge>
+              </div>
+            </div>
+          </div>
 
           <div className="container mx-auto px-4 relative z-10">
             <Reveal>
             <div className="max-w-4xl mx-auto text-center space-y-8">
-              <Badge
-                className="mx-auto backdrop-blur-sm bg-background/80 border-primary/20 hover-lift"
-                variant="secondary"
-              >
-                <Sparkles className="h-3 w-3 mr-1" />
-                {isRTL ? "منصة التعلم الإلكتروني" : "E-Learning Platform"}
-              </Badge>
+              <div className="w-fit mx-auto floating-float" style={{ animationDuration: "5.2s", animationDelay: "-1.6s" }}>
+                <Badge
+                  className="mx-auto backdrop-blur-sm bg-background/80 border-primary/20 hover-lift"
+                  variant="secondary"
+                >
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  {isRTL ? "منصة التعلم الإلكتروني" : "E-Learning Platform"}
+                </Badge>
+              </div>
 
               <h1 className="text-5xl md:text-7xl font-bold text-balance leading-tight">
                 <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
@@ -96,6 +162,7 @@ export default function HomePage() {
                       {isRTL ? "منصتك ل\u200D" : "Your platform for "}
                     </span>
                     <RotatingWords
+                      marginInlineStart={isRTL ? "-2.20em" : "0.18em"}
                       words={
                         isRTL
                           ? [
@@ -170,6 +237,41 @@ export default function HomePage() {
             @media (prefers-reduced-motion: no-preference) {
               .animate-gradient {
                 animation: gradient 8s ease infinite;
+              }
+            }
+
+            @keyframes floating-float-y {
+              0%, 100% { transform: translate3d(0, 0, 0); }
+              50% { transform: translate3d(0, -10px, 0); }
+            }
+
+            @keyframes floating-drift-right {
+              0% { transform: translate3d(0, 0, 0); }
+              50% { transform: translate3d(26px, 0, 0); }
+              100% { transform: translate3d(0, 0, 0); }
+            }
+
+            @keyframes floating-drift-left {
+              0% { transform: translate3d(0, 0, 0); }
+              50% { transform: translate3d(-26px, 0, 0); }
+              100% { transform: translate3d(0, 0, 0); }
+            }
+
+            @media (prefers-reduced-motion: no-preference) {
+              .floating-float {
+                animation-name: floating-float-y;
+                animation-timing-function: ease-in-out;
+                animation-iteration-count: infinite;
+              }
+              .floating-drift-right {
+                animation-name: floating-drift-right;
+                animation-timing-function: ease-in-out;
+                animation-iteration-count: infinite;
+              }
+              .floating-drift-left {
+                animation-name: floating-drift-left;
+                animation-timing-function: ease-in-out;
+                animation-iteration-count: infinite;
               }
             }
 

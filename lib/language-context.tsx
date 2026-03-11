@@ -24,15 +24,20 @@ export function LanguageProvider({
   const router = useRouter()
 
   useEffect(() => {
+    const maybeLocale = pathname?.split("/")[1]
+    if (maybeLocale === "ar" || maybeLocale === "en") {
+      setLanguageState(maybeLocale)
+      return
+    }
     setLanguageState(defaultLang)
-  }, [defaultLang])
+  }, [defaultLang, pathname])
 
   const setLanguage = (lang: Language) => {
     if (lang === language) return
     
     // Replace locale in path
     // Path is like /ar/some/path or /ar
-    const segments = pathname.split('/')
+    const segments = (pathname || "").split('/')
     // segments[0] is empty string
     // segments[1] is locale
     if (segments.length > 1) {

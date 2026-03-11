@@ -144,8 +144,8 @@ export function PortalHeader({ user, mobileNav }: PortalHeaderProps) {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push(`/${user.role}/profile`)}>Profile</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push("/")}>View Site</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push(`/${language}/profile`)}>Profile</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push(`/${language}`)}>View Site</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="text-destructive">
               <LogOut className="mr-2 h-4 w-4" />

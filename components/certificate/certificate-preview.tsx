@@ -54,10 +54,10 @@ export function CertificatePreview({ studentName, certificates }: CertificatePre
   const pdfHeightCm = 21.0
 
   const studentNameLeft = (3.0 / pdfWidthCm) * 100
-  const studentNameTop = (9.2 / pdfHeightCm) * 100
+  const studentNameTop = (9.1 / pdfHeightCm) * 100
   
   const courseNameLeft = (3.0 / pdfWidthCm) * 100
-  const courseNameTop = (12.48 / pdfHeightCm) * 100
+  const courseNameTop = (12.3 / pdfHeightCm) * 100
 
   // Certificate Number: x=21.0cm, y=19.17cm
   const certNumLeft = (21.0 / pdfWidthCm) * 100

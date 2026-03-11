@@ -224,7 +224,7 @@ export function NavBar() {
                         </Button>
                       </Link>
                       <Link
-                        href={user.role === "student" ? `/${language}/student/profile` : `/${language}/instructor/profile`}
+                        href={`/${language}/profile`}
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         <Button variant="outline" className="w-full justify-start">
