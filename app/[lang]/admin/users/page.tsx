@@ -1,7 +1,7 @@
 import { requirePermission } from "@/lib/rbac/require-permission"
 import { db } from "@/lib/db"
 import { users } from "@/lib/db/schema"
-import { desc } from "drizzle-orm"
+import { desc, or, ilike } from "drizzle-orm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,12 +10,14 @@ import { Plus, Search, Filter } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 
-export default async function UsersManagementPage(props: { params: Promise<{ lang: string }> }) {
+export default async function UsersManagementPage(props: { params: Promise<{ lang: string }>, searchParams: Promise<{ q?: string }> }) {
   const params = await props.params
+  const sp = await props.searchParams
   const { lang } = params
+  const q = (sp?.q || "").trim()
   await requirePermission("users:read")
 
-  const usersData = await db
+  const base = db
     .select({
       id: users.id,
       email: users.email,
@@ -26,8 +28,11 @@ export default async function UsersManagementPage(props: { params: Promise<{ lan
       created_at: users.createdAt,
     })
     .from(users)
-    .orderBy(desc(users.createdAt))
-    .limit(100)
+  
+  const usersData = await (q
+    ? base.where(or(ilike(users.name, `%${q}%`), ilike(users.email, `%${q}%`))).orderBy(desc(users.createdAt)).limit(100)
+    : base.orderBy(desc(users.createdAt)).limit(100)
+  )
 
   return (
     <div className="space-y-6">
@@ -46,16 +51,16 @@ export default async function UsersManagementPage(props: { params: Promise<{ lan
 
       <Card>
         <CardContent className="pt-6">
-          <div className="flex gap-4">
+          <form className="flex gap-4" action="">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Search users..." className="pl-9" />
+              <Input name="q" placeholder="Search users..." className="pl-9" defaultValue={q} />
             </div>
-            <Button variant="outline">
+            <Button type="submit" variant="outline">
               <Filter className="mr-2 h-4 w-4" />
               Filter
             </Button>
-          </div>
+          </form>
         </CardContent>
       </Card>
 
