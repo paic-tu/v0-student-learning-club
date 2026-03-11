@@ -74,6 +74,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     openGraph: {
       type: "website",
       locale: isAr ? "ar_SA" : "en_US",
+      alternateLocale: isAr ? ["en_US"] : ["ar_SA"],
       url: `/${lang}`,
       title: isAr ? "Neon | نيون التعليمية" : "Neon | E-Learning Platform",
       description: isAr 
