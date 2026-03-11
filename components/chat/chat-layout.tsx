@@ -7,6 +7,8 @@ import { NewChatDialog } from "./new-chat-dialog"
 import { getConversations, joinCommunityChat } from "@/lib/actions/chat"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
+import { useLanguage } from "@/lib/language-context"
+import { cn } from "@/lib/utils"
 
 interface ChatLayoutProps {
   userId: string
@@ -14,6 +16,8 @@ interface ChatLayoutProps {
 }
 
 export function ChatLayout({ userId, initialConversations = [] }: ChatLayoutProps) {
+  const { language } = useLanguage()
+  const isAr = language === "ar"
   const [conversations, setConversations] = useState(initialConversations)
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined)
   const [loading, setLoading] = useState(!initialConversations.length)
@@ -21,10 +25,21 @@ export function ChatLayout({ userId, initialConversations = [] }: ChatLayoutProp
 
   // Simple mobile detection
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768)
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-    return () => window.removeEventListener("resize", checkMobile)
+    const computeIsMobile = () => {
+      const ua = navigator.userAgent || ""
+      const isUA = /Mobi|Android|iPhone|iPad|iPod/i.test(ua)
+      const coarse = window.matchMedia("(pointer: coarse)").matches
+      const small = window.matchMedia("(max-width: 900px)").matches
+      return isUA || coarse || small
+    }
+    const apply = () => setIsMobile(computeIsMobile())
+    apply()
+    window.addEventListener("resize", apply)
+    window.addEventListener("orientationchange", apply)
+    return () => {
+      window.removeEventListener("resize", apply)
+      window.removeEventListener("orientationchange", apply)
+    }
   }, [])
 
   const fetchConversations = async () => {
@@ -102,7 +117,7 @@ export function ChatLayout({ userId, initialConversations = [] }: ChatLayoutProp
 
   // Desktop View
   return (
-    <div className="flex h-[calc(100dvh-8rem)] border rounded-lg overflow-hidden bg-background shadow-sm">
+    <div className={cn("flex h-[calc(100dvh-8rem)] border rounded-lg overflow-hidden bg-background shadow-sm")} dir={isAr ? "rtl" : "ltr"}>
       <div className="flex-none h-full">
         <ChatSidebar
           conversations={conversations}

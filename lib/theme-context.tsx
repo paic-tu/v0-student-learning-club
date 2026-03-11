@@ -12,7 +12,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark")
+  const [theme, setTheme] = useState<Theme>("light")
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -21,8 +21,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setTheme(saved)
       document.documentElement.classList.toggle("dark", saved === "dark")
     } else {
-      setTheme("dark")
-      document.documentElement.classList.add("dark")
+      setTheme("light")
+      document.documentElement.classList.remove("dark")
     }
     setMounted(true)
   }, [])

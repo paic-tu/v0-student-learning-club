@@ -18,6 +18,7 @@ import { GifPicker } from "./gif-picker"
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UserActionPopover } from "./user-action-popover"
+import { useLanguage } from "@/lib/language-context"
 
 const formSchema = z.object({
   content: z.string().min(1),
@@ -32,6 +33,8 @@ interface ChatWindowProps {
 }
 
 export function ChatWindow({ conversationId, currentUserId, recipientName, recipientImage, onBack }: ChatWindowProps) {
+  const { language } = useLanguage()
+  const isAr = language === "ar"
   const [messages, setMessages] = useState<any[]>([])
   const [typingUsers, setTypingUsers] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
@@ -89,7 +92,15 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
     const now = new Date()
     const yesterday = new Date(now)
     yesterday.setDate(yesterday.getDate() - 1)
-
+    if (isAr) {
+      if (date.toDateString() === now.toDateString()) {
+        return `اليوم ${date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}`
+      } else if (date.toDateString() === yesterday.toDateString()) {
+        return `أمس ${date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}`
+      } else {
+        return date.toLocaleDateString('ar-SA') + " " + date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
+      }
+    }
     if (date.toDateString() === now.toDateString()) {
       return `Today at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
     } else if (date.toDateString() === yesterday.toDateString()) {
@@ -169,8 +180,8 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
   }
 
   return (
-    <div className="flex flex-col h-full bg-background w-full overflow-hidden">
-      <div className="h-16 px-4 border-b flex items-center gap-3 bg-background/95 backdrop-blur z-10 shadow-sm shrink-0">
+    <div className="flex flex-col h-full bg-background w-full overflow-hidden" dir={isAr ? "rtl" : "ltr"}>
+      <div className={cn("h-16 px-4 border-b flex items-center gap-3 bg-background/95 backdrop-blur z-10 shadow-sm shrink-0", isAr && "flex-row-reverse")} dir={isAr ? "rtl" : "ltr"}>
         {onBack && (
           <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden -ml-2 shrink-0">
             <ArrowLeft className="h-5 w-5" />
@@ -181,17 +192,17 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
             <AvatarFallback>{recipientName?.[0]}</AvatarFallback>
         </Avatar>
         <div className="flex flex-col overflow-hidden">
-          <h2 className="font-semibold text-sm leading-none truncate">{recipientName || "Chat"}</h2>
+          <h2 className={cn("font-semibold text-sm leading-none truncate", isAr && "text-right")}>{recipientName || (isAr ? "الدردشة" : "Chat")}</h2>
           {typingUsers.length > 0 && (
             <span className="text-[10px] text-muted-foreground animate-pulse truncate">
-              {typingUsers.length === 1 ? "typing..." : "people typing..."}
+              {isAr ? (typingUsers.length === 1 ? "يكتب..." : "يكتبون...") : (typingUsers.length === 1 ? "typing..." : "people typing...")}
             </span>
           )}
         </div>
       </div>
 
       <div className="flex-1 min-h-0 relative">
-        <ScrollArea className="h-full w-full p-4 absolute inset-0">
+        <ScrollArea className="h-full w-full p-4 absolute inset-0" dir={isAr ? "rtl" : "ltr"}>
           <div className="flex flex-col gap-4 pb-4">
           {loading ? (
             <div className="flex justify-center p-4">
@@ -208,7 +219,9 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
               className={cn(
                 "flex items-start gap-2 hover:bg-muted/30 p-1 rounded-xl transition-colors group max-w-[85%] md:max-w-[70%]",
                 !isSameSender && "mt-6",
-                isMe ? "flex-row-reverse ml-auto bg-primary/5 hover:bg-primary/10" : "mr-auto"
+                isMe 
+                  ? cn("flex-row-reverse bg-primary/5 hover:bg-primary/10", isAr ? "" : "ml-auto")
+                  : (isAr ? "ml-auto" : "")
               )}
             >
               {!isSameSender ? (
@@ -377,9 +390,10 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
                 <FormItem className="flex-1 min-w-0">
                   <FormControl>
                     <Textarea 
-                      placeholder="Type a message..." 
+                      placeholder={isAr ? "اكتب رسالة..." : "Type a message..."} 
                       {...field} 
                       className="min-h-[20px] max-h-32 resize-none py-2.5 px-0 bg-transparent border-0 focus-visible:ring-0 shadow-none leading-relaxed"
+                      dir={isAr ? "rtl" : "ltr"}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && !e.shiftKey) {
                           e.preventDefault()

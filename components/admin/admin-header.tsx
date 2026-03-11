@@ -53,7 +53,7 @@ export function AdminHeader({ user, mobileNav }: AdminHeaderProps) {
                 <span className="sr-only">Toggle menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-72">
+            <SheetContent side={language === "ar" ? "right" : "left"} className="p-0 w-72">
               <div 
                 className="h-full" 
                 onClick={(e) => {

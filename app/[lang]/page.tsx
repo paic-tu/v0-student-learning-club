@@ -17,6 +17,8 @@ import { getFaqItems } from "@/lib/content/faq"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
+import { Reveal } from "@/components/reveal"
+import { RotatingWords } from "@/components/rotating-words"
 
 export default function HomePage() {
   const { language } = useLanguage()
@@ -59,19 +61,21 @@ export default function HomePage() {
   }, [])
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative">
+      {/* Unified animated background for the whole page */}
+      <div className="pointer-events-none fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-background opacity-80" />
+        <StarfieldBackground className="opacity-80 dark:opacity-50" />
+        <GlowBlob className="top-1/5 left-1/4 -translate-x-1/2 -translate-y-1/2 opacity-45 dark:opacity-30" color="primary" size="720px" />
+        <GlowBlob className="bottom-1/6 right-1/4 translate-x-1/2 translate-y-1/2 opacity-40 dark:opacity-25" color="accent" size="640px" />
+      </div>
       <NavBar />
 
       <main>
-        <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-accent/5 to-background py-24 md:py-40">
-          <div className="absolute inset-0 z-0">
-            <StarfieldBackground className="opacity-40 dark:opacity-20" />
-          </div>
-
-          <GlowBlob className="top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 z-0" color="primary" size="600px" />
-          <GlowBlob className="bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 z-0" color="accent" size="500px" />
+        <section className="relative overflow-hidden py-24 md:py-40">
 
           <div className="container mx-auto px-4 relative z-10">
+            <Reveal>
             <div className="max-w-4xl mx-auto text-center space-y-8">
               <Badge
                 className="mx-auto backdrop-blur-sm bg-background/80 border-primary/20 hover-lift"
@@ -87,14 +91,35 @@ export default function HomePage() {
                 </span>
                 <br />
                 <span className="text-foreground text-4xl md:text-5xl mt-2 block">
-                  {isRTL ? "منصتك للتعلم والنمو" : "Your Learning & Growth Platform"}
+                  <span className="inline-flex items-baseline justify-center gap-0 whitespace-nowrap">
+                    <span>
+                      {isRTL ? "منصتك ل\u200D" : "Your platform for "}
+                    </span>
+                    <RotatingWords
+                      words={
+                        isRTL
+                          ? [
+                              { text: "التعلم", className: "bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent" },
+                              { text: "النمو", className: "bg-gradient-to-r from-emerald-500 to-teal-400 bg-clip-text text-transparent" },
+                              { text: "الابتكار", className: "bg-gradient-to-r from-fuchsia-500 to-pink-500 bg-clip-text text-transparent" },
+                              { text: "النجاح", className: "bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent" },
+                            ]
+                          : [
+                              { text: "Learning", className: "bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent" },
+                              { text: "Growth", className: "bg-gradient-to-r from-emerald-500 to-teal-400 bg-clip-text text-transparent" },
+                              { text: "Innovation", className: "bg-gradient-to-r from-fuchsia-500 to-pink-500 bg-clip-text text-transparent" },
+                              { text: "Success", className: "bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent" },
+                            ]
+                      }
+                    />
+                  </span>
                 </span>
               </h1>
 
               <p className="text-xl md:text-2xl text-muted-foreground text-balance max-w-2xl mx-auto leading-relaxed">
                 {isRTL
-                  ? "اكتشف دورات تعليمية متميزة واحصل على شهادات معتمدة من أفضل المدربين في العالم العربي"
-                  : "Discover premium educational courses and earn certified certificates from the best instructors in the Arab world"}
+                  ? "اكتشف دورات تعليمية متميزة واحصل على شهادات معتمدة مع أفضل المدربين "
+                  : "Discover premium educational courses and earn certified certificates from the best instructors "}
               </p>
 
               <div className="flex gap-4 justify-center flex-wrap pt-4">
@@ -134,6 +159,7 @@ export default function HomePage() {
                 </Link>
               </div>
             </div>
+            </Reveal>
           </div>
 
           <style jsx global>{`
@@ -225,6 +251,7 @@ export default function HomePage() {
 
         <section className="py-20 border-b bg-gradient-to-b from-background to-muted/20">
           <div className="container mx-auto px-4">
+            <Reveal>
             <div className="max-w-5xl mx-auto">
               <div className="text-center mb-12">
                 <h2 className="text-3xl md:text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
@@ -282,6 +309,7 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
+            </Reveal>
           </div>
         </section>
 
@@ -343,8 +371,9 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="py-24 border-t border-b bg-gradient-to-b from-background to-muted/20">
+        <section className="py-20 border-t border-b">
           <div className="container mx-auto px-4" dir={isRTL ? "rtl" : "ltr"}>
+            <Reveal>
             <div className="max-w-6xl mx-auto grid gap-10 lg:grid-cols-2 items-start">
               <div className="space-y-4">
                 <div className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground">
@@ -383,11 +412,11 @@ export default function HomePage() {
                 </Accordion>
               </div>
             </div>
+            </Reveal>
           </div>
         </section>
 
         <section className="py-24 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/10 to-primary/5 z-0" />
           <GlowBlob className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0" color="primary" size="800px" />
 
           <div className="container mx-auto px-4 relative z-10">

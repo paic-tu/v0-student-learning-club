@@ -16,11 +16,14 @@ export default async function ChatPage({ params }: { params: Promise<{ lang: str
   }
 
   const initialConversations = await getConversations()
+  const isAr = lang === "ar"
 
   return (
-    <div className="container mx-auto p-6 h-full">
-      <h1 className="text-3xl font-bold mb-6">Chat</h1>
-      <ChatLayout userId={session.user.id} initialConversations={initialConversations} />
+    <div className="-m-6 md:m-0 p-2 md:p-6 h-full">
+      <h1 className="hidden md:block text-3xl font-bold mb-6">{isAr ? "المحادثات" : "Chat"}</h1>
+      <div className="h-full">
+        <ChatLayout userId={session.user.id} initialConversations={initialConversations} />
+      </div>
     </div>
   )
 }

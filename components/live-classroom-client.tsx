@@ -116,6 +116,7 @@ function ClassroomLayout({
   const [isCollapsed, setIsCollapsed] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const recordedChunksRef = useRef<BlobPart[]>([])
+  const [isHandRaised, setIsHandRaised] = useState(false)
 
   const isInstructorView = effectiveMode === "instructor"
 
@@ -164,6 +165,16 @@ function ClassroomLayout({
           return
         }
 
+        if (data.type === "LOWER_HAND") {
+          const whoName = participant?.name || participant?.identity || "Unknown"
+          setRaisedHands((prev) => prev.filter((n) => n !== whoName))
+          toast({
+            title: isAr ? "خفض اليد" : "Hand Lowered",
+            description: `${whoName} ${isAr ? "أنزل يده" : "lowered their hand"}`,
+          })
+          return
+        }
+
         if (effectiveMode !== "student") return
 
         if (data.type === "FORCE_MUTE") {
@@ -192,15 +203,19 @@ function ClassroomLayout({
     }
   }, [room, isAr, toast, effectiveMode])
 
-  const sendRaiseHand = async () => {
-    const data = JSON.stringify({ type: "RAISE_HAND" })
+  const toggleRaiseHand = async () => {
+    const nextRaised = !isHandRaised
+    const data = JSON.stringify({ type: nextRaised ? "RAISE_HAND" : "LOWER_HAND" })
     const encoder = new TextEncoder()
     await room.localParticipant.publishData(encoder.encode(data), {
       reliable: true,
     })
+    setIsHandRaised(nextRaised)
     toast({
-      title: isAr ? "تم رفع اليد" : "Hand Raised",
-      description: isAr ? "لقد قمت برفع يدك للمدرس" : "You raised your hand to the instructor",
+      title: nextRaised ? (isAr ? "تم رفع اليد" : "Hand Raised") : (isAr ? "تم خفض اليد" : "Hand Lowered"),
+      description: nextRaised
+        ? (isAr ? "لقد قمت برفع يدك للمدرس" : "You raised your hand to the instructor")
+        : (isAr ? "لقد أنزلت يدك" : "You lowered your hand"),
     })
   }
 
@@ -290,18 +305,19 @@ function ClassroomLayout({
       {!isInstructorView && (
         <div
           className={cn(
-            "absolute bottom-4 left-4 z-50 flex flex-wrap items-center gap-2",
+            "absolute top-4 left-4 z-50 flex flex-wrap items-center gap-2",
             isAr && "left-auto right-4"
           )}
         >
           <Button
             variant="secondary"
             size="sm"
-            onClick={sendRaiseHand}
+            onClick={toggleRaiseHand}
             className="shadow-lg bg-background/80 backdrop-blur-sm hover:bg-background"
+            aria-pressed={isHandRaised}
           >
-            <Hand className={cn("mr-2 h-4 w-4 text-yellow-500", isAr && "mr-0 ml-2")} />
-            {isAr ? "رفع اليد" : "Raise Hand"}
+            <Hand className={cn("mr-2 h-4 w-4", isHandRaised ? "text-yellow-500" : "text-muted-foreground", isAr && "mr-0 ml-2")} />
+            {isAr ? (isHandRaised ? "خفض اليد" : "رفع اليد") : (isHandRaised ? "Lower Hand" : "Raise Hand")}
           </Button>
         </div>
       )}
@@ -387,5 +403,3 @@ function ClassroomLayout({
     </div>
   )
 }
-
-
