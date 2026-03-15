@@ -39,7 +39,7 @@ export default function OrdersPage() {
   const getStatusBadge = (status: string) => {
     const variants: Record<string, any> = {
       pending: "outline",
-      completed: "default",
+      paid: "default",
       cancelled: "destructive",
     }
     return variants[status] || "secondary"
@@ -48,7 +48,7 @@ export default function OrdersPage() {
   const getStatusText = (status: string) => {
     const texts: Record<string, { ar: string; en: string }> = {
       pending: { ar: "قيد المعالجة", en: "Pending" },
-      completed: { ar: "مكتمل", en: "Completed" },
+      paid: { ar: "مدفوع", en: "Paid" },
       cancelled: { ar: "ملغى", en: "Cancelled" },
     }
     return language === "ar" ? texts[status]?.ar || status : texts[status]?.en || status
@@ -109,29 +109,44 @@ export default function OrdersPage() {
                     </div>
 
                     <div className="space-y-2 mb-4">
-                      {JSON.parse(order.items).map((item: any, idx: number) => (
-                        <div key={idx} className="flex justify-between text-sm">
-                          <span>
-                            {item.name} x{item.quantity}
-                          </span>
-                          <span className="font-medium">
-                            {(item.price * item.quantity).toFixed(2)} {language === "ar" ? "ر.س" : "SAR"}
-                          </span>
-                        </div>
-                      ))}
+                      {(order.items || []).map((item: any, idx: number) => {
+                        const name = item.course
+                          ? language === "ar"
+                            ? item.course.titleAr
+                            : item.course.titleEn
+                          : item.product
+                            ? language === "ar"
+                              ? item.product.nameAr
+                              : item.product.nameEn
+                            : language === "ar"
+                              ? "عنصر غير معروف"
+                              : "Unknown item"
+                        const unitPrice = item.price ? Number(item.price) : item.course ? Number(item.course.price) : item.product ? Number(item.product.price) : 0
+                        const qty = Number(item.quantity || 1)
+                        return (
+                          <div key={idx} className="flex justify-between text-sm">
+                            <span>
+                              {name} x{qty}
+                            </span>
+                            <span className="font-medium">
+                              {(unitPrice * qty).toFixed(2)} {language === "ar" ? "ر.س" : "SAR"}
+                            </span>
+                          </div>
+                        )
+                      })}
                     </div>
 
                     <div className="flex justify-between items-center pt-4 border-t">
                       <span className="font-semibold">{t("total", language)}</span>
                       <span className="text-lg font-bold text-primary">
-                        {Number(order.total_amount).toFixed(2)} {language === "ar" ? "ر.س" : "SAR"}
+                        {Number(order.totalAmount).toFixed(2)} {language === "ar" ? "ر.س" : "SAR"}
                       </span>
                     </div>
 
-                    {order.shipping_address && (
+                    {order.shippingAddress && (
                       <div className="mt-4 pt-4 border-t text-sm text-muted-foreground">
                         <p className="font-medium mb-1">{language === "ar" ? "عنوان الشحن:" : "Shipping Address:"}</p>
-                        <p>{order.shipping_address}</p>
+                        <p>{order.shippingAddress}</p>
                       </div>
                     )}
                   </CardContent>

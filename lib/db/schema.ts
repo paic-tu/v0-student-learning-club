@@ -10,6 +10,7 @@ import {
   decimal,
   pgEnum,
   primaryKey,
+  uniqueIndex,
 } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 
@@ -57,6 +58,7 @@ export const users = pgTable("users", {
   twitterUrl: text("twitter_url"),
   linkedinUrl: text("linkedin_url"),
   phoneNumber: varchar("phone_number", { length: 32 }),
+  streamConsumerId: uuid("stream_consumer_id"),
   // Legacy/External columns (kept to avoid data loss during push)
   phone: varchar("phone", { length: 256 }),
   preferences: jsonb("preferences"),
@@ -66,6 +68,25 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 })
+
+export const docsPages = pgTable(
+  "docs_pages",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    slug: varchar("slug", { length: 255 }).notNull(),
+    lang: varchar("lang", { length: 10 }).notNull().default("ar"),
+    title: varchar("title", { length: 255 }).notNull(),
+    description: text("description"),
+    contentMd: text("content_md").notNull().default(""),
+    isPublic: boolean("is_public").notNull().default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedByUserId: uuid("updated_by_user_id").references(() => users.id),
+  },
+  (t) => ({
+    slugLangUnique: uniqueIndex("docs_pages_slug_lang_unique").on(t.slug, t.lang),
+  }),
+)
 
 // Sessions table for authentication
 export const sessions = pgTable("sessions", {
@@ -110,6 +131,7 @@ export const courses = pgTable("courses", {
   language: varchar("language", { length: 10 }).default("ar"), // Primary language of the course
   duration: integer("duration"), // in minutes
   price: decimal("price", { precision: 10, scale: 2 }).notNull().default("0"),
+  streamProductId: uuid("stream_product_id"),
   isFree: boolean("is_free").notNull().default(true),
   isLive: boolean("is_live").notNull().default(false),
   isStreaming: boolean("is_streaming").notNull().default(false), // Indicates if the live stream is currently active
@@ -280,6 +302,8 @@ export const products = pgTable("products", {
   descriptionEn: text("description_en"),
   descriptionAr: text("description_ar"),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  pointsCost: integer("points_cost"),
+  streamProductId: uuid("stream_product_id"),
   imageUrl: text("image_url"),
   stockQuantity: integer("stock_quantity").notNull().default(0),
   categoryId: uuid("category_id").references(() => categories.id),
@@ -297,6 +321,16 @@ export const orders = pgTable("orders", {
   status: orderStatusEnum("status").notNull().default("pending"),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   paymentIntentId: varchar("payment_intent_id", { length: 255 }),
+  paymentProvider: varchar("payment_provider", { length: 64 }),
+  paymentLinkId: varchar("payment_link_id", { length: 255 }),
+  paymentLinkUrl: text("payment_link_url"),
+  invoiceId: varchar("invoice_id", { length: 255 }),
+  paymentId: varchar("payment_id", { length: 255 }),
+  branchId: varchar("branch_id", { length: 255 }),
+  gatewayStatus: varchar("gateway_status", { length: 64 }),
+  gatewayPayload: jsonb("gateway_payload"),
+  paidAt: timestamp("paid_at"),
+  lastWebhookAt: timestamp("last_webhook_at"),
   shippingAddress: text("shipping_address"),
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

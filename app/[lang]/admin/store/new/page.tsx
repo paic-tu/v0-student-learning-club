@@ -23,7 +23,8 @@ async function getCategories() {
   }
 }
 
-export default async function NewStoreItemPage() {
+export default async function NewStoreItemPage(props: { params: Promise<{ lang: string }> }) {
+  const { lang } = await props.params
   await requirePermission("store:write")
   const categoriesData = await getCategories()
 
@@ -32,11 +33,15 @@ export default async function NewStoreItemPage() {
       <PageHeader
         title="Create New Store Item"
         description="Add a new product to the store"
-        breadcrumbs={[{ label: "Admin", href: "/admin" }, { label: "Store", href: "/admin/store" }, { label: "New" }]}
+        breadcrumbs={[
+          { label: "Admin", href: `/${lang}/admin` },
+          { label: "Store", href: `/${lang}/admin/store` },
+          { label: "New" },
+        ]}
       />
 
       <Suspense fallback={<div>Loading form...</div>}>
-        <StoreItemForm categories={categoriesData} />
+        <StoreItemForm lang={lang} categories={categoriesData} />
       </Suspense>
     </div>
   )

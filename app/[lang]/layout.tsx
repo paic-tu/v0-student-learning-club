@@ -138,7 +138,7 @@ export default async function RootLayout({
     <html lang={lang} dir={dir} suppressHydrationWarning>
       <body className={`${arabic.variable} ${inter.variable} ${playfair.variable} ${dancing.variable} font-sans antialiased`}>
         <Script id="silence-console" strategy="beforeInteractive">
-          {`(function(){var n=function(){};var c=window.console||{};c.log=n;c.debug=n;c.info=n;c.warn=n;c.error=n;window.console=c})();`}
+          {`(function(){try{var n=function(){};var c=window.console||{};c.log=n;c.debug=n;c.info=n;c.warn=n;c.error=n;window.console=c}catch(e){};try{var p=window.performance;if(p&&p.measure&&!p.__neonPatchedMeasure){var m=p.measure.bind(p);p.measure=function(a,b,d){try{if(b&&typeof b==="object"&&(typeof b.start==="number"||typeof b.end==="number")){var o=b;if(typeof o.start==="number"&&o.start<0){o=Object.assign({},o,{start:0})}if(typeof o.end==="number"&&o.end<0){o=Object.assign({},o,{end:0})}return m(a,o)}return m(a,b,d)}catch(e){if(e&&typeof e.message==="string"&&e.message.indexOf("negative time stamp")!==-1){return}throw e}};p.__neonPatchedMeasure=true}}catch(e){}})();`}
         </Script>
         <ThemeProvider>
           <LanguageProvider defaultLang={lang as "ar" | "en"}>

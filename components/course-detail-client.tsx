@@ -22,7 +22,7 @@ import { t } from "@/lib/i18n"
 import { Clock, BookOpen, Share2, PlayCircle, Lock, Star, ChevronRight, ShoppingCart } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
-import { enrollAction, addToCartAction } from "@/lib/actions"
+import { enrollAction, addToCartAction, checkoutAction } from "@/lib/actions"
 
 import { BookmarkButton } from "@/components/bookmark-button"
 
@@ -146,7 +146,14 @@ export function CourseDetailClient({ course, initialBookmarked, initialEnrolled 
         toast({
           variant: "destructive",
           title: language === "ar" ? "خطأ" : "Error",
-          description: language === "ar" ? "فشل التسجيل في الدورة" : "Failed to enroll",
+          description:
+            result.error === "Paid course requires checkout"
+              ? language === "ar"
+                ? "هذه دورة مدفوعة. استخدم شراء الآن لإتمام الدفع."
+                : "This is a paid course. Use Buy Now to checkout."
+              : language === "ar"
+                ? "فشل التسجيل في الدورة"
+                : "Failed to enroll",
         })
       } else {
         setIsEnrolled(true)
@@ -163,6 +170,51 @@ export function CourseDetailClient({ course, initialBookmarked, initialEnrolled 
         variant: "destructive",
         title: language === "ar" ? "خطأ" : "Error",
         description: language === "ar" ? "حدث خطأ غير متوقع" : "An unexpected error occurred",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleBuyNow = async () => {
+    if (!user) {
+      router.push(`/${language}/auth/login`)
+      return
+    }
+
+    setLoading(true)
+    try {
+      const add = await addToCartAction(course.id)
+      if (!add.success) {
+        toast({
+          variant: "destructive",
+          title: language === "ar" ? "خطأ" : "Error",
+          description: add.error || add.message || "Failed",
+        })
+        return
+      }
+
+      const checkout = await checkoutAction(undefined, undefined, language)
+      if (checkout?.checkoutUrl) {
+        window.location.href = checkout.checkoutUrl
+        return
+      }
+      if (checkout?.success) {
+        router.refresh()
+        router.push(`/${language}/student/dashboard`)
+        return
+      }
+
+      toast({
+        variant: "destructive",
+        title: language === "ar" ? "خطأ" : "Error",
+        description: checkout?.error || "Checkout failed",
+      })
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: language === "ar" ? "خطأ" : "Error",
+        description: e instanceof Error ? e.message : "Failed",
       })
     } finally {
       setLoading(false)
@@ -467,7 +519,7 @@ export function CourseDetailClient({ course, initialBookmarked, initialEnrolled 
                                  <Button className="w-full text-lg h-12" onClick={handleAddToCart} disabled={addingToCart}>
                                     {addingToCart ? (language === "ar" ? "جاري الإضافة..." : "Adding...") : (language === "ar" ? "أضف للسلة" : "Add to Cart")}
                                  </Button>
-                                 <Button variant="outline" className="w-full" onClick={handleEnroll}>
+                                 <Button variant="outline" className="w-full" onClick={handleBuyNow} disabled={loading}>
                                     {language === "ar" ? "شراء الآن" : "Buy Now"}
                                  </Button>
                               </div>

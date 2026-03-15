@@ -20,6 +20,18 @@ export async function enrollAction(courseId: string) {
 
     const userId = session.user.id
 
+    const course = await db.query.courses.findFirst({
+      where: eq(courses.id, courseId),
+      columns: { id: true, isFree: true, price: true },
+    })
+    if (!course) return { error: "Course not found" }
+
+    const priceNumber = Number.parseFloat(String(course.price))
+    const isPaid = !course.isFree && Number.isFinite(priceNumber) && priceNumber > 0
+    if (isPaid) {
+      return { error: "Paid course requires checkout" }
+    }
+
     // Check if already enrolled
     const existing = await db.query.enrollments.findFirst({
       where: and(

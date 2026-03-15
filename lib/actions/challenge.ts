@@ -3,10 +3,11 @@
 import { db } from "@/lib/db"
 import { 
   challenges, 
-  challengeSubmissions 
+  challengeSubmissions,
+  users,
 } from "@/lib/db/schema"
 import { auth } from "@/lib/auth"
-import { eq, and, desc } from "drizzle-orm"
+import { eq, and, desc, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 export async function getChallengesAction() {
@@ -89,7 +90,6 @@ export async function getChallengeAction(id: string) {
 
         return { challenge, previousSubmission }
     } catch (error) {
-        console.error("[Action] getChallengeAction error:", error)
         return { error: "Failed to get challenge" }
     }
 }
@@ -168,6 +168,128 @@ export async function submitQuizAction(challengeId: string, answers: Record<numb
         console.error("[Action] submitQuizAction error:", error)
         return { error: "Failed to submit quiz" }
     }
+}
+
+function normalizePython(code: string) {
+  return String(code || "")
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+$/g, ""))
+    .join("\n")
+    .trim()
+}
+
+export async function submitFindBugAction(
+  challengeId: string,
+  code: string,
+  meta?: { timeMs?: number },
+) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) return { error: "Unauthorized" }
+    const userId = session.user.id
+
+    const challenge = await db.query.challenges.findFirst({
+      where: eq(challenges.id, challengeId),
+    })
+
+    if (!challenge) return { error: "Challenge not found" }
+
+    const testCases = challenge.testCases as any
+    const isFindBug =
+      challenge.type === "coding" &&
+      testCases &&
+      typeof testCases === "object" &&
+      testCases.format === "find_bug_python"
+
+    if (!isFindBug) return { error: "Unsupported challenge type" }
+
+    const now = Date.now()
+    const startAtMs = testCases?.startAt ? new Date(testCases.startAt).getTime() : null
+    const endAtMs = testCases?.endAt ? new Date(testCases.endAt).getTime() : null
+
+    if (Number.isFinite(startAtMs as any) && typeof startAtMs === "number" && now < startAtMs) {
+      return { error: "Challenge has not started yet" }
+    }
+
+    if (Number.isFinite(endAtMs as any) && typeof endAtMs === "number" && now > endAtMs) {
+      return { error: "Challenge has ended" }
+    }
+
+    const [attemptCountRow] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(challengeSubmissions)
+      .where(and(eq(challengeSubmissions.challengeId, challengeId), eq(challengeSubmissions.userId, userId)))
+
+    const attempts = Number(attemptCountRow?.count || 0) + 1
+
+    const [previousPassed] = await db
+      .select({ id: challengeSubmissions.id })
+      .from(challengeSubmissions)
+      .where(
+        and(
+          eq(challengeSubmissions.challengeId, challengeId),
+          eq(challengeSubmissions.userId, userId),
+          eq(challengeSubmissions.isPassed, true),
+        ),
+      )
+      .limit(1)
+
+    const alreadyPassed = Boolean(previousPassed?.id)
+
+    const safeTimeMsRaw = typeof meta?.timeMs === "number" ? meta.timeMs : 0
+    const timeMs = Math.max(0, Math.min(24 * 60 * 60 * 1000, Math.floor(safeTimeMsRaw)))
+    const timeMinutes = Math.floor(timeMs / 60000)
+
+    const limitMinutes = typeof challenge.timeLimit === "number" && Number.isFinite(challenge.timeLimit) ? challenge.timeLimit : null
+    const limitMs = limitMinutes != null ? Math.max(0, limitMinutes) * 60000 : null
+    const timeLimitExceeded = limitMs != null && limitMs > 0 && timeMs > limitMs
+
+    const expected = normalizePython(challenge.solution || "")
+    const submitted = normalizePython(code || "")
+
+    const isPassed = !timeLimitExceeded && Boolean(expected) && submitted === expected
+
+    const basePoints = Number.isFinite(challenge.points) ? Number(challenge.points) : 100
+    const bonus = Math.max(0, 50 - timeMinutes * 5 - Math.max(0, attempts - 1) * 10)
+    const awardedPoints = isPassed && !alreadyPassed ? basePoints + bonus : 0
+
+    await db.insert(challengeSubmissions).values({
+      userId,
+      challengeId,
+      code,
+      result: {
+        format: "find_bug_python",
+        timeMs,
+        timeLimitMinutes: limitMinutes,
+        timeLimitExceeded,
+        attempts,
+        basePoints,
+        bonus,
+        awardedPoints,
+        alreadyPassed,
+      },
+      score: awardedPoints,
+      isPassed,
+    })
+
+    if (awardedPoints > 0) {
+      await db
+        .update(users)
+        .set({ points: sql`${users.points} + ${awardedPoints}` })
+        .where(eq(users.id, userId))
+    }
+
+    revalidatePath(`/ar/challenges/${challengeId}`)
+    revalidatePath(`/en/challenges/${challengeId}`)
+    revalidatePath(`/ar/challenges`)
+    revalidatePath(`/en/challenges`)
+
+    return { success: true, isPassed, awardedPoints, bonus, attempts, timeMs, timeLimitExceeded }
+  } catch (error) {
+    console.error("[Action] submitFindBugAction error:", error)
+    return { error: "Failed to submit code" }
+  }
 }
 
 export async function getInstructorQuizzesAction() {

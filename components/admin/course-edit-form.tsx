@@ -179,6 +179,7 @@ export function CourseEditForm({
         is_published: formData.get("is_published") === "on",
         thumbnail_url: formData.get("thumbnail_url") || null,
         video_url: formData.get("video_url") || null,
+        stream_product_id: formData.get("stream_product_id") || null,
       }
 
       const response = await fetch(`/api/admin/courses/${course.id}`, {
@@ -358,6 +359,17 @@ export function CourseEditForm({
                     step="0.01" 
                     defaultValue={course.price} 
                     onChange={(e) => updatePreview("price", Number(e.target.value))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="stream_product_id">Stream product_id</Label>
+                  <Input
+                    id="stream_product_id"
+                    name="stream_product_id"
+                    defaultValue={course.stream_product_id || course.streamProductId || ""}
+                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                    dir="ltr"
                   />
                 </div>
               </div>

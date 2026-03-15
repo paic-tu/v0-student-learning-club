@@ -1,6 +1,6 @@
 import { requirePermission } from "@/lib/rbac/require-permission"
 import { db } from "@/lib/db"
-import { products, categories, orders } from "@/lib/db/schema"
+import { products, categories, orders, courses } from "@/lib/db/schema"
 import { eq, desc, sum, count, inArray } from "drizzle-orm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,13 +9,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Search, Filter, DollarSign } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
+import { StoreCourseControls } from "@/components/admin/store-course-controls"
 
 export default async function StoreManagementPage(props: { params: Promise<{ lang: string }> }) {
   const params = await props.params
   const { lang } = params
   await requirePermission("store:read")
 
-  const [items, stats] = await Promise.all([
+  const [items, stats, courseItems] = await Promise.all([
     db.query.products.findMany({
       with: {
         category: true
@@ -27,8 +28,13 @@ export default async function StoreManagementPage(props: { params: Promise<{ lan
       totalOrders: count()
     })
     .from(orders)
-    .where(inArray(orders.status, ['paid', 'shipped', 'delivered']))
+    .where(inArray(orders.status, ['paid', 'shipped', 'delivered'])),
+    db.query.courses.findMany({
+      orderBy: [desc(courses.updatedAt)],
+      with: { category: true }
+    }),
   ])
+
 
   return (
     <div className="space-y-6">
@@ -116,6 +122,55 @@ export default async function StoreManagementPage(props: { params: Promise<{ lan
                   <TableCell>
                     <Button variant="ghost" size="sm" asChild>
                       <Link href={`/${lang}/admin/store/${item.id}`}>Edit</Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Courses ({courseItems.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Title (EN)</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>Published</TableHead>
+                <TableHead>Quick Update</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {courseItems.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell className="font-medium text-xs font-mono">{c.id.substring(0, 8)}...</TableCell>
+                  <TableCell>{c.titleEn}</TableCell>
+                  <TableCell>{c.category?.nameEn || "None"}</TableCell>
+                  <TableCell>SAR {c.price}</TableCell>
+                  <TableCell>
+                    <Badge variant={c.isPublished ? "default" : "secondary"}>
+                      {c.isPublished ? "Published" : "Draft"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <StoreCourseControls
+                      courseId={c.id}
+                      initialPrice={c.price}
+                      initialPublished={c.isPublished}
+                      initialStreamProductId={c.streamProductId}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link href={`/${lang}/admin/courses/${c.id}`}>Edit</Link>
                     </Button>
                   </TableCell>
                 </TableRow>

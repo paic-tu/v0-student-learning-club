@@ -75,8 +75,17 @@ export function CartClient({ initialCart }: CartClientProps) {
 
   const handleCheckout = () => {
     startTransition(async () => {
-      const result = await checkoutAction()
+      const result = await checkoutAction(undefined, undefined, language)
       if (result.success) {
+        if ((result as any).checkoutUrl) {
+          toast({
+            title: language === "ar" ? "جاري تحويلك للدفع" : "Redirecting to payment",
+            description: language === "ar" ? "سيتم فتح صفحة الدفع الآمنة" : "Opening secure checkout",
+          })
+          window.location.href = (result as any).checkoutUrl
+          return
+        }
+
         toast({
           title: language === "ar" ? "تم الطلب بنجاح" : "Order Placed",
           description: language === "ar" ? "تم إنشاء طلبك وتفعيل الدورات" : "Your order has been placed and courses activated",

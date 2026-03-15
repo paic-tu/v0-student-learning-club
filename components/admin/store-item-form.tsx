@@ -23,7 +23,13 @@ const storeItemSchema = z.object({
   price: z.number().min(0),
   pointsCost: z.number().int().min(0).optional().nullable(),
   stock: z.number().int().min(0),
-  categoryId: z.string().optional().nullable(),
+  categoryId: z.string().min(1, "Category is required").uuid("Invalid category id"),
+  streamProductId: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : null))
+    .refine((v) => v === null || z.string().uuid().safeParse(v).success, { message: "Invalid Stream product_id" }),
   imageUrl: z.string().optional().or(z.literal("")).nullable(),
   isActive: z.boolean().default(true),
 })
@@ -31,43 +37,61 @@ const storeItemSchema = z.object({
 type StoreItemFormData = z.infer<typeof storeItemSchema>
 
 interface StoreItemFormProps {
+  lang: string
   categories: Array<{ id: string; nameEn: string; nameAr: string }>
+  product?: {
+    id: string
+    nameEn: string
+    nameAr: string
+    descriptionEn: string | null
+    descriptionAr: string | null
+    price: string
+    pointsCost: number | null
+    stockQuantity: number
+    categoryId: string | null
+    streamProductId: string | null
+    imageUrl: string | null
+    isActive: boolean
+  }
 }
 
-export function StoreItemForm({ categories }: StoreItemFormProps) {
+export function StoreItemForm({ lang, categories, product }: StoreItemFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
   const form = useForm<StoreItemFormData>({
     resolver: zodResolver(storeItemSchema),
     defaultValues: {
-      nameEn: "",
-      nameAr: "",
-      descriptionEn: "",
-      descriptionAr: "",
-      price: 0,
-      pointsCost: null,
-      stock: 0,
-      isActive: true,
+      nameEn: product?.nameEn || "",
+      nameAr: product?.nameAr || "",
+      descriptionEn: product?.descriptionEn || "",
+      descriptionAr: product?.descriptionAr || "",
+      price: product?.price ? Number.parseFloat(product.price) : 0,
+      pointsCost: product?.pointsCost ?? null,
+      stock: product?.stockQuantity ?? 0,
+      categoryId: product?.categoryId || categories[0]?.id || "",
+      streamProductId: product?.streamProductId ?? null,
+      imageUrl: product?.imageUrl || "",
+      isActive: product?.isActive ?? true,
     },
   })
 
   async function onSubmit(data: StoreItemFormData) {
     setIsLoading(true)
     try {
-      const response = await fetch("/api/admin/store", {
-        method: "POST",
+      const response = await fetch(product ? `/api/admin/store/${product.id}` : "/api/admin/store", {
+        method: product ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       })
 
-      if (!response.ok) throw new Error("Failed to create store item")
+      if (!response.ok) throw new Error(product ? "Failed to update store item" : "Failed to create store item")
 
-      toast.success("Store item created successfully")
-      router.push("/admin/store")
+      toast.success(product ? "Store item updated successfully" : "Store item created successfully")
+      router.push(`/${lang}/admin/store`)
       router.refresh()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create store item")
+      toast.error(error instanceof Error ? error.message : product ? "Failed to update store item" : "Failed to create store item")
     } finally {
       setIsLoading(false)
     }
@@ -163,10 +187,10 @@ export function StoreItemForm({ categories }: StoreItemFormProps) {
               name="categoryId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Category (Optional)</FormLabel>
+                  <FormLabel>Category</FormLabel>
                   <Select
-                    onValueChange={(value) => field.onChange(Number.parseInt(value))}
-                    value={field.value?.toString() || ""}
+                    onValueChange={field.onChange}
+                    value={field.value || ""}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -175,12 +199,31 @@ export function StoreItemForm({ categories }: StoreItemFormProps) {
                     </FormControl>
                     <SelectContent>
                       {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id.toString()}>
+                        <SelectItem key={category.id} value={category.id}>
                           {category.nameEn}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="streamProductId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Stream product_id</FormLabel>
+                  <FormControl>
+                    <Input
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                      dir="ltr"
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

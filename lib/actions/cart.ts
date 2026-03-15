@@ -6,11 +6,13 @@ import {
   cartItems, 
   orders, 
   orderItems, 
-  enrollments 
+  enrollments,
+  users
 } from "@/lib/db/schema"
 import { auth } from "@/lib/auth"
 import { eq, and } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
+import { createStreamConsumer, createStreamPaymentLink, findStreamConsumerByEmail, findStreamConsumerByPhone, getAppBaseUrl, normalizeSaudiPhone } from "@/lib/payments/stream"
 
 export async function getCartAction() {
   console.log("[Action] getCartAction started")
@@ -146,7 +148,7 @@ export async function removeFromCartAction(itemId: string) {
   }
 }
 
-export async function checkoutAction(shippingAddress?: string, notes?: string) {
+export async function checkoutAction(shippingAddress?: string, notes?: string, lang: string = "ar") {
     console.log("[Action] checkoutAction started")
     try {
         const session = await auth()
@@ -155,6 +157,12 @@ export async function checkoutAction(shippingAddress?: string, notes?: string) {
             return { error: "Unauthorized" }
         }
         const userId = session.user.id
+
+        const user = await db.query.users.findFirst({
+          where: eq(users.id, userId),
+          columns: { id: true, name: true, email: true, phoneNumber: true, phone: true, preferences: true, streamConsumerId: true },
+        })
+        if (!user) return { error: "User not found" }
 
         // Get cart with items and prices
         const cart = await db.query.carts.findFirst({
@@ -190,16 +198,122 @@ export async function checkoutAction(shippingAddress?: string, notes?: string) {
             total += price
         }
 
-        // Create Order
-        const [order] = await db.insert(orders).values({
-            userId,
-            status: "paid", // Auto-pay for now
-            totalAmount: total.toString(),
-            shippingAddress: shippingAddress || null,
-            notes: notes || null,
-        }).returning()
+        const shouldUseStream = Boolean(process.env.STREAM_API_KEY_BASE64 || (process.env.STREAM_API_KEY && process.env.STREAM_API_SECRET))
 
-        // Create Order Items and Enrollments
+        if (!shouldUseStream) {
+            const [order] = await db.insert(orders).values({
+                userId,
+                status: "paid",
+                totalAmount: total.toString(),
+                shippingAddress: shippingAddress || null,
+                notes: notes || null,
+                paymentProvider: "manual",
+                paidAt: new Date(),
+            }).returning()
+
+            for (const item of validItems) {
+                await db.insert(orderItems).values({
+                    orderId: order.id,
+                    courseId: item.type === 'course' ? item.id : null,
+                    productId: item.type === 'product' ? item.id : null,
+                    price: item.price.toString(),
+                    quantity: 1
+                })
+
+                if (item.type === 'course') {
+                     const existing = await db.query.enrollments.findFirst({
+                         where: and(
+                             eq(enrollments.userId, userId),
+                             eq(enrollments.courseId, item.id)
+                         )
+                     })
+
+                     if (!existing) {
+                         await db.insert(enrollments).values({
+                             userId,
+                             courseId: item.id,
+                             status: 'active'
+                         })
+                     }
+                }
+            }
+
+            await db.delete(cartItems).where(eq(cartItems.cartId, cart.id))
+
+            revalidatePath("/cart")
+            revalidatePath("/student/dashboard")
+            revalidatePath("/ar/student/dashboard")
+            revalidatePath("/en/student/dashboard")
+            revalidatePath("/ar/student/my-courses")
+            revalidatePath("/en/student/my-courses")
+            return { success: true, orderId: order.id }
+        }
+
+        const itemsForStream: Array<{ productId: string; quantity: number }> = []
+        for (const ci of cart.items) {
+            if (ci.course) {
+                const pid = (ci.course as any).streamProductId as string | null | undefined
+                if (!pid) return { error: `Stream product_id is missing for course: ${ci.course.titleEn}` }
+                itemsForStream.push({ productId: pid, quantity: ci.quantity || 1 })
+            } else if (ci.product) {
+                const pid = (ci.product as any).streamProductId as string | null | undefined
+                if (!pid) return { error: `Stream product_id is missing for product: ${ci.product.nameEn}` }
+                itemsForStream.push({ productId: pid, quantity: ci.quantity || 1 })
+            }
+        }
+
+        let streamConsumerId = user.streamConsumerId as string | null | undefined
+        const phoneRaw = user.phoneNumber || user.phone || ""
+        const phoneE164 = phoneRaw ? normalizeSaudiPhone(phoneRaw) : ""
+        const email = (user.email || "").trim().toLowerCase()
+        const preferredLanguage = typeof user.preferences?.preferred_language === "string" ? user.preferences.preferred_language : lang
+
+        if (!streamConsumerId) {
+          try {
+            const consumer = await createStreamConsumer({
+              name: user.name,
+              phone_number: phoneE164 || undefined,
+              email: email || undefined,
+              external_id: `neon_user_${user.id}`,
+              communication_methods: phoneE164 ? ["WHATSAPP"] : ["EMAIL"],
+              preferred_language: preferredLanguage || undefined,
+              alias: user.name,
+              comment: "Created via Store Checkout",
+            })
+            streamConsumerId = consumer.id
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : "Failed"
+            const isDuplicate = msg.includes("DUPLICATE_CONSUMER") || msg.includes("Consumer already exist") || msg.includes("PHONE_ALREADY_REGISTERED")
+            if (isDuplicate) {
+              const existing = phoneE164 ? await findStreamConsumerByPhone(phoneE164) : email ? await findStreamConsumerByEmail(email) : null
+              if (existing?.id) {
+                streamConsumerId = String(existing.id)
+              } else {
+                throw e
+              }
+            } else {
+              throw e
+            }
+          }
+
+          if (streamConsumerId) {
+            await db.update(users).set({ streamConsumerId, updatedAt: new Date() }).where(eq(users.id, user.id))
+          }
+        }
+
+        const [order] = await db
+            .insert(orders)
+            .values({
+                userId,
+                status: "pending",
+                totalAmount: total.toString(),
+                shippingAddress: shippingAddress || null,
+                notes: notes || null,
+                paymentProvider: "stream",
+                gatewayStatus: "CREATED",
+            })
+            .returning()
+
         for (const item of validItems) {
             await db.insert(orderItems).values({
                 orderId: order.id,
@@ -208,36 +322,51 @@ export async function checkoutAction(shippingAddress?: string, notes?: string) {
                 price: item.price.toString(),
                 quantity: 1
             })
+        }
+        const baseUrl = getAppBaseUrl()
+        const successRedirectUrl = `${baseUrl}/${lang}/checkout/stream/success?order_id=${order.id}`
+        const failureRedirectUrl = `${baseUrl}/${lang}/checkout/stream/failure?order_id=${order.id}`
 
-            if (item.type === 'course') {
-                 // Check enrollment
-                 const existing = await db.query.enrollments.findFirst({
-                     where: and(
-                         eq(enrollments.userId, userId),
-                         eq(enrollments.courseId, item.id)
-                     )
-                 })
-
-                 if (!existing) {
-                     await db.insert(enrollments).values({
-                         userId,
-                         courseId: item.id,
-                         status: 'active'
-                     })
-                 }
-            }
+        let paymentLink: any
+        try {
+            paymentLink = await createStreamPaymentLink({
+                name: `Neon Order ${order.id}`,
+                currency: "SAR",
+                maxNumberOfPayments: 1,
+                organizationConsumerId: streamConsumerId || undefined,
+                contactInformationType: phoneE164 ? "PHONE" : "EMAIL",
+                successRedirectUrl,
+                failureRedirectUrl,
+                items: itemsForStream,
+                customMetadata: {
+                    order_id: order.id,
+                    user_id: userId,
+                    source: "neon_store",
+                    user_name: user.name,
+                    user_email: email || null,
+                    user_phone: phoneE164 || null,
+                    preferred_language: preferredLanguage || null,
+                },
+            })
+        } catch (e) {
+            await db.delete(orderItems).where(eq(orderItems.orderId, order.id))
+            await db.delete(orders).where(eq(orders.id, order.id))
+            return { error: e instanceof Error ? e.message : "Failed to create payment link" }
         }
 
-        // Clear Cart
+        await db.update(orders).set({
+            paymentLinkId: paymentLink.id,
+            paymentLinkUrl: paymentLink.url,
+            gatewayStatus: paymentLink.status || "ACTIVE",
+            branchId: process.env.STREAM_BRANCH_ID || null,
+            gatewayPayload: paymentLink as any,
+            updatedAt: new Date(),
+        }).where(eq(orders.id, order.id))
+
         await db.delete(cartItems).where(eq(cartItems.cartId, cart.id))
 
         revalidatePath("/cart")
-        revalidatePath("/student/dashboard")
-        revalidatePath("/ar/student/dashboard")
-        revalidatePath("/en/student/dashboard")
-        revalidatePath("/ar/student/my-courses")
-        revalidatePath("/en/student/my-courses")
-        return { success: true, orderId: order.id }
+        return { success: true, orderId: order.id, checkoutUrl: paymentLink.url }
     } catch (error) {
         console.error("[Action] checkoutAction error:", error)
         return { error: "Checkout failed" }

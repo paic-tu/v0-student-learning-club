@@ -1254,7 +1254,6 @@ export async function getSiteSettings() {
       features: { showStore: true, showMentors: true, enableLive: true },
     }
   } catch (e) {
-    console.error("Error fetching site settings:", e)
     return {
       id: "global",
       siteName: "Neon Educational Platform",

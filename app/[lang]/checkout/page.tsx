@@ -45,15 +45,24 @@ export default function CheckoutPage() {
 
     setLoading(true)
     try {
-      const result = await checkoutAction(shippingAddress, notes)
+      const result = await checkoutAction(shippingAddress, notes, language)
 
       if (result.success) {
+        if ((result as any).checkoutUrl) {
+          toast({
+            title: language === "ar" ? "جاري تحويلك للدفع" : "Redirecting to payment",
+            description: language === "ar" ? "سيتم فتح صفحة الدفع الآمنة" : "Opening secure checkout",
+          })
+          window.location.href = (result as any).checkoutUrl
+          return
+        }
+
         toast({
           title: language === "ar" ? "تم إنشاء الطلب" : "Order created",
           description: language === "ar" ? "تم إنشاء طلبك بنجاح" : "Your order has been created successfully",
         })
 
-        router.push(`/orders`)
+        router.push(`/${language}/orders`)
       } else {
         throw new Error(result.error)
       }

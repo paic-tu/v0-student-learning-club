@@ -31,6 +31,7 @@ const createCourseSchema = z.object({
   difficulty: z.enum(["beginner", "intermediate", "advanced"]).default("beginner"),
   duration: z.coerce.number().int().min(0).default(0),
   price: z.coerce.number().min(0).default(0),
+  streamProductId: z.string().uuid().optional().nullable(),
   isFree: z.boolean().default(true),
   isPublished: z.boolean().default(false),
   thumbnailUrl: z.string().optional().or(z.literal("")).nullable(),
@@ -82,6 +83,7 @@ export async function POST(req: NextRequest) {
         difficulty: data.difficulty,
         duration: data.duration,
         price: data.price.toString(), // Ensure decimal/numeric compatibility
+        streamProductId: data.streamProductId || null,
         isFree: data.isFree,
         isPublished: data.isPublished,
         thumbnailUrl: data.thumbnailUrl || null,

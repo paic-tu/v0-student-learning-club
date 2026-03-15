@@ -38,6 +38,14 @@ const getCourseSchema = (isAr: boolean) => z.object({
   difficulty: z.enum(["beginner", "intermediate", "advanced"]),
   duration: z.number().int().min(0),
   price: z.number().min(0),
+  streamProductId: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : null))
+    .refine((v) => v === null || z.string().uuid().safeParse(v).success, {
+      message: isAr ? "Stream product_id غير صحيح" : "Invalid Stream product_id",
+    }),
   isFree: z.boolean().default(false),
   isLive: z.boolean().default(false),
   isPublished: z.boolean().default(false),
@@ -124,6 +132,7 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
       difficulty: "beginner",
       duration: 0,
       price: 0,
+      streamProductId: null,
       isFree: true,
       isLive: false,
       isPublished: false,
@@ -676,6 +685,28 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                         </div>
                       </FormControl>
                       <p className="text-xs text-muted-foreground">{isAr ? "اتركه 0 للدورات المجانية" : "Leave at 0 for free courses"}</p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="streamProductId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{isAr ? "Stream product_id" : "Stream product_id"}</FormLabel>
+                      <FormControl>
+                        <Input
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                          dir="ltr"
+                        />
+                      </FormControl>
+                      <p className="text-xs text-muted-foreground">
+                        {isAr ? "مطلوب للدورات المدفوعة عند استخدام Stream items" : "Required for paid courses when using Stream items"}
+                      </p>
                       <FormMessage />
                     </FormItem>
                   )}

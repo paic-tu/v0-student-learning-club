@@ -1,0 +1,3559 @@
+Create Payment Link
+Create Payment Link
+POST
+https://stream-app-service.streampay.sa/api/v2/payment_links
+Create a new checkout/payment link for collecting payments.
+
+One-time products: Creates an invoice (with its associated payment) when paid.
+Recurring products: Creates a subscription (with its associated invoice and payment) when paid.
+Notes:
+
+Cannot mix one-time and recurring products in the same payment link.
+Installments are automatically disabled for recurring products (subscriptions).
+Invoices, subscriptions and payments are created only after a successful payment.
+Request
+application/json
+Bodyrequired
+name
+Name (string)
+required
+Name of the payment link
+
+description
+string
+nullable
+Optional description of the payment link
+
+currency
+CurrencyCode (string)
+ISO 4217 currency codes supported by Moyasar.
+
+Includes all currencies supported by Moyasar payment gateway.
+
+Possible values: [SAR, USD, EUR, GBP, AED, BHD, KWD, OMR, QAR]
+
+Default value: SAR
+items
+object[]
+required
+coupons
+string<uuid4>[]
+List of coupon UUIDs to apply at the payment link level for discounts
+
+max_number_of_payments
+integer
+nullable
+Maximum number of times this payment link can be used. If null, the payment link can be used unlimited times. If organization_consumer_id is set, this number becomes how many times that specific customer can pay. Typically this should be set to 1 in that scenario.
+
+valid_until
+string<date-time>
+nullable
+Datetime after which the payment link is no longer valid. If no timezone is specified, UTC is assumed.
+
+confirmation_message
+string
+nullable
+Optional message to display to the payer after successful payment
+
+payment_methods
+object
+nullable
+custom_fields
+object
+nullable
+success_redirect_url
+string<uri>
+nullable
+URL to redirect the payer to after a successful payment
+
+Possible values: non-empty and <= 2000 characters
+
+failure_redirect_url
+string<uri>
+nullable
+URL to redirect the payer to after a failed payment
+
+Possible values: non-empty and <= 2000 characters
+
+organization_consumer_id
+string<uuid>
+nullable
+ID of an existing consumer who will pay using this payment link. If set, customer information is not collected and this payment will be for that customer only. This is typically used when a specific customer is paying once. If not set, the link will collect customer information first. Use this when you expect multiple payments from different people, such as for a group trip or event.
+
+custom_metadata
+object
+nullable
+contact_information_type
+ContactInformationType (string)
+nullable
+Type of contact information required for payment collection. Defaults to PHONE if not specified.
+
+Possible values: [PHONE, EMAIL]
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+created_at
+string<date-time>
+Creation timestamp of the object.
+
+updated_at
+string<date-time>
+nullable
+Last modification timestamp of the object.
+
+id
+string<uuid4>
+Unique identifier (UUID) of the payment link
+
+name
+Name (string)
+Name of the payment link
+
+description
+string
+nullable
+Description of the payment link
+
+amount
+Amount (string)
+Total payment link amount after discounts
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+original_amount
+Original Amount (string)
+Original payment link amount before discounts
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+item_level_discounted_amount
+Item Level Discounted Amount (string)
+Total amount discounted at the item level
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+coupon_calculation_metadata
+object
+nullable
+currency
+CurrencyCode (string)
+ISO 4217 currency codes supported by Moyasar.
+
+Includes all currencies supported by Moyasar payment gateway.
+
+Possible values: [SAR, USD, EUR, GBP, AED, BHD, KWD, OMR, QAR]
+
+home_currency_amount
+string
+nullable
+Amount in home currency (SAR) at creation; for SAR links or when converted from other currencies.
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+exchange_rate_at_creation
+string
+nullable
+Exchange rate from link currency to home currency (SAR) at creation time
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+max_number_of_payments
+integer
+nullable
+Maximum number of times this payment link can be used
+
+valid_until
+string<date-time>
+nullable
+UTC datetime after which the payment link is no longer valid
+
+confirmation_message
+string
+nullable
+Message to display to the payer after successful payment
+
+recurring_interval
+SubscriptionRecurringInterval (string)
+nullable
+Billing cycle interval if this payment link creates a subscription
+
+Possible values: [WEEK, MONTH, QUARTER, YEAR]
+
+recurring_interval_count
+integer
+nullable
+Number of intervals per billing cycle for recurring payments
+
+status
+PaymentLinkStatus (string)
+Current status of the payment link
+
+Possible values: [INACTIVE, ACTIVE, COMPLETED]
+
+organization_id
+string<uuid4>
+Unique identifier (UUID) of the organization
+
+user_id
+string<uuid4>
+Unique identifier (UUID) of the user who created the payment link
+
+organization_consumer_id
+string<uuid4>
+nullable
+Unique identifier (UUID) of the organization consumer if linked to a specific consumer
+
+deactivate_message
+string
+nullable
+Message to display when the payment link is deactivated
+
+custom_fields
+object
+nullable
+success_redirect_url
+string
+nullable
+URL to redirect the payer to after a successful payment
+
+failure_redirect_url
+string
+nullable
+URL to redirect the payer to after a failed payment
+
+custom_metadata
+object
+nullable
+contact_information_type
+ContactInformationType (string)
+nullable
+Type of contact information required for payment collection
+
+Possible values: [PHONE, EMAIL]
+
+items
+object[]
+coupons
+object[]
+override_payment_methods
+object
+nullable
+url
+Url (string)
+Public URL of the payment link for sharing with payers
+
+amount_collected
+Amount Collected (string)
+Total amount collected from payments
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+amount_in_smallest_unit
+Amount In Smallest Unit (integer)
+Payment link amount in smallest currency unit (e.g. halala for SAR).
+
+original_amount_in_smallest_unit
+Original Amount In Smallest Unit (integer)
+Original payment link amount (before discounts) in smallest currency unit.
+
+amount_collected_in_smallest_unit
+Amount Collected In Smallest Unit (integer)
+Total amount collected in smallest currency unit.
+
+Authorization: x-api-key
+csharp
+curl
+dart
+go
+http
+java
+javascript
+kotlin
+c
+nodejs
+objective-c
+ocaml
+php
+powershell
+python
+r
+ruby
+rust
+shell
+swift
+FETCH
+JQUERY
+XHR
+const myHeaders = new Headers();
+myHeaders.append("Content-Type", "application/json");
+myHeaders.append("Accept", "application/json");
+myHeaders.append("x-api-key", "<x-api-key>");
+
+const raw = JSON.stringify({
+  "name": "string",
+  "description": "string",
+  "currency": "SAR",
+  "items": [
+    {
+      "product_id": "string",
+      "quantity": 1,
+      "coupons": [
+        "string"
+      ],
+      "allow_custom_quantity": false,
+      "min_quantity": 0,
+      "max_quantity": 0
+    }
+  ],
+  "coupons": [
+    "string"
+  ],
+  "max_number_of_payments": 0,
+  "valid_until": "2024-07-29T15:51:28.071Z",
+  "confirmation_message": "string",
+  "payment_methods": {
+    "visa": false,
+    "mastercard": false,
+    "amex": false,
+    "bank_transfer": false,
+    "installment": false
+  },
+  "custom_fields": {},
+  "success_redirect_url": "string",
+  "failure_redirect_url": "string",
+  "organization_consumer_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "custom_metadata": {},
+  "contact_information_type": "PHONE"
+});
+
+const requestOptions = {
+  method: "POST",
+  headers: myHeaders,
+  body: raw,
+  redirect: "follow"
+};
+
+fetch("https://stream-app-service.streampay.sa/api/v2/payment_links", requestOptions)
+  .then((response) => response.text())
+  .then((result) => console.log(result))
+  .catch((error) => console.error(error));
+
+
+Request
+Collapse all
+Base URL
+https://stream-app-service.streampay.sa
+Auth
+Security Scheme
+
+APIKey
+APIKey
+••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+Body
+ required
+{
+  "name": "string",
+  "description": "string",
+  "currency": "SAR",
+  "items": [
+    {
+      "product_id": "string",
+      "quantity": 1,
+      "coupons": [
+        "string"
+      ],
+      "allow_custom_quantity": false,
+      "min_quantity": 0,
+      "max_quantity": 0
+    }
+  ],
+  "coupons": [
+    "string"
+  ],
+  "max_number_of_payments": 0,
+  "valid_until": "2024-07-29T15:51:28.071Z",
+  "confirmation_message": "string",
+  "payment_methods": {
+    "visa": false,
+    "mastercard": false,
+    "amex": false,
+    "bank_transfer": false,
+    "installment": false
+  },
+  "custom_fields": {},
+  "success_redirect_url": "string",
+  "failure_redirect_url": "string",
+  "organization_consumer_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "custom_metadata": {},
+  "contact_information_type": "PHONE"
+}
+Send API Request
+Response
+Clear
+Click the Send API Request button above and see the response here!
+
+Get Payment Link
+GET
+https://stream-app-service.streampay.sa/api/v2/payment_links/:payment_link_id
+Retrieve detailed information about a specific payment link by its ID.
+
+Request
+Path Parameters
+payment_link_id
+uuid
+required
+Unique identifier (UUID) of the payment link
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+created_at
+string<date-time>
+Creation timestamp of the object.
+
+updated_at
+string<date-time>
+nullable
+Last modification timestamp of the object.
+
+id
+string<uuid4>
+Unique identifier (UUID) of the payment link
+
+name
+Name (string)
+Name of the payment link
+
+description
+string
+nullable
+Description of the payment link
+
+amount
+Amount (string)
+Total payment link amount after discounts
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+original_amount
+Original Amount (string)
+Original payment link amount before discounts
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+item_level_discounted_amount
+Item Level Discounted Amount (string)
+Total amount discounted at the item level
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+coupon_calculation_metadata
+object
+nullable
+currency
+CurrencyCode (string)
+ISO 4217 currency codes supported by Moyasar.
+
+Includes all currencies supported by Moyasar payment gateway.
+
+Possible values: [SAR, USD, EUR, GBP, AED, BHD, KWD, OMR, QAR]
+
+home_currency_amount
+string
+nullable
+Amount in home currency (SAR) at creation; for SAR links or when converted from other currencies.
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+exchange_rate_at_creation
+string
+nullable
+Exchange rate from link currency to home currency (SAR) at creation time
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+max_number_of_payments
+integer
+nullable
+Maximum number of times this payment link can be used
+
+valid_until
+string<date-time>
+nullable
+UTC datetime after which the payment link is no longer valid
+
+confirmation_message
+string
+nullable
+Message to display to the payer after successful payment
+
+recurring_interval
+SubscriptionRecurringInterval (string)
+nullable
+Billing cycle interval if this payment link creates a subscription
+
+Possible values: [WEEK, MONTH, QUARTER, YEAR]
+
+recurring_interval_count
+integer
+nullable
+Number of intervals per billing cycle for recurring payments
+
+status
+PaymentLinkStatus (string)
+Current status of the payment link
+
+Possible values: [INACTIVE, ACTIVE, COMPLETED]
+
+organization_id
+string<uuid4>
+Unique identifier (UUID) of the organization
+
+user_id
+string<uuid4>
+Unique identifier (UUID) of the user who created the payment link
+
+organization_consumer_id
+string<uuid4>
+nullable
+Unique identifier (UUID) of the organization consumer if linked to a specific consumer
+
+deactivate_message
+string
+nullable
+Message to display when the payment link is deactivated
+
+custom_fields
+object
+nullable
+success_redirect_url
+string
+nullable
+URL to redirect the payer to after a successful payment
+
+failure_redirect_url
+string
+nullable
+URL to redirect the payer to after a failed payment
+
+custom_metadata
+object
+nullable
+contact_information_type
+ContactInformationType (string)
+nullable
+Type of contact information required for payment collection
+
+Possible values: [PHONE, EMAIL]
+
+items
+object[]
+coupons
+object[]
+override_payment_methods
+object
+nullable
+url
+Url (string)
+Public URL of the payment link for sharing with payers
+
+amount_collected
+Amount Collected (string)
+Total amount collected from payments
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+amount_in_smallest_unit
+Amount In Smallest Unit (integer)
+Payment link amount in smallest currency unit (e.g. halala for SAR).
+
+original_amount_in_smallest_unit
+Original Amount In Smallest Unit (integer)
+Original payment link amount (before discounts) in smallest currency unit.
+
+amount_collected_in_smallest_unit
+Amount Collected In Smallest Unit (integer)
+Total amount collected in smallest currency unit.
+
+List Payment Links
+List Payment Links
+GET
+https://stream-app-service.streampay.sa/api/v2/payment_links
+List all payment links with pagination, filtering, and sorting options.
+
+Request
+Query Parameters
+statuses
+PaymentLinkStatus[]
+Possible values: [INACTIVE, ACTIVE, COMPLETED]
+
+Filter by subscription status
+
+from_date
+date-time
+datetime is created_at
+
+to_date
+date-time
+datetime is created_at
+
+from_price
+object
+limit list by min payment link total amount inclusive
+
+to_price
+object
+limit list by max payment link total amount inclusive
+
+product_ids
+uuid[]
+Product ids that need to be in the list of payment links
+
+currencies
+string
+Filter by currency codes (OR). E.g. currencies=SAR,USD
+
+page
+integer
+Possible values: > 0
+
+Page number, defaults to 1.
+
+Default value: 1
+limit
+integer
+Possible values: > 0
+
+Size of a page, defaults to 10. Maximum is 100.
+
+Default value: 10
+sort_field
+string
+Field to sort by, e.g., 'amount', 'scheduled_on'
+
+sort_direction
+string
+Sorting direction ('asc' or 'desc')
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+data
+object[]
+pagination
+object
+
+Update Payment Link Status
+PATCH
+https://stream-app-service.streampay.sa/api/v2/payment_links/:payment_link_id/status
+Update the status of a payment link.
+
+Allows activating or deactivating a payment link. When deactivated, the link will no longer accept new payments. Existing payments in progress are not affected.
+
+Request
+Path Parameters
+payment_link_id
+uuid
+required
+Unique identifier (UUID) of the payment link to update
+
+application/json
+Bodyrequired
+status
+PaymentLinkStatus (string)
+required
+New status for the payment link
+
+Possible values: [INACTIVE, ACTIVE, COMPLETED]
+
+deactivate_message
+string
+nullable
+Optional message to display when the payment link is deactivated
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+created_at
+string<date-time>
+Creation timestamp of the object.
+
+updated_at
+string<date-time>
+nullable
+Last modification timestamp of the object.
+
+id
+string<uuid4>
+Unique identifier (UUID) of the payment link
+
+name
+Name (string)
+Name of the payment link
+
+description
+string
+nullable
+Description of the payment link
+
+amount
+Amount (string)
+Total payment link amount after discounts
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+original_amount
+Original Amount (string)
+Original payment link amount before discounts
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+item_level_discounted_amount
+Item Level Discounted Amount (string)
+Total amount discounted at the item level
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+coupon_calculation_metadata
+object
+nullable
+currency
+CurrencyCode (string)
+ISO 4217 currency codes supported by Moyasar.
+
+Includes all currencies supported by Moyasar payment gateway.
+
+Possible values: [SAR, USD, EUR, GBP, AED, BHD, KWD, OMR, QAR]
+
+home_currency_amount
+string
+nullable
+Amount in home currency (SAR) at creation; for SAR links or when converted from other currencies.
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+exchange_rate_at_creation
+string
+nullable
+Exchange rate from link currency to home currency (SAR) at creation time
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+max_number_of_payments
+integer
+nullable
+Maximum number of times this payment link can be used
+
+valid_until
+string<date-time>
+nullable
+UTC datetime after which the payment link is no longer valid
+
+confirmation_message
+string
+nullable
+Message to display to the payer after successful payment
+
+recurring_interval
+SubscriptionRecurringInterval (string)
+nullable
+Billing cycle interval if this payment link creates a subscription
+
+Possible values: [WEEK, MONTH, QUARTER, YEAR]
+
+recurring_interval_count
+integer
+nullable
+Number of intervals per billing cycle for recurring payments
+
+status
+PaymentLinkStatus (string)
+Current status of the payment link
+
+Possible values: [INACTIVE, ACTIVE, COMPLETED]
+
+organization_id
+string<uuid4>
+Unique identifier (UUID) of the organization
+
+user_id
+string<uuid4>
+Unique identifier (UUID) of the user who created the payment link
+
+organization_consumer_id
+string<uuid4>
+nullable
+Unique identifier (UUID) of the organization consumer if linked to a specific consumer
+
+deactivate_message
+string
+nullable
+Message to display when the payment link is deactivated
+
+custom_fields
+object
+nullable
+success_redirect_url
+string
+nullable
+URL to redirect the payer to after a successful payment
+
+failure_redirect_url
+string
+nullable
+URL to redirect the payer to after a failed payment
+
+custom_metadata
+object
+nullable
+contact_information_type
+ContactInformationType (string)
+nullable
+Type of contact information required for payment collection
+
+Possible values: [PHONE, EMAIL]
+
+items
+object[]
+coupons
+object[]
+override_payment_methods
+object
+nullable
+url
+Url (string)
+Public URL of the payment link for sharing with payers
+
+amount_collected
+Amount Collected (string)
+Total amount collected from payments
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+amount_in_smallest_unit
+Amount In Smallest Unit (integer)
+Payment link amount in smallest currency unit (e.g. halala for SAR).
+
+original_amount_in_smallest_unit
+Original Amount In Smallest Unit (integer)
+Original payment link amount (before discounts) in smallest currency unit.
+
+amount_collected_in_smallest_unit
+Amount Collected In Smallest Unit (integer)
+Total amount collected in smallest currency unit.
+
+Create Consumer
+POST
+https://stream-app-service.streampay.sa/api/v2/consumers
+Create a new consumer with contact information and payment details.
+
+Request
+application/json
+Bodyrequired
+name
+Name (string)
+required
+Consumer name
+
+phone_number
+string<phone>
+nullable
+Phone number
+
+email
+string<email>
+nullable
+Email address
+
+external_id
+string
+nullable
+External ID
+
+iban
+IBAN (string)
+nullable
+IBAN
+
+Possible values: <= 34 characters
+
+alias
+string
+nullable
+Alias
+
+comment
+string
+nullable
+Comment
+
+preferred_language
+string
+nullable
+Preferred language
+
+communication_methods
+ConsumerCommunicationMethod (string)[]
+nullable
+Communication methods
+
+Possible values: [WHATSAPP, EMAIL, SMS]
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+id
+string<uuid4>
+Unique identifier (UUID) of the organization consumer
+
+name
+Name (string)
+Name of the consumer
+
+phone_number
+string<phone>
+nullable
+Phone number of the consumer
+
+email
+string<email>
+nullable
+Email address of the consumer
+
+external_id
+string
+nullable
+External identifier for the consumer
+
+consumer
+object
+nullable
+iban
+string
+nullable
+IBAN (International Bank Account Number) of the consumer
+
+is_deleted
+Is Deleted (boolean)
+Whether the consumer has been deleted
+
+alias
+string
+nullable
+Alias of the consumer
+
+created_at
+string<date-time>
+Date and time when the consumer was created
+
+branch
+object
+comment
+string
+nullable
+Additional comments or notes about the consumer
+
+communication_methods
+ConsumerCommunicationMethod (string)[]
+Preferred communication methods for the consumer
+
+Possible values: [WHATSAPP, EMAIL, SMS]
+
+preferred_language
+Preferred Language (string)
+Preferred language of the consumer
+
+last_invoice_activity
+object
+
+
+Get All Consumers
+GET
+https://stream-app-service.streampay.sa/api/v2/consumers
+List all consumers with pagination, filtering, and sorting options.
+
+Request
+Query Parameters
+page
+integer
+Possible values: > 0
+
+Page number, defaults to 1.
+
+Default value: 1
+limit
+integer
+Possible values: > 0
+
+Size of a page, defaults to 10. Maximum is 100.
+
+Default value: 10
+search_term
+string
+Search term to filter consumers. Default is None.
+
+sort_field
+string
+Field to sort by, e.g., 'amount', 'scheduled_on'
+
+sort_direction
+string
+Sorting direction ('asc' or 'desc')
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+data
+object[]
+pagination
+object
+
+Get Consumer
+GET
+https://stream-app-service.streampay.sa/api/v2/consumers/:consumer_id
+Retrieve detailed information about a specific consumer by their ID.
+
+Request
+Path Parameters
+consumer_id
+uuid
+required
+Unique identifier (UUID) of the consumer
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+id
+string<uuid4>
+Unique identifier (UUID) of the organization consumer
+
+name
+Name (string)
+Name of the consumer
+
+phone_number
+string<phone>
+nullable
+Phone number of the consumer
+
+email
+string<email>
+nullable
+Email address of the consumer
+
+external_id
+string
+nullable
+External identifier for the consumer
+
+consumer
+object
+nullable
+iban
+string
+nullable
+IBAN (International Bank Account Number) of the consumer
+
+is_deleted
+Is Deleted (boolean)
+Whether the consumer has been deleted
+
+alias
+string
+nullable
+Alias of the consumer
+
+created_at
+string<date-time>
+Date and time when the consumer was created
+
+branch
+object
+comment
+string
+nullable
+Additional comments or notes about the consumer
+
+communication_methods
+ConsumerCommunicationMethod (string)[]
+Preferred communication methods for the consumer
+
+Possible values: [WHATSAPP, EMAIL, SMS]
+
+preferred_language
+Preferred Language (string)
+Preferred language of the consumer
+
+Update Consumer
+PUT
+https://stream-app-service.streampay.sa/api/v2/consumers/:consumer_id
+Update consumer information such as contact details or payment methods.
+
+Request
+Path Parameters
+consumer_id
+uuid
+required
+Unique identifier (UUID) of the consumer to update
+
+application/json
+Bodyrequired
+name
+string
+nullable
+Consumer name
+
+phone_number
+string<phone>
+nullable
+Phone number
+
+email
+string<email>
+nullable
+Email address
+
+external_id
+string
+nullable
+External ID
+
+iban
+IBAN (string)
+nullable
+IBAN
+
+Possible values: <= 34 characters
+
+alias
+string
+nullable
+Alias
+
+comment
+string
+nullable
+Comment
+
+preferred_language
+string
+nullable
+Preferred language
+
+communication_methods
+ConsumerCommunicationMethod (string)[]
+nullable
+Communication methods
+
+Possible values: [WHATSAPP, EMAIL, SMS]
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+id
+string<uuid4>
+Unique identifier (UUID) of the organization consumer
+
+name
+Name (string)
+Name of the consumer
+
+phone_number
+string<phone>
+nullable
+Phone number of the consumer
+
+email
+string<email>
+nullable
+Email address of the consumer
+
+external_id
+string
+nullable
+External identifier for the consumer
+
+consumer
+object
+nullable
+iban
+string
+nullable
+IBAN (International Bank Account Number) of the consumer
+
+is_deleted
+Is Deleted (boolean)
+Whether the consumer has been deleted
+
+alias
+string
+nullable
+Alias of the consumer
+
+created_at
+string<date-time>
+Date and time when the consumer was created
+
+branch
+object
+comment
+string
+nullable
+Additional comments or notes about the consumer
+
+communication_methods
+ConsumerCommunicationMethod (string)[]
+Preferred communication methods for the consumer
+
+Possible values: [WHATSAPP, EMAIL, SMS]
+
+preferred_language
+Preferred Language (string)
+Preferred language of the consumer
+
+
+Create Coupon
+POST
+https://stream-app-service.streampay.sa/api/v2/coupons
+Create a new coupon with discount details and active/inactive status.
+
+Request
+application/json
+Bodyrequired
+name
+Name (string)
+required
+Name of the coupon.
+
+Possible values: non-empty and <= 80 characters
+
+discount_value
+object
+required
+currency
+CurrencyCode (string)
+nullable
+ISO 4217 currency codes supported by Moyasar.
+
+Includes all currencies supported by Moyasar payment gateway.
+
+Possible values: [SAR, USD, EUR, GBP, AED, BHD, KWD, OMR, QAR]
+
+is_percentage
+Is Percentage (boolean)
+True if the discount is a percentage, False if it is a fixed amount.
+
+Default value: false
+is_active
+Is Active (boolean)
+Indicates if the coupon is active upon creation.
+
+Default value: true
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+created_at
+string<date-time>
+Creation timestamp of the object.
+
+updated_at
+string<date-time>
+nullable
+Last modification timestamp of the object.
+
+id
+string<uuid4>
+Unique identifier (UUID) of the coupon
+
+name
+Name (string)
+Name of the coupon.
+
+Possible values: non-empty and <= 80 characters
+
+discount_value
+Discount Value (string)
+Discount value of the coupon (either percentage or fixed).
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+currency
+CurrencyCode (string)
+nullable
+ISO 4217 currency codes supported by Moyasar.
+
+Includes all currencies supported by Moyasar payment gateway.
+
+Possible values: [SAR, USD, EUR, GBP, AED, BHD, KWD, OMR, QAR]
+
+is_percentage
+Is Percentage (boolean)
+True if the discount is a percentage, False if it is a fixed amount.
+
+is_active
+Is Active (boolean)
+Indicates if the coupon is currently active.
+
+Delete Coupon
+DELETE
+https://stream-app-service.streampay.sa/api/v2/coupons/:coupon_id
+Delete a coupon from the organization.
+
+Request
+Path Parameters
+coupon_id
+uuid
+required
+Unique identifier (UUID) of the coupon to delete
+
+Responses
+200
+422
+Successful Response
+
+application/json
+
+Get Coupon
+GET
+https://stream-app-service.streampay.sa/api/v2/coupons/:coupon_id
+Retrieve detailed information about a specific coupon including redemption history.
+
+Request
+Path Parameters
+coupon_id
+uuid
+required
+Unique identifier (UUID) of the coupon
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+created_at
+string<date-time>
+Creation timestamp of the object.
+
+updated_at
+string<date-time>
+nullable
+Last modification timestamp of the object.
+
+id
+string<uuid4>
+Unique identifier (UUID) of the coupon
+
+name
+Name (string)
+Name of the coupon.
+
+Possible values: non-empty and <= 80 characters
+
+discount_value
+Discount Value (string)
+Discount value of the coupon (either percentage or fixed).
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+currency
+CurrencyCode (string)
+nullable
+ISO 4217 currency codes supported by Moyasar.
+
+Includes all currencies supported by Moyasar payment gateway.
+
+Possible values: [SAR, USD, EUR, GBP, AED, BHD, KWD, OMR, QAR]
+
+is_percentage
+Is Percentage (boolean)
+True if the discount is a percentage, False if it is a fixed amount.
+
+is_active
+Is Active (boolean)
+Indicates if the coupon is currently active.
+
+redemptions
+Redemptions (integer)
+Indicates how many times this coupon has been used.
+
+List Coupons
+GET
+https://stream-app-service.streampay.sa/api/v2/coupons
+List all coupons with pagination, filtering, and sorting options.
+
+Request
+Query Parameters
+page
+integer
+Possible values: > 0
+
+Page number, defaults to 1.
+
+Default value: 1
+limit
+integer
+Possible values: > 0
+
+Size of a page, defaults to 10. Maximum is 100.
+
+Default value: 10
+search_term
+string
+Search by coupon name.
+
+active
+boolean
+Filter by active or inactive coupons.
+
+is_percentage
+boolean
+Filter by percentage-based or fixed-amount coupons.
+
+sort_field
+string
+Field to sort by, e.g., 'amount', 'scheduled_on'
+
+sort_direction
+string
+Sorting direction ('asc' or 'desc')
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+data
+object[]
+pagination
+object
+
+Update Coupon
+PUT
+https://stream-app-service.streampay.sa/api/v2/coupons/:coupon_id
+Update coupon details such as discount amount or active status.
+
+Request
+Path Parameters
+coupon_id
+uuid
+required
+Unique identifier (UUID) of the coupon to update
+
+application/json
+Bodyrequired
+name
+string
+nullable
+Updated name of the coupon.
+
+Possible values: non-empty and <= 80 characters
+
+discount_value
+object
+currency
+CurrencyCode (string)
+nullable
+ISO 4217 currency codes supported by Moyasar.
+
+Includes all currencies supported by Moyasar payment gateway.
+
+Possible values: [SAR, USD, EUR, GBP, AED, BHD, KWD, OMR, QAR]
+
+is_percentage
+boolean
+nullable
+True if the discount is a percentage, False if it is a fixed amount.
+
+is_active
+boolean
+nullable
+Whether the coupon should be active or inactive.
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+created_at
+string<date-time>
+Creation timestamp of the object.
+
+updated_at
+string<date-time>
+nullable
+Last modification timestamp of the object.
+
+id
+string<uuid4>
+Unique identifier (UUID) of the coupon
+
+name
+Name (string)
+Name of the coupon.
+
+Possible values: non-empty and <= 80 characters
+
+discount_value
+Discount Value (string)
+Discount value of the coupon (either percentage or fixed).
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+currency
+CurrencyCode (string)
+nullable
+ISO 4217 currency codes supported by Moyasar.
+
+Includes all currencies supported by Moyasar payment gateway.
+
+Possible values: [SAR, USD, EUR, GBP, AED, BHD, KWD, OMR, QAR]
+
+is_percentage
+Is Percentage (boolean)
+True if the discount is a percentage, False if it is a fixed amount.
+
+is_active
+Is Active (boolean)
+Indicates if the coupon is currently active.
+
+Create Invoice
+POST
+https://stream-app-service.streampay.sa/api/v2/invoices
+Create a new invoice with items and payment details.
+
+Important: For most use cases, use the Checkout/Payment Link API (/v2/payment_links) instead. It generates a payment link that you can embed in your own web page or redirect to.
+
+Use Cases:
+
+Create an invoice and manually mark it as paid for reference
+Automated invoice generation
+Request
+application/json
+Bodyrequired
+notify_consumer
+Notify Consumer (boolean)
+Whether to send a notification to the consumer about the invoice
+
+Default value: true
+description
+string
+nullable
+Invoice description or notes
+
+Possible values: <= 500 characters
+
+items
+object[]
+required
+payment_methods
+object
+required
+coupons
+string<uuid4>[]
+nullable
+List of coupon UUIDs to apply for discounts
+
+organization_consumer_id
+string<uuid4>
+required
+UUID of the consumer who will pay this invoice
+
+scheduled_on
+string<date-time>
+required
+Payment due date. After this date, the invoice will be marked as overdue
+
+exclude_coupons_if_installments
+Exclude Coupons If Installments (boolean)
+If enabled, all coupons (invoice-level and item-level) will be excluded when the payer chooses installments. The payer will need to pay the full amount without discounts when paying by installments.
+
+Default value: false
+currency
+CurrencyCode (string)
+ISO 4217 currency codes supported by Moyasar.
+
+Includes all currencies supported by Moyasar payment gateway.
+
+Possible values: [SAR, USD, EUR, GBP, AED, BHD, KWD, OMR, QAR]
+
+Default value: SAR
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+created_at
+string<date-time>
+Creation timestamp of the object.
+
+updated_at
+string<date-time>
+nullable
+Last modification timestamp of the object.
+
+id
+string<uuid4>
+Unique identifier (UUID) of the invoice
+
+user_id
+string<uuid4>
+Unique identifier (UUID) of the user who created the invoice
+
+organization_id
+string<uuid4>
+Unique identifier (UUID) of the organization
+
+organization_consumer_id
+string<uuid4>
+Unique identifier (UUID) of the organization consumer
+
+account_id
+string<uuid4>
+Unique identifier (UUID) of the account
+
+branch_id
+string<uuid4>
+Unique identifier (UUID) of the branch
+
+org_invoice_number
+Org Invoice Number (integer)
+Organization-specific invoice number
+
+description
+string
+nullable
+Description of the invoice
+
+total_amount
+Total Amount (string)
+Total invoice amount after discounts (in invoice currency)
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+original_amount
+Original Amount (string)
+Original invoice amount before discounts (in invoice currency)
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+item_level_discounted_amount
+Item Level Discounted Amount (string)
+Total amount discounted at the item level
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+total_vat_amount
+string
+nullable
+Total VAT amount calculated from products
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+total_price_excluding_vat
+string
+nullable
+Total price excluding VAT
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+coupon_calculation_metadata
+object
+nullable
+currency
+CurrencyCode (string)
+ISO 4217 currency codes supported by Moyasar.
+
+Includes all currencies supported by Moyasar payment gateway.
+
+Possible values: [SAR, USD, EUR, GBP, AED, BHD, KWD, OMR, QAR]
+
+Default value: SAR
+home_currency_amount
+string
+nullable
+Total in home currency (SAR) for reporting. Equals total_amount for SAR invoices.
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+home_currency_amount_actual
+string
+nullable
+Actual settled amount in home currency (SAR) after payment processing.
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+exchange_rate_at_creation
+string
+nullable
+Exchange rate used at invoice creation time (for audit). 1 for SAR invoices.
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+consumer_message
+string
+nullable
+Message to display to the consumer
+
+status
+InvoiceStatusEnum (string)
+Current status of the invoice
+
+Possible values: [DRAFT, CREATED, SENT, ACCEPTED, REJECTED, COMPLETED, CANCELED, EXPIRED]
+
+payment_method
+PaymentMethodEnum (string)
+Payment method for the invoice
+
+Possible values: [OPENBANKING, PAYMENTGATEWAY]
+
+allowed_payment_flow
+PaymentFlow (string)
+Allowed payment flow for the invoice
+
+Possible values: [ALL, AUTO, MANUAL]
+
+current_payment_flow
+PaymentFlow (string)
+nullable
+Current payment flow being used
+
+Possible values: [ALL, AUTO, MANUAL]
+
+period_start
+string<date-time>
+nullable
+Start date and time of the billing period
+
+period_end
+string<date-time>
+nullable
+End date and time of the billing period
+
+recurring_interval
+RecurringInterval (string)
+nullable
+Billing cycle interval if this is a recurring invoice
+
+Possible values: [WEEK, MONTH, SEMESTER, YEAR]
+
+recurring_interval_count
+integer
+nullable
+Number of intervals per billing cycle for recurring invoices
+
+type
+InvoiceType (string)
+nullable
+Type of invoice
+
+Possible values: [ONE_OFF, ONE_OFF_FUTURE, RECURRING, INSTALLMENTS]
+
+invoice_number
+Invoice Number (integer)
+Global unique invoice number
+
+remaining_amount
+Remaining Amount (string)
+Remaining amount to be paid
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+paid_amount
+Paid Amount (string)
+Total amount already paid
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+exclude_coupons_if_installments
+Exclude Coupons If Installments (boolean)
+Whether coupons are excluded when paying by installments
+
+organization_consumer
+object
+items
+object[]
+branch
+object
+nullable
+payments
+object[]
+subscription_id
+string<uuid4>
+nullable
+Unique identifier (UUID) of the subscription if this invoice is part of a subscription
+
+subscription
+object
+nullable
+payment_methods
+object
+nullable
+recurrence_pattern
+RecurrencePattern (string)
+nullable
+Recurrence pattern for recurring invoices
+
+Possible values: [Hour, Day, Week, Fortnight, Month, Quarter, Half-Year, Year]
+
+parent_id
+string<uuid4>
+nullable
+Parent invoice ID for recurring invoices
+
+custom_field_answers
+object
+nullable
+url
+Url (string)
+URL to access the invoice
+
+total_amount_in_smallest_unit
+Total Amount In Smallest Unit (integer)
+Total invoice amount in smallest currency unit (e.g. halala for SAR).
+
+original_amount_in_smallest_unit
+Original Amount In Smallest Unit (integer)
+Original invoice amount (before discounts) in smallest currency unit.
+
+remaining_amount_in_smallest_unit
+Remaining Amount In Smallest Unit (integer)
+Remaining amount in smallest currency unit.
+
+paid_amount_in_smallest_unit
+Paid Amount In Smallest Unit (integer)
+Paid amount in smallest currency unit.
+
+Get Invoice
+GET
+https://stream-app-service.streampay.sa/api/v2/invoices/:invoice_id
+Retrieve detailed information about a specific invoice by its ID.
+
+Request
+Path Parameters
+invoice_id
+uuid
+required
+Unique identifier (UUID) of the invoice
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+created_at
+string<date-time>
+Creation timestamp of the object.
+
+updated_at
+string<date-time>
+nullable
+Last modification timestamp of the object.
+
+id
+string<uuid4>
+Unique identifier (UUID) of the invoice
+
+user_id
+string<uuid4>
+Unique identifier (UUID) of the user who created the invoice
+
+organization_id
+string<uuid4>
+Unique identifier (UUID) of the organization
+
+organization_consumer_id
+string<uuid4>
+Unique identifier (UUID) of the organization consumer
+
+account_id
+string<uuid4>
+Unique identifier (UUID) of the account
+
+branch_id
+string<uuid4>
+Unique identifier (UUID) of the branch
+
+org_invoice_number
+Org Invoice Number (integer)
+Organization-specific invoice number
+
+description
+string
+nullable
+Description of the invoice
+
+total_amount
+Total Amount (string)
+Total invoice amount after discounts (in invoice currency)
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+original_amount
+Original Amount (string)
+Original invoice amount before discounts (in invoice currency)
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+item_level_discounted_amount
+Item Level Discounted Amount (string)
+Total amount discounted at the item level
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+total_vat_amount
+string
+nullable
+Total VAT amount calculated from products
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+total_price_excluding_vat
+string
+nullable
+Total price excluding VAT
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+coupon_calculation_metadata
+object
+nullable
+currency
+CurrencyCode (string)
+ISO 4217 currency codes supported by Moyasar.
+
+Includes all currencies supported by Moyasar payment gateway.
+
+Possible values: [SAR, USD, EUR, GBP, AED, BHD, KWD, OMR, QAR]
+
+Default value: SAR
+home_currency_amount
+string
+nullable
+Total in home currency (SAR) for reporting. Equals total_amount for SAR invoices.
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+home_currency_amount_actual
+string
+nullable
+Actual settled amount in home currency (SAR) after payment processing.
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+exchange_rate_at_creation
+string
+nullable
+Exchange rate used at invoice creation time (for audit). 1 for SAR invoices.
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+consumer_message
+string
+nullable
+Message to display to the consumer
+
+status
+InvoiceStatusEnum (string)
+Current status of the invoice
+
+Possible values: [DRAFT, CREATED, SENT, ACCEPTED, REJECTED, COMPLETED, CANCELED, EXPIRED]
+
+payment_method
+PaymentMethodEnum (string)
+Payment method for the invoice
+
+Possible values: [OPENBANKING, PAYMENTGATEWAY]
+
+allowed_payment_flow
+PaymentFlow (string)
+Allowed payment flow for the invoice
+
+Possible values: [ALL, AUTO, MANUAL]
+
+current_payment_flow
+PaymentFlow (string)
+nullable
+Current payment flow being used
+
+Possible values: [ALL, AUTO, MANUAL]
+
+period_start
+string<date-time>
+nullable
+Start date and time of the billing period
+
+period_end
+string<date-time>
+nullable
+End date and time of the billing period
+
+recurring_interval
+RecurringInterval (string)
+nullable
+Billing cycle interval if this is a recurring invoice
+
+Possible values: [WEEK, MONTH, SEMESTER, YEAR]
+
+recurring_interval_count
+integer
+nullable
+Number of intervals per billing cycle for recurring invoices
+
+type
+InvoiceType (string)
+nullable
+Type of invoice
+
+Possible values: [ONE_OFF, ONE_OFF_FUTURE, RECURRING, INSTALLMENTS]
+
+invoice_number
+Invoice Number (integer)
+Global unique invoice number
+
+remaining_amount
+Remaining Amount (string)
+Remaining amount to be paid
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+paid_amount
+Paid Amount (string)
+Total amount already paid
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+exclude_coupons_if_installments
+Exclude Coupons If Installments (boolean)
+Whether coupons are excluded when paying by installments
+
+organization_consumer
+object
+items
+object[]
+branch
+object
+nullable
+payments
+object[]
+subscription_id
+string<uuid4>
+nullable
+Unique identifier (UUID) of the subscription if this invoice is part of a subscription
+
+subscription
+object
+nullable
+payment_methods
+object
+nullable
+recurrence_pattern
+RecurrencePattern (string)
+nullable
+Recurrence pattern for recurring invoices
+
+Possible values: [Hour, Day, Week, Fortnight, Month, Quarter, Half-Year, Year]
+
+parent_id
+string<uuid4>
+nullable
+Parent invoice ID for recurring invoices
+
+custom_field_answers
+object
+nullable
+url
+Url (string)
+URL to access the invoice
+
+total_amount_in_smallest_unit
+Total Amount In Smallest Unit (integer)
+Total invoice amount in smallest currency unit (e.g. halala for SAR).
+
+original_amount_in_smallest_unit
+Original Amount In Smallest Unit (integer)
+Original invoice amount (before discounts) in smallest currency unit.
+
+remaining_amount_in_smallest_unit
+Remaining Amount In Smallest Unit (integer)
+Remaining amount in smallest currency unit.
+
+paid_amount_in_smallest_unit
+Paid Amount In Smallest Unit (integer)
+Paid amount in smallest currency unit.
+
+
+List Invoices
+GET
+https://stream-app-service.streampay.sa/api/v2/invoices
+List all invoices with pagination, filtering, and sorting options.
+
+Request
+Query Parameters
+include_payments
+boolean
+payment_link_id
+uuid
+statuses
+InvoiceStatusEnum[]
+Possible values: [DRAFT, CREATED, SENT, ACCEPTED, REJECTED, COMPLETED, CANCELED, EXPIRED]
+
+payment_statuses
+PaymentStatusEnum[]
+Possible values: [PENDING, PROCESSING, FAILED_INITIATION, SUCCEEDED, FAILED, CANCELED, UNDER_REVIEW, EXPIRED, SETTLED, REFUNDED]
+
+Invoice includes payments with the following statuses
+
+search_term
+string
+from_date
+date-time
+to_date
+date-time
+due_date_from
+date-time
+Invoice's payment due date from this date onwards
+
+due_date_to
+date-time
+Invoice's payment due date to this date or older
+
+from_price
+object
+to_price
+object
+organization_consumer_id
+uuid4
+subscription_id
+uuid4
+currencies
+string
+Filter by invoice currency codes (OR). E.g. currencies=SAR,USD
+
+payments_not_settled
+boolean
+When true, only include invoices with a SUCCEEDED card/wallet payment (e.g. MADA, Visa).
+
+page
+integer
+Possible values: > 0
+
+Page number, defaults to 1.
+
+Default value: 1
+limit
+integer
+Possible values: > 0
+
+Size of a page, defaults to 10. Maximum is 100.
+
+Default value: 10
+sort_field
+string
+Field to sort by, e.g., 'amount', 'scheduled_on'
+
+sort_direction
+string
+Sorting direction ('asc' or 'desc')
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+data
+object[]
+pagination
+object
+
+Update Invoice In Place
+PATCH
+https://stream-app-service.streampay.sa/api/v2/invoices/:invoice_id/inplace
+Partially update specific invoice fields in-place.
+
+This endpoint allows updating only the fields specified in the request. Use for quick changes such as updating the description or scheduled date.
+
+Request
+Path Parameters
+invoice_id
+uuid
+required
+application/json
+Bodyrequired
+scheduled_on
+string<date-time>
+nullable
+The scheduled payment date for the invoice. After this date, the invoice will be considered overdue. Must be a future date.
+
+description
+string
+nullable
+Description of the invoice. Provides additional context or details about the invoice. Must be between 0 and 500 characters if provided.
+
+Possible values: <= 500 characters
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+created_at
+string<date-time>
+Creation timestamp of the object.
+
+updated_at
+string<date-time>
+nullable
+Last modification timestamp of the object.
+
+id
+string<uuid4>
+Unique identifier (UUID) of the invoice
+
+user_id
+string<uuid4>
+Unique identifier (UUID) of the user who created the invoice
+
+organization_id
+string<uuid4>
+Unique identifier (UUID) of the organization
+
+organization_consumer_id
+string<uuid4>
+Unique identifier (UUID) of the organization consumer
+
+account_id
+string<uuid4>
+Unique identifier (UUID) of the account
+
+branch_id
+string<uuid4>
+Unique identifier (UUID) of the branch
+
+org_invoice_number
+Org Invoice Number (integer)
+Organization-specific invoice number
+
+description
+string
+nullable
+Description of the invoice
+
+total_amount
+Total Amount (string)
+Total invoice amount after discounts (in invoice currency)
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+original_amount
+Original Amount (string)
+Original invoice amount before discounts (in invoice currency)
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+item_level_discounted_amount
+Item Level Discounted Amount (string)
+Total amount discounted at the item level
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+total_vat_amount
+string
+nullable
+Total VAT amount calculated from products
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+total_price_excluding_vat
+string
+nullable
+Total price excluding VAT
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+coupon_calculation_metadata
+object
+nullable
+currency
+CurrencyCode (string)
+ISO 4217 currency codes supported by Moyasar.
+
+Includes all currencies supported by Moyasar payment gateway.
+
+Possible values: [SAR, USD, EUR, GBP, AED, BHD, KWD, OMR, QAR]
+
+Default value: SAR
+home_currency_amount
+string
+nullable
+Total in home currency (SAR) for reporting. Equals total_amount for SAR invoices.
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+home_currency_amount_actual
+string
+nullable
+Actual settled amount in home currency (SAR) after payment processing.
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+exchange_rate_at_creation
+string
+nullable
+Exchange rate used at invoice creation time (for audit). 1 for SAR invoices.
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+consumer_message
+string
+nullable
+Message to display to the consumer
+
+status
+InvoiceStatusEnum (string)
+Current status of the invoice
+
+Possible values: [DRAFT, CREATED, SENT, ACCEPTED, REJECTED, COMPLETED, CANCELED, EXPIRED]
+
+payment_method
+PaymentMethodEnum (string)
+Payment method for the invoice
+
+Possible values: [OPENBANKING, PAYMENTGATEWAY]
+
+allowed_payment_flow
+PaymentFlow (string)
+Allowed payment flow for the invoice
+
+Possible values: [ALL, AUTO, MANUAL]
+
+current_payment_flow
+PaymentFlow (string)
+nullable
+Current payment flow being used
+
+Possible values: [ALL, AUTO, MANUAL]
+
+period_start
+string<date-time>
+nullable
+Start date and time of the billing period
+
+period_end
+string<date-time>
+nullable
+End date and time of the billing period
+
+recurring_interval
+RecurringInterval (string)
+nullable
+Billing cycle interval if this is a recurring invoice
+
+Possible values: [WEEK, MONTH, SEMESTER, YEAR]
+
+recurring_interval_count
+integer
+nullable
+Number of intervals per billing cycle for recurring invoices
+
+type
+InvoiceType (string)
+nullable
+Type of invoice
+
+Possible values: [ONE_OFF, ONE_OFF_FUTURE, RECURRING, INSTALLMENTS]
+
+invoice_number
+Invoice Number (integer)
+Global unique invoice number
+
+remaining_amount
+Remaining Amount (string)
+Remaining amount to be paid
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+paid_amount
+Paid Amount (string)
+Total amount already paid
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+exclude_coupons_if_installments
+Exclude Coupons If Installments (boolean)
+Whether coupons are excluded when paying by installments
+
+organization_consumer
+object
+items
+object[]
+branch
+object
+nullable
+payments
+object[]
+subscription_id
+string<uuid4>
+nullable
+Unique identifier (UUID) of the subscription if this invoice is part of a subscription
+
+subscription
+object
+nullable
+payment_methods
+object
+nullable
+recurrence_pattern
+RecurrencePattern (string)
+nullable
+Recurrence pattern for recurring invoices
+
+Possible values: [Hour, Day, Week, Fortnight, Month, Quarter, Half-Year, Year]
+
+parent_id
+string<uuid4>
+nullable
+Parent invoice ID for recurring invoices
+
+custom_field_answers
+object
+nullable
+url
+Url (string)
+URL to access the invoice
+
+total_amount_in_smallest_unit
+Total Amount In Smallest Unit (integer)
+Total invoice amount in smallest currency unit (e.g. halala for SAR).
+
+original_amount_in_smallest_unit
+Original Amount In Smallest Unit (integer)
+Original invoice amount (before discounts) in smallest currency unit.
+
+remaining_amount_in_smallest_unit
+Remaining Amount In Smallest Unit (integer)
+Remaining amount in smallest currency unit.
+
+paid_amount_in_smallest_unit
+Paid Amount In Smallest Unit (integer)
+Paid amount in smallest currency unit.
+
+Auto Charge On Demand
+POST
+https://stream-app-service.streampay.sa/api/v2/payments/auto-charge-on-demand/:payment_id
+Charge a payment using the consumer's latest tokenized card.
+
+This endpoint allows organizations to charge a payment using the consumer's latest active tokenized card. The following conditions must be met:
+
+The consumer must have at least one active tokenized card.
+The payment must be in an unpaid status (PENDING, PROCESSING, FAILED, etc.).
+This is a restricted API and is only available to some organizations.
+
+Request
+Path Parameters
+payment_id
+uuid
+required
+Unique identifier (UUID) of the payment to charge
+
+Responses
+200
+400
+401
+404
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+payment_id
+string<uuid>
+ID of the payment that was charged
+
+invoice_id
+string<uuid>
+ID of the invoice associated with the payment
+
+Get Payment
+GET
+https://stream-app-service.streampay.sa/api/v2/payments/:payment_id
+Retrieve detailed information about a specific payment by its ID.
+
+Request
+Path Parameters
+payment_id
+uuid
+required
+Unique identifier (UUID) of the payment
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+id
+string<uuid>
+Unique identifier (UUID) of the payment
+
+amount
+Amount (string)
+Payment amount
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+currency
+CurrencyCode (string)
+ISO 4217 currency codes supported by Moyasar.
+
+Includes all currencies supported by Moyasar payment gateway.
+
+Possible values: [SAR, USD, EUR, GBP, AED, BHD, KWD, OMR, QAR]
+
+Default value: SAR
+scheduled_on
+Scheduled On (string)
+Scheduled date and time for the payment
+
+type
+PaymentTypeEnum (string)
+Type of payment
+
+Possible values: [INITIAL, INSTALLMENT, SPLIT_PREPAID]
+
+payment_method
+PaymentMethod (string)
+nullable
+Payment method used
+
+Possible values: [MADA, MASTERCARD, VISA, APPLE_PAY, SAMSUNG_PAY, AMEX, CASH, PGW_CARD_UNSPECIFIED, BANK_TRANSFER, CARD, QURRAH]
+
+current_status
+PaymentStatusEnum (string)
+Current status of the payment
+
+Possible values: [PENDING, PROCESSING, FAILED_INITIATION, SUCCEEDED, FAILED, CANCELED, UNDER_REVIEW, EXPIRED, SETTLED, REFUNDED]
+
+payed_at
+string<date-time>
+nullable
+Date and time when the payment was completed
+
+refunded_at
+string<date-time>
+nullable
+Date and time when the payment was refunded
+
+refund_reason
+PaymentRefundReason (string)
+nullable
+Reason for the refund if applicable
+
+Possible values: [REQUESTED_BY_CUSTOMER, DUPLICATE, FRAUDULENT, OTHER]
+
+refund_note
+string
+nullable
+Note explaining the refund reason if applicable
+
+amount_in_smallest_unit
+Amount In Smallest Unit (integer)
+Payment amount in smallest currency unit (e.g. halala for SAR).
+
+List Payments
+GET
+https://stream-app-service.streampay.sa/api/v2/payments
+List all payments with pagination, filtering, and sorting options.
+
+Payments can be filtered by invoice IDs, statuses, date ranges, or search terms.
+
+Request
+Query Parameters
+invoice_id
+uuid[]
+Filter by invoice IDs. Default is None.
+
+statuses
+PaymentStatusEnum[]
+Possible values: [PENDING, PROCESSING, FAILED_INITIATION, SUCCEEDED, FAILED, CANCELED, UNDER_REVIEW, EXPIRED, SETTLED, REFUNDED]
+
+Filter by payment statuses. Default is None.
+
+search_term
+string
+Search term to filter payments. Default is None.
+
+from_date
+date-time
+Filter payments from this date. Default is None.
+
+to_date
+date-time
+Filter payments up to this date. Default is None.
+
+page
+integer
+Possible values: > 0
+
+Page number, defaults to 1.
+
+Default value: 1
+limit
+integer
+Possible values: > 0
+
+Size of a page, defaults to 10. Maximum is 100.
+
+Default value: 10
+sort_field
+string
+Field to sort by, e.g., 'amount', 'scheduled_on'
+
+sort_direction
+string
+Sorting direction ('asc' or 'desc')
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+data
+object[]
+pagination
+object
+
+Mark Payment As Paid
+POST
+https://stream-app-service.streampay.sa/api/v2/payments/:payment_id/mark-paid
+Manually mark a payment as paid.
+
+Record a payment received through manual methods (CASH, BANK_TRANSFER, CARD, or QURRAH).
+
+Requirements:
+
+Payment must be in unpaid status (PENDING, UNDER_REVIEW, or FAILED)
+Payment method must be manual (CASH, BANK_TRANSFER, CARD, or QURRAH)
+For installment invoices, invoice must be in ACCEPTED status
+Automatically completes the invoice if all payments are paid.
+
+Request
+Path Parameters
+payment_id
+uuid
+required
+Unique identifier (UUID) of the payment to mark as paid
+
+application/json
+Bodyrequired
+payment_method
+PaymentMethod (string)
+required
+Manual payment method used. Automated payment methods (e.g., MADA, VISA, MASTERCARD) are not allowed.
+
+Possible values: [MADA, MASTERCARD, VISA, APPLE_PAY, SAMSUNG_PAY, AMEX, CASH, PGW_CARD_UNSPECIFIED, BANK_TRANSFER, CARD, QURRAH]
+
+note
+string
+nullable
+Optional note or reference number for the payment (e.g., transaction ID, receipt number)
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+object
+
+Refund Payment
+POST
+https://stream-app-service.streampay.sa/api/v2/payments/:payment_id/refund
+Process a refund for a payment.
+
+Supports full refunds. The refund reason and optional note can be specified in the request.
+
+Note: If the customer paid multiple payments in a single transaction, you may receive an error (400 Bad Request) indicating multiple payments in the transaction. The error response will include details about all related payments. In this case, set allow_refund_multiple_related_payments to true to refund all payments that were part of the same transaction.
+
+Request
+Path Parameters
+payment_id
+uuid
+required
+Unique identifier (UUID) of the payment to refund
+
+application/json
+Bodyrequired
+refund_reason
+PaymentRefundReason (string)
+required
+Reason for the refund
+
+Possible values: [REQUESTED_BY_CUSTOMER, DUPLICATE, FRAUDULENT, OTHER]
+
+refund_note
+string
+nullable
+Optional note explaining the refund reason
+
+allow_refund_multiple_related_payments
+Allow Refund Multiple Related Payments (boolean)
+If true and the customer paid multiple payments at the same time (single transaction), refund all related payments instead of returning an error. Use this when attempting to refund a single payment that was part of a multi-payment transaction.
+
+Default value: false
+Responses
+200
+400
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+id
+string<uuid>
+Unique identifier (UUID) of the payment
+
+amount
+Amount (string)
+Payment amount
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+currency
+CurrencyCode (string)
+ISO 4217 currency codes supported by Moyasar.
+
+Includes all currencies supported by Moyasar payment gateway.
+
+Possible values: [SAR, USD, EUR, GBP, AED, BHD, KWD, OMR, QAR]
+
+Default value: SAR
+scheduled_on
+Scheduled On (string)
+Scheduled date and time for the payment
+
+type
+PaymentTypeEnum (string)
+Type of payment
+
+Possible values: [INITIAL, INSTALLMENT, SPLIT_PREPAID]
+
+payment_method
+PaymentMethod (string)
+nullable
+Payment method used
+
+Possible values: [MADA, MASTERCARD, VISA, APPLE_PAY, SAMSUNG_PAY, AMEX, CASH, PGW_CARD_UNSPECIFIED, BANK_TRANSFER, CARD, QURRAH]
+
+current_status
+PaymentStatusEnum (string)
+Current status of the payment
+
+Possible values: [PENDING, PROCESSING, FAILED_INITIATION, SUCCEEDED, FAILED, CANCELED, UNDER_REVIEW, EXPIRED, SETTLED, REFUNDED]
+
+payed_at
+string<date-time>
+nullable
+Date and time when the payment was completed
+
+refunded_at
+string<date-time>
+nullable
+Date and time when the payment was refunded
+
+refund_reason
+PaymentRefundReason (string)
+nullable
+Reason for the refund if applicable
+
+Possible values: [REQUESTED_BY_CUSTOMER, DUPLICATE, FRAUDULENT, OTHER]
+
+refund_note
+string
+nullable
+Note explaining the refund reason if applicable
+
+amount_in_smallest_unit
+Amount In Smallest Unit (integer)
+Payment amount in smallest currency unit (e.g. halala for SAR).
+
+Create Product
+POST
+https://stream-app-service.streampay.sa/api/v2/products
+Create a new product with pricing and description.
+
+Request
+application/json
+Bodyrequired
+name
+Name (string)
+required
+Name of the product.
+
+Possible values: non-empty and <= 160 characters
+
+description
+string
+nullable
+Description of the product.
+
+Possible values: <= 500 characters
+
+price
+object
+prices
+object[]
+nullable
+is_one_time
+Is One Time (boolean)
+Will this product be used only one time in one invoice?
+
+Default value: false
+type
+ProductType (string)
+required
+the type of product: one off or recurring
+
+Possible values: [RECURRING, ONE_OFF]
+
+recurring_interval
+RecurringInterval (string)
+nullable
+Represents the billing cycle interval if product is recurring. Required for cyclic products
+
+Possible values: [WEEK, MONTH, SEMESTER, YEAR]
+
+recurring_interval_count
+Recurring Interval Count (integer)
+The billing cycle multiple if the product is recurring
+
+Possible values: >= 1
+
+Default value: 1
+is_price_exempt_from_vat
+boolean
+nullable
+[DEPRECATED] Is the price exempt from VAT? Use VAT settings in prices[] instead.
+
+is_price_inclusive_of_vat
+boolean
+nullable
+[DEPRECATED] Is the price inclusive of VAT? Use VAT settings in prices[] instead.
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+created_at
+string<date-time>
+Creation timestamp of the object.
+
+updated_at
+string<date-time>
+nullable
+Last modification timestamp of the object.
+
+id
+string<uuid4>
+Unique identifier (UUID) of the product
+
+name
+Name (string)
+Name of the product.
+
+Possible values: non-empty and <= 160 characters
+
+description
+string
+nullable
+Description of the product.
+
+Possible values: <= 500 characters
+
+type
+ProductType (string)
+the type of product: one off or recurring
+
+Possible values: [RECURRING, ONE_OFF]
+
+recurring_interval
+RecurringInterval (string)
+nullable
+Represents the billing cycle interval if product is recurring
+
+Possible values: [WEEK, MONTH, SEMESTER, YEAR]
+
+recurring_interval_count
+Recurring Interval Count (integer)
+The billing cycle multiple if the product is recurring
+
+price
+Price (string)
+Total price including VAT (default currency).
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+currency
+Currency (string)
+Default price currency of the product.
+
+Possible values: >= 3 characters and <= 3 characters, [AED, AFN, ALL, AMD, ANG, AOA, ARS, AUD, AWG, AZN, BAM, BBD, BDT, BGN, BHD, BIF, BMD, BND, BOB, BOV, BRL, BSD, BTN, BWP, BYN, BZD, CAD, CDF, CHE, CHF, CHW, CLF, CLP, CNY, COP, COU, CRC, CUC, CUP, CVE, CZK, DJF, DKK, DOP, DZD, EGP, ERN, ETB, EUR, FJD, FKP, GBP, GEL, GHS, GIP, GMD, GNF, GTQ, GYD, HKD, HNL, HRK, HTG, HUF, IDR, ILS, INR, IQD, IRR, ISK, JMD, JOD, JPY, KES, KGS, KHR, KMF, KPW, KRW, KWD, KYD, KZT, LAK, LBP, LKR, LRD, LSL, LYD, MAD, MDL, MGA, MKD, MMK, MNT, MOP, MRU, MUR, MVR, MWK, MXN, MXV, MYR, MZN, NAD, NGN, NIO, NOK, NPR, NZD, OMR, PAB, PEN, PGK, PHP, PKR, PLN, PYG, QAR, RON, RSD, RUB, RWF, SAR, SBD, SCR, SDG, SEK, SGD, SHP, SLE, SLL, SOS, SRD, SSP, STN, SVC, SYP, SZL, THB, TJS, TMT, TND, TOP, TRY, TTD, TWD, TZS, UAH, UGX, USD, USN, UYI, UYU, UYW, UZS, VED, VES, VND, VUV, WST, XAF, XCD, XOF, XPF, XSU, XUA, YER, ZAR, ZMW, ZWL]
+
+Default value: SAR
+is_price_exempt_from_vat
+Is Price Exempt From Vat (boolean)
+Is the default price exempt from VAT?
+
+is_price_inclusive_of_vat
+Is Price Inclusive Of Vat (boolean)
+Is the default price inclusive of VAT?
+
+price_excluding_vat
+Price Excluding Vat (string)
+Default price excluding VAT.
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+vat_amount
+Vat Amount (string)
+VAT amount for default price.
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+prices
+object[]
+is_active
+Is Active (boolean)
+Can this product be used in invoices or subscriptions?
+
+is_one_time
+Is One Time (boolean)
+Shows if the product was created to be used once, and not to be added to product cataloge
+
+is_used_in_finalized_invoice
+Is Used In Finalized Invoice (boolean)
+Is the product used in a finalized invoice?
+
+Default value: false
+
+Delete Product
+DELETE
+https://stream-app-service.streampay.sa/api/v2/products/:product_id
+Delete a product from the organization.
+
+Request
+Path Parameters
+product_id
+uuid
+required
+Unique identifier (UUID) of the product to delete
+
+Responses
+200
+422
+Successful Response
+
+Get Product
+GET
+https://stream-app-service.streampay.sa/api/v2/products/:product_id
+Retrieve detailed information about a specific product by its ID.
+
+Request
+Path Parameters
+product_id
+uuid
+required
+Unique identifier (UUID) of the product
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+created_at
+string<date-time>
+Creation timestamp of the object.
+
+updated_at
+string<date-time>
+nullable
+Last modification timestamp of the object.
+
+id
+string<uuid4>
+Unique identifier (UUID) of the product
+
+name
+Name (string)
+Name of the product.
+
+Possible values: non-empty and <= 160 characters
+
+description
+string
+nullable
+Description of the product.
+
+Possible values: <= 500 characters
+
+type
+ProductType (string)
+the type of product: one off or recurring
+
+Possible values: [RECURRING, ONE_OFF]
+
+recurring_interval
+RecurringInterval (string)
+nullable
+Represents the billing cycle interval if product is recurring
+
+Possible values: [WEEK, MONTH, SEMESTER, YEAR]
+
+recurring_interval_count
+Recurring Interval Count (integer)
+The billing cycle multiple if the product is recurring
+
+price
+Price (string)
+Total price including VAT (default currency).
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+currency
+Currency (string)
+Default price currency of the product.
+
+Possible values: >= 3 characters and <= 3 characters, [AED, AFN, ALL, AMD, ANG, AOA, ARS, AUD, AWG, AZN, BAM, BBD, BDT, BGN, BHD, BIF, BMD, BND, BOB, BOV, BRL, BSD, BTN, BWP, BYN, BZD, CAD, CDF, CHE, CHF, CHW, CLF, CLP, CNY, COP, COU, CRC, CUC, CUP, CVE, CZK, DJF, DKK, DOP, DZD, EGP, ERN, ETB, EUR, FJD, FKP, GBP, GEL, GHS, GIP, GMD, GNF, GTQ, GYD, HKD, HNL, HRK, HTG, HUF, IDR, ILS, INR, IQD, IRR, ISK, JMD, JOD, JPY, KES, KGS, KHR, KMF, KPW, KRW, KWD, KYD, KZT, LAK, LBP, LKR, LRD, LSL, LYD, MAD, MDL, MGA, MKD, MMK, MNT, MOP, MRU, MUR, MVR, MWK, MXN, MXV, MYR, MZN, NAD, NGN, NIO, NOK, NPR, NZD, OMR, PAB, PEN, PGK, PHP, PKR, PLN, PYG, QAR, RON, RSD, RUB, RWF, SAR, SBD, SCR, SDG, SEK, SGD, SHP, SLE, SLL, SOS, SRD, SSP, STN, SVC, SYP, SZL, THB, TJS, TMT, TND, TOP, TRY, TTD, TWD, TZS, UAH, UGX, USD, USN, UYI, UYU, UYW, UZS, VED, VES, VND, VUV, WST, XAF, XCD, XOF, XPF, XSU, XUA, YER, ZAR, ZMW, ZWL]
+
+Default value: SAR
+is_price_exempt_from_vat
+Is Price Exempt From Vat (boolean)
+Is the default price exempt from VAT?
+
+is_price_inclusive_of_vat
+Is Price Inclusive Of Vat (boolean)
+Is the default price inclusive of VAT?
+
+price_excluding_vat
+Price Excluding Vat (string)
+Default price excluding VAT.
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+vat_amount
+Vat Amount (string)
+VAT amount for default price.
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+prices
+object[]
+is_active
+Is Active (boolean)
+Can this product be used in invoices or subscriptions?
+
+is_one_time
+Is One Time (boolean)
+Shows if the product was created to be used once, and not to be added to product cataloge
+
+is_used_in_finalized_invoice
+Is Used In Finalized Invoice (boolean)
+Is the product used in a finalized invoice?
+
+Default value: false
+
+List Products
+GET
+https://stream-app-service.streampay.sa/api/v2/products
+List all products with pagination, filtering, and sorting options.
+
+Request
+Query Parameters
+page
+integer
+Possible values: > 0
+
+Page number, defaults to 1.
+
+Default value: 1
+limit
+integer
+Possible values: > 0
+
+Size of a page, defaults to 10. Maximum is 100.
+
+Default value: 10
+search_term
+string
+Serach by product name or description.
+
+active
+boolean
+Filter by active or inactive product. Removing this flag will return all products.
+
+type
+ProductType
+Possible values: [RECURRING, ONE_OFF]
+
+Filter by product type.
+
+currency
+string
+Possible values: >= 3 characters and <= 3 characters
+
+Filter by currency availability. Only returns products with an active price in this currency.
+
+sort_field
+string
+Field to sort by, e.g., 'amount', 'scheduled_on'
+
+sort_direction
+string
+Sorting direction ('asc' or 'desc')
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+data
+object[]
+Array [
+created_at
+string<date-time>
+Creation timestamp of the object.
+
+updated_at
+string<date-time>
+nullable
+Last modification timestamp of the object.
+
+id
+string<uuid4>
+Unique identifier (UUID) of the product
+
+name
+Name (string)
+Name of the product.
+
+Possible values: non-empty and <= 160 characters
+
+description
+string
+nullable
+Description of the product.
+
+Possible values: <= 500 characters
+
+type
+ProductType (string)
+the type of product: one off or recurring
+
+Possible values: [RECURRING, ONE_OFF]
+
+recurring_interval
+RecurringInterval (string)
+nullable
+Represents the billing cycle interval if product is recurring
+
+Possible values: [WEEK, MONTH, SEMESTER, YEAR]
+
+recurring_interval_count
+Recurring Interval Count (integer)
+The billing cycle multiple if the product is recurring
+
+price
+Price (string)
+Total price including VAT (default currency).
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+currency
+Currency (string)
+Default price currency of the product.
+
+Possible values: >= 3 characters and <= 3 characters, [AED, AFN, ALL, AMD, ANG, AOA, ARS, AUD, AWG, AZN, BAM, BBD, BDT, BGN, BHD, BIF, BMD, BND, BOB, BOV, BRL, BSD, BTN, BWP, BYN, BZD, CAD, CDF, CHE, CHF, CHW, CLF, CLP, CNY, COP, COU, CRC, CUC, CUP, CVE, CZK, DJF, DKK, DOP, DZD, EGP, ERN, ETB, EUR, FJD, FKP, GBP, GEL, GHS, GIP, GMD, GNF, GTQ, GYD, HKD, HNL, HRK, HTG, HUF, IDR, ILS, INR, IQD, IRR, ISK, JMD, JOD, JPY, KES, KGS, KHR, KMF, KPW, KRW, KWD, KYD, KZT, LAK, LBP, LKR, LRD, LSL, LYD, MAD, MDL, MGA, MKD, MMK, MNT, MOP, MRU, MUR, MVR, MWK, MXN, MXV, MYR, MZN, NAD, NGN, NIO, NOK, NPR, NZD, OMR, PAB, PEN, PGK, PHP, PKR, PLN, PYG, QAR, RON, RSD, RUB, RWF, SAR, SBD, SCR, SDG, SEK, SGD, SHP, SLE, SLL, SOS, SRD, SSP, STN, SVC, SYP, SZL, THB, TJS, TMT, TND, TOP, TRY, TTD, TWD, TZS, UAH, UGX, USD, USN, UYI, UYU, UYW, UZS, VED, VES, VND, VUV, WST, XAF, XCD, XOF, XPF, XSU, XUA, YER, ZAR, ZMW, ZWL]
+
+Default value: SAR
+is_price_exempt_from_vat
+Is Price Exempt From Vat (boolean)
+Is the default price exempt from VAT?
+
+is_price_inclusive_of_vat
+Is Price Inclusive Of Vat (boolean)
+Is the default price inclusive of VAT?
+
+price_excluding_vat
+Price Excluding Vat (string)
+Default price excluding VAT.
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+vat_amount
+Vat Amount (string)
+VAT amount for default price.
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+prices
+object[]
+is_active
+Is Active (boolean)
+Can this product be used in invoices or subscriptions?
+
+is_one_time
+Is One Time (boolean)
+Shows if the product was created to be used once, and not to be added to product cataloge
+
+is_used_in_finalized_invoice
+Is Used In Finalized Invoice (boolean)
+Is the product used in a finalized invoice?
+
+Default value: false
+]
+pagination
+object
+total_count
+Total Count (integer)
+max_page
+Max Page (integer)
+current_page
+Current Page (integer)
+limit
+Limit (integer)
+has_next_page
+Has Next Page (boolean)
+has_previous_page
+Has Previous Page (boolean)
+
+Update Product
+PUT
+https://stream-app-service.streampay.sa/api/v2/products/:product_id
+Update product details such as name, price, or description.
+
+Request
+Path Parameters
+product_id
+uuid
+required
+Unique identifier (UUID) of the product to update
+
+application/json
+Bodyrequired
+name
+string
+nullable
+Name of the product.
+
+Possible values: non-empty and <= 160 characters
+
+description
+string
+nullable
+Description of the product.
+
+Possible values: non-empty and <= 500 characters
+
+price
+object
+prices
+object[]
+nullable
+is_active
+boolean
+nullable
+Whether the product is active. If true, the product won't be available for purchase anymore. Existing customers will still have access to the product details in the invoice, and subscriptions will continue normally.
+
+type
+ProductType (string)
+nullable
+the type of product: one off or recurring
+
+Possible values: [RECURRING, ONE_OFF]
+
+recurring_interval
+RecurringInterval (string)
+nullable
+Represents the billing cycle interval if product is recurring. Required for cyclic products
+
+Possible values: [WEEK, MONTH, SEMESTER, YEAR]
+
+recurring_interval_count
+integer
+nullable
+The billing cycle multiple if the product is recurring
+
+Possible values: >= 1
+
+is_price_exempt_from_vat
+boolean
+nullable
+[DEPRECATED] Is the price exempt from VAT? Use VAT settings in prices[] instead.
+
+is_price_inclusive_of_vat
+boolean
+nullable
+[DEPRECATED] Is the price inclusive of VAT? Use VAT settings in prices[] instead.
+
+Responses
+200
+422
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+created_at
+string<date-time>
+Creation timestamp of the object.
+
+updated_at
+string<date-time>
+nullable
+Last modification timestamp of the object.
+
+id
+string<uuid4>
+Unique identifier (UUID) of the product
+
+name
+Name (string)
+Name of the product.
+
+Possible values: non-empty and <= 160 characters
+
+description
+string
+nullable
+Description of the product.
+
+Possible values: <= 500 characters
+
+type
+ProductType (string)
+the type of product: one off or recurring
+
+Possible values: [RECURRING, ONE_OFF]
+
+recurring_interval
+RecurringInterval (string)
+nullable
+Represents the billing cycle interval if product is recurring
+
+Possible values: [WEEK, MONTH, SEMESTER, YEAR]
+
+recurring_interval_count
+Recurring Interval Count (integer)
+The billing cycle multiple if the product is recurring
+
+price
+Price (string)
+Total price including VAT (default currency).
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+currency
+Currency (string)
+Default price currency of the product.
+
+Possible values: >= 3 characters and <= 3 characters, [AED, AFN, ALL, AMD, ANG, AOA, ARS, AUD, AWG, AZN, BAM, BBD, BDT, BGN, BHD, BIF, BMD, BND, BOB, BOV, BRL, BSD, BTN, BWP, BYN, BZD, CAD, CDF, CHE, CHF, CHW, CLF, CLP, CNY, COP, COU, CRC, CUC, CUP, CVE, CZK, DJF, DKK, DOP, DZD, EGP, ERN, ETB, EUR, FJD, FKP, GBP, GEL, GHS, GIP, GMD, GNF, GTQ, GYD, HKD, HNL, HRK, HTG, HUF, IDR, ILS, INR, IQD, IRR, ISK, JMD, JOD, JPY, KES, KGS, KHR, KMF, KPW, KRW, KWD, KYD, KZT, LAK, LBP, LKR, LRD, LSL, LYD, MAD, MDL, MGA, MKD, MMK, MNT, MOP, MRU, MUR, MVR, MWK, MXN, MXV, MYR, MZN, NAD, NGN, NIO, NOK, NPR, NZD, OMR, PAB, PEN, PGK, PHP, PKR, PLN, PYG, QAR, RON, RSD, RUB, RWF, SAR, SBD, SCR, SDG, SEK, SGD, SHP, SLE, SLL, SOS, SRD, SSP, STN, SVC, SYP, SZL, THB, TJS, TMT, TND, TOP, TRY, TTD, TWD, TZS, UAH, UGX, USD, USN, UYI, UYU, UYW, UZS, VED, VES, VND, VUV, WST, XAF, XCD, XOF, XPF, XSU, XUA, YER, ZAR, ZMW, ZWL]
+
+Default value: SAR
+is_price_exempt_from_vat
+Is Price Exempt From Vat (boolean)
+Is the default price exempt from VAT?
+
+is_price_inclusive_of_vat
+Is Price Inclusive Of Vat (boolean)
+Is the default price inclusive of VAT?
+
+price_excluding_vat
+Price Excluding Vat (string)
+Default price excluding VAT.
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+vat_amount
+Vat Amount (string)
+VAT amount for default price.
+
+Possible values: Value must match regular expression ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+
+prices
+object[]
+is_active
+Is Active (boolean)
+Can this product be used in invoices or subscriptions?
+
+is_one_time
+Is One Time (boolean)
+Shows if the product was created to be used once, and not to be added to product cataloge
+
+is_used_in_finalized_invoice
+Is Used In Finalized Invoice (boolean)
+Is the product used in a finalized invoice?
+
+Default value: false
+
+Get User And Organization Info
+GET
+https://stream-app-service.streampay.sa/api/v2/me
+Retrieve information about the authenticated user and their organization.
+
+It requires a valid authentication token and can be used to verify API connectivity and retrieve user context. This endpoint returns details about the currently authenticated user and their associated organization.
+
+Responses
+200
+Successful Response
+
+application/json
+Schema
+Example (auto)
+Schema
+user
+object
+User information for /me endpoint.
+
+id
+string<uuid>
+email
+Email (string)
+first_name
+First Name (string)
+last_name
+Last Name (string)
+en_first_name
+string
+nullable
+en_last_name
+string
+nullable
+created_at
+string<date-time>
+organization
+object
+Organization information for /me endpoint.
+
+id
+string<uuid>
+name
+Name (string)
+name_en
+string
+nullable
+sandbox
+Sandbox (boolean)
+created_at
+string<date-time>
+currency_config
+object

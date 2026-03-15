@@ -30,22 +30,50 @@ export function StudentNav({ isCollapsed }: { isCollapsed?: boolean }) {
 
   useEffect(() => {
     const controller = new AbortController()
+    let timeout: ReturnType<typeof setTimeout> | null = null
+    let stopped = false
+
     const fetchLive = async (isInitial = false) => {
       try {
         if (isInitial) setLoadingLive(true)
         const res = await fetch("/api/live/courses", { signal: controller.signal })
         const data = await res.json()
-        setLiveCourses((data?.courses || []).slice(0, 6))
+        const next = (data?.courses || []).slice(0, 6)
+        setLiveCourses(next)
+        return Array.isArray(next) ? next.length : 0
       } catch {
+        return null
       } finally {
         if (isInitial) setLoadingLive(false)
       }
     }
-    fetchLive(true)
-    const interval = setInterval(() => fetchLive(false), 5000)
+
+    const schedule = async (isInitial = false) => {
+      if (stopped) return
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        timeout = setTimeout(() => schedule(false), 60_000)
+        return
+      }
+      const count = await fetchLive(isInitial)
+      const nextDelay = typeof count === "number" ? (count > 0 ? 10_000 : 120_000) : 60_000
+      timeout = setTimeout(() => schedule(false), nextDelay)
+    }
+
+    const onVisibility = () => {
+      if (typeof document === "undefined") return
+      if (document.visibilityState === "visible") {
+        if (timeout) clearTimeout(timeout)
+        schedule(false)
+      }
+    }
+
+    schedule(true)
+    document.addEventListener("visibilitychange", onVisibility)
     return () => {
+      stopped = true
       controller.abort()
-      clearInterval(interval)
+      if (timeout) clearTimeout(timeout)
+      document.removeEventListener("visibilitychange", onVisibility)
     }
   }, [])
 

@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Moon, Sun, Globe, ShoppingCart, Menu, BookOpen, Trophy, ShoppingBag, ShieldCheck, HelpCircle, Info, Phone, LayoutDashboard, User as UserIcon, LogIn } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -260,7 +259,7 @@ export function NavBar() {
                           {language === "ar" ? "اللغة" : "Language"}
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" dir={language === "ar" ? "rtl" : "ltr"}>
+                      <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => setLanguage("ar")}>العربية {language === "ar" && "✓"}</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setLanguage("en")}>English {language === "en" && "✓"}</DropdownMenuItem>
                       </DropdownMenuContent>
