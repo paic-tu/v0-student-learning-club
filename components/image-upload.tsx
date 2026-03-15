@@ -8,6 +8,7 @@ import { getCroppedImg } from "@/lib/canvasUtils"
 import { Loader2, Upload, X, ZoomIn, ZoomOut } from "lucide-react"
 import Image from "next/image"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { uploadFileAction } from "@/lib/actions/upload"
 
 interface ImageUploadProps {
   value: string
@@ -70,17 +71,24 @@ export function ImageUpload({
       const formData = new FormData()
       formData.append("file", croppedImageBlob, "image.jpg")
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      })
+      const primary = await uploadFileAction(formData)
+      if (primary?.success && primary.url) {
+        onChange(primary.url)
+      } else {
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        })
 
-      if (!response.ok) {
-        throw new Error("Upload failed")
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(primary?.error || errorData.error || "Upload failed")
+        }
+
+        const data = await response.json()
+        onChange(data.url)
       }
-
-      const data = await response.json()
-      onChange(data.url)
       setIsOpen(false)
       setImageSrc(null)
     } catch (error) {

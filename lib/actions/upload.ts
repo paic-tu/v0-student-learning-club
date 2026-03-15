@@ -8,12 +8,12 @@ export async function uploadFileAction(formData: FormData) {
   try {
     const session = await auth()
     if (!session?.user?.id) return { error: "Unauthorized" }
-    if (session.user.role !== "admin" && session.user.role !== "instructor") return { error: "Forbidden" }
 
     const file = formData.get("file") as File
     
     if (!file) return { error: "No file provided" }
-    if (file.size > 15 * 1024 * 1024) return { error: "File too large (max 15MB)" }
+    const maxMb = Number.parseInt(process.env.UPLOAD_DB_MAX_MB || "", 10) > 0 ? Number.parseInt(process.env.UPLOAD_DB_MAX_MB || "", 10) : 15
+    if (file.size > maxMb * 1024 * 1024) return { error: `File too large (max ${maxMb}MB)` }
 
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)

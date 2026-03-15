@@ -93,7 +93,16 @@ export function MediaUploadField({
       formData.append("file", file)
 
       try {
-        // Use API route instead of Server Action for better large file handling
+        const primary = await uploadFileAction(formData)
+        if (primary?.success && primary.url) {
+          handleValueChange(primary.url)
+          toast({
+            title: isAr ? "تم بنجاح" : "Success",
+            description: isAr ? "تم رفع الملف بنجاح" : "File uploaded successfully",
+          })
+          return
+        }
+
         const response = await fetch("/api/upload", {
           method: "POST",
           body: formData,
@@ -102,30 +111,11 @@ export function MediaUploadField({
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}))
-          if (response.status === 401 || response.status === 403) {
-            const fallback = await uploadFileAction(formData)
-            if (fallback?.success && fallback.url) {
-              handleValueChange(fallback.url)
-              toast({
-                title: isAr ? "تم بنجاح" : "Success",
-                description: isAr ? "تم رفع الملف بنجاح" : "File uploaded successfully",
-              })
-              return
-            }
-            throw new Error(fallback?.error || errorData.error || `Upload failed with status: ${response.status}`)
-          }
-          throw new Error(errorData.error || `Upload failed with status: ${response.status}`)
+          throw new Error(primary?.error || errorData.error || `Upload failed with status: ${response.status}`)
         }
 
         const result = await response.json()
-
-        if (result.url) {
-          handleValueChange(result.url)
-          toast({
-            title: isAr ? "تم بنجاح" : "Success",
-            description: isAr ? "تم رفع الملف بنجاح" : "File uploaded successfully"
-          })
-        }
+        if (result.url) handleValueChange(result.url)
       } catch (error: any) {
         console.error("Upload error:", error)
         toast({

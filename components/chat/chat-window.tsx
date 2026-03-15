@@ -19,6 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UserActionPopover } from "./user-action-popover"
 import { useLanguage } from "@/lib/language-context"
+import { uploadFileAction } from "@/lib/actions/upload"
 
 const formSchema = z.object({
   content: z.string().min(1),
@@ -52,14 +53,26 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
       const formData = new FormData()
       formData.append("file", file)
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      })
+      let url = ""
+      const primary = await uploadFileAction(formData)
+      if (primary?.success && primary.url) {
+        url = primary.url
+      } else {
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        })
 
-      if (!response.ok) throw new Error("Upload failed")
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(primary?.error || errorData.error || "Upload failed")
+        }
 
-      const { url } = await response.json()
+        const data = await response.json()
+        url = String(data?.url || "")
+        if (!url) throw new Error("Upload failed")
+      }
       const type = file.type.startsWith("image/") ? "image" : "file"
       
       await sendMessage(conversationId, file.name, type, url)
