@@ -22,7 +22,7 @@ function getOptionalBranchId() {
 
 export function getAppBaseUrl() {
   const url = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL
-  if (!url) return "http://localhost:3000"
+  if (!url) return "https://neonedu.org"
   return url.replace(/\/+$/, "")
 }
 
@@ -70,6 +70,7 @@ export async function createStreamPaymentLink(input: {
   description?: string | null
   contactInformationType?: "PHONE" | "EMAIL" | null
   items?: Array<{ productId: string; quantity: number }>
+  couponIds?: string[] | null
   successRedirectUrl: string
   failureRedirectUrl: string
   customMetadata?: Record<string, any>
@@ -84,6 +85,10 @@ export async function createStreamPaymentLink(input: {
     success_redirect_url: input.successRedirectUrl,
     failure_redirect_url: input.failureRedirectUrl,
     custom_metadata: input.customMetadata || {},
+  }
+
+  if (Array.isArray(input.couponIds) && input.couponIds.length > 0) {
+    payload.coupons = input.couponIds
   }
 
   if (Array.isArray(input.items) && input.items.length > 0) {

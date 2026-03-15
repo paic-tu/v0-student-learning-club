@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { enrollments, orderItems, orders } from "@/lib/db/schema"
+import { cartItems, carts, enrollments, orderItems, orders } from "@/lib/db/schema"
 import { and, eq, isNotNull } from "drizzle-orm"
 import { streamRequest, verifyStreamWebhookSignature } from "@/lib/payments/stream"
 
@@ -153,6 +153,14 @@ export async function POST(req: Request) {
           status: "active",
         })
       }
+    }
+
+    const cart = await db.query.carts.findFirst({
+      where: eq(carts.userId, order.userId),
+      columns: { id: true },
+    })
+    if (cart?.id) {
+      await db.delete(cartItems).where(eq(cartItems.cartId, cart.id))
     }
 
     return NextResponse.json({ success: true })

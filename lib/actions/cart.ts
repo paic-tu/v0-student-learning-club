@@ -10,9 +10,9 @@ import {
   users
 } from "@/lib/db/schema"
 import { auth } from "@/lib/auth"
-import { eq, and } from "drizzle-orm"
+import { and, desc, eq, isNotNull } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
-import { createStreamConsumer, createStreamPaymentLink, findStreamConsumerByEmail, findStreamConsumerByPhone, getAppBaseUrl, normalizeSaudiPhone } from "@/lib/payments/stream"
+import { createStreamConsumer, createStreamPaymentLink, findStreamConsumerByEmail, findStreamConsumerByPhone, getAppBaseUrl, normalizeSaudiPhone, streamRequest } from "@/lib/payments/stream"
 
 export async function getCartAction() {
   console.log("[Action] getCartAction started")
@@ -141,6 +141,8 @@ export async function removeFromCartAction(itemId: string) {
 
     await db.delete(cartItems).where(eq(cartItems.id, itemId))
     revalidatePath("/cart")
+    revalidatePath("/ar/cart")
+    revalidatePath("/en/cart")
     return { success: true }
   } catch (error) {
     console.error("[Action] removeFromCartAction error:", error)
@@ -148,7 +150,86 @@ export async function removeFromCartAction(itemId: string) {
   }
 }
 
-export async function checkoutAction(shippingAddress?: string, notes?: string, lang: string = "ar") {
+export async function updateCartItemQuantityAction(cartItemId: string, quantity: number) {
+  console.log("[Action] updateCartItemQuantityAction started", { cartItemId, quantity })
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return { error: "Unauthorized" }
+    }
+    const userId = session.user.id
+
+    const q = Number(quantity)
+    if (!Number.isFinite(q) || q < 1 || q > 99) {
+      return { error: "Invalid quantity" }
+    }
+
+    const item = await db.query.cartItems.findFirst({
+      where: eq(cartItems.id, cartItemId),
+      columns: { id: true, cartId: true },
+    })
+    if (!item) return { error: "Cart item not found" }
+
+    const cart = await db.query.carts.findFirst({
+      where: and(eq(carts.id, item.cartId), eq(carts.userId, userId)),
+      columns: { id: true },
+    })
+    if (!cart) return { error: "Unauthorized" }
+
+    await db.update(cartItems).set({ quantity: q }).where(eq(cartItems.id, item.id))
+
+    revalidatePath("/cart")
+    revalidatePath("/ar/cart")
+    revalidatePath("/en/cart")
+    return { success: true }
+  } catch (error) {
+    console.error("[Action] updateCartItemQuantityAction error:", error)
+    return { error: "Failed to update quantity" }
+  }
+}
+
+export async function validateCouponAction(code: string) {
+  console.log("[Action] validateCouponAction started")
+  try {
+    const session = await auth()
+    if (!session?.user?.id) return { error: "Unauthorized" }
+
+    const shouldUseStream = Boolean(process.env.STREAM_API_KEY_BASE64 || (process.env.STREAM_API_KEY && process.env.STREAM_API_SECRET))
+    if (!shouldUseStream) return { error: "Stream is not configured" }
+
+    const raw = String(code || "").trim()
+    if (!raw) return { error: "Invalid coupon" }
+
+    const res = await streamRequest<any>(`/coupons?search_term=${encodeURIComponent(raw)}&active=true&limit=10`, { method: "GET" })
+    const list: any[] = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : []
+    const found =
+      list.find((c) => String(c?.name || "").trim().toLowerCase() === raw.toLowerCase()) ||
+      list.find((c) => String(c?.name || "").trim().toLowerCase().includes(raw.toLowerCase())) ||
+      null
+
+    if (!found?.id) return { error: "Coupon not found" }
+    if (found?.is_active === false) return { error: "Coupon is inactive" }
+
+    const discountValue = Number.parseFloat(String(found?.discount_value))
+    const isPercentage = Boolean(found?.is_percentage)
+    if (!Number.isFinite(discountValue) || discountValue <= 0) return { error: "Invalid coupon" }
+
+    return {
+      success: true,
+      coupon: {
+        id: String(found.id),
+        name: String(found.name || raw),
+        isPercentage,
+        discountValue,
+        currency: String(found?.currency || "SAR"),
+      },
+    }
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to validate coupon" }
+  }
+}
+
+export async function checkoutAction(shippingAddress?: string, notes?: string, lang: string = "ar", couponIds?: string[] | null) {
     console.log("[Action] checkoutAction started")
     try {
         const session = await auth()
@@ -188,14 +269,15 @@ export async function checkoutAction(shippingAddress?: string, notes?: string, l
 
         for (const item of cart.items) {
             let price = 0
+            const qty = item.quantity || 1
             if (item.course) {
                 price = parseFloat(item.course.price || "0")
-                validItems.push({ type: 'course', id: item.course.id, price, title: item.course.titleEn })
+                validItems.push({ type: 'course', id: item.course.id, price, title: item.course.titleEn, quantity: qty })
             } else if (item.product) {
                 price = parseFloat(item.product.price || "0")
-                validItems.push({ type: 'product', id: item.product.id, price, title: item.product.nameEn })
+                validItems.push({ type: 'product', id: item.product.id, price, title: item.product.nameEn, quantity: qty })
             }
-            total += price
+            total += price * qty
         }
 
         const shouldUseStream = Boolean(process.env.STREAM_API_KEY_BASE64 || (process.env.STREAM_API_KEY && process.env.STREAM_API_SECRET))
@@ -217,7 +299,7 @@ export async function checkoutAction(shippingAddress?: string, notes?: string, l
                     courseId: item.type === 'course' ? item.id : null,
                     productId: item.type === 'product' ? item.id : null,
                     price: item.price.toString(),
-                    quantity: 1
+                    quantity: item.quantity || 1
                 })
 
                 if (item.type === 'course') {
@@ -301,6 +383,29 @@ export async function checkoutAction(shippingAddress?: string, notes?: string, l
           }
         }
 
+        const existingOrder = await db.query.orders.findFirst({
+          where: and(eq(orders.userId, userId), eq(orders.status, "pending"), eq(orders.paymentProvider, "stream"), isNotNull(orders.paymentLinkUrl)),
+          orderBy: [desc(orders.createdAt)],
+          with: { items: { columns: { courseId: true, productId: true, quantity: true } } },
+          columns: { id: true, paymentLinkUrl: true },
+        })
+
+        if (existingOrder?.paymentLinkUrl && Array.isArray(existingOrder.items) && existingOrder.items.length > 0) {
+          const cartKey = cart.items
+            .map((it) => `${it.courseId || it.productId}:${it.quantity || 1}`)
+            .slice()
+            .sort()
+            .join("|")
+          const orderKey = existingOrder.items
+            .map((it) => `${it.courseId || it.productId}:${it.quantity || 1}`)
+            .slice()
+            .sort()
+            .join("|")
+          if (cartKey && cartKey === orderKey) {
+            return { success: true, orderId: existingOrder.id, checkoutUrl: existingOrder.paymentLinkUrl }
+          }
+        }
+
         const [order] = await db
             .insert(orders)
             .values({
@@ -320,7 +425,7 @@ export async function checkoutAction(shippingAddress?: string, notes?: string, l
                 courseId: item.type === 'course' ? item.id : null,
                 productId: item.type === 'product' ? item.id : null,
                 price: item.price.toString(),
-                quantity: 1
+                quantity: item.quantity || 1
             })
         }
         const baseUrl = getAppBaseUrl()
@@ -338,6 +443,7 @@ export async function checkoutAction(shippingAddress?: string, notes?: string, l
                 successRedirectUrl,
                 failureRedirectUrl,
                 items: itemsForStream,
+                couponIds: Array.isArray(couponIds) && couponIds.length > 0 ? couponIds : undefined,
                 customMetadata: {
                     order_id: order.id,
                     user_id: userId,
@@ -346,6 +452,7 @@ export async function checkoutAction(shippingAddress?: string, notes?: string, l
                     user_email: email || null,
                     user_phone: phoneE164 || null,
                     preferred_language: preferredLanguage || null,
+                    coupon_ids: Array.isArray(couponIds) && couponIds.length > 0 ? couponIds : null,
                 },
             })
         } catch (e) {
@@ -363,9 +470,9 @@ export async function checkoutAction(shippingAddress?: string, notes?: string, l
             updatedAt: new Date(),
         }).where(eq(orders.id, order.id))
 
-        await db.delete(cartItems).where(eq(cartItems.cartId, cart.id))
-
         revalidatePath("/cart")
+        revalidatePath("/ar/cart")
+        revalidatePath("/en/cart")
         return { success: true, orderId: order.id, checkoutUrl: paymentLink.url }
     } catch (error) {
         console.error("[Action] checkoutAction error:", error)
