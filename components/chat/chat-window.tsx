@@ -50,27 +50,30 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
 
     setIsUploading(true)
     try {
-      const formDataAction = new FormData()
-      formDataAction.append("file", file)
-
       let url = ""
-      const primary = await uploadFileAction(formDataAction)
-      if (primary?.success && primary.url) {
-        url = primary.url
-      } else {
-        const formDataFetch = new FormData()
-        formDataFetch.append("file", file)
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          body: formDataFetch,
-          credentials: "include",
-        })
+      const formDataFetch = new FormData()
+      formDataFetch.append("file", file)
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formDataFetch,
+        credentials: "include",
+      })
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}))
-          throw new Error(primary?.error || errorData.error || "Upload failed")
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        if (response.status === 401 || response.status === 403) {
+          const formDataAction = new FormData()
+          formDataAction.append("file", file)
+          const fallback = await uploadFileAction(formDataAction)
+          if (fallback?.success && fallback.url) {
+            url = fallback.url
+          } else {
+            throw new Error(fallback?.error || errorData.error || "Upload failed")
+          }
+        } else {
+          throw new Error(errorData.error || "Upload failed")
         }
-
+      } else {
         const data = await response.json()
         url = String(data?.url || "")
         if (!url) throw new Error("Upload failed")

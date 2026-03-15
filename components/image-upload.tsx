@@ -71,23 +71,25 @@ export function ImageUpload({
       const formData = new FormData()
       formData.append("file", croppedImageBlob, "image.jpg")
 
-      const primary = await uploadFileAction(formData)
-      if (primary?.success && primary.url) {
-        onChange(primary.url)
-      } else {
-        const formDataFetch = new FormData()
-        formDataFetch.append("file", croppedImageBlob, "image.jpg")
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          body: formDataFetch,
-          credentials: "include",
-        })
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      })
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}))
-          throw new Error(primary?.error || errorData.error || "Upload failed")
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        if (response.status === 401 || response.status === 403) {
+          const fallback = await uploadFileAction(formData)
+          if (fallback?.success && fallback.url) {
+            onChange(fallback.url)
+          } else {
+            throw new Error(fallback?.error || errorData.error || "Upload failed")
+          }
+        } else {
+          throw new Error(errorData.error || "Upload failed")
         }
-
+      } else {
         const data = await response.json()
         onChange(data.url)
       }

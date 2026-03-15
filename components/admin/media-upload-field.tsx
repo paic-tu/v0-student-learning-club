@@ -89,20 +89,7 @@ export function MediaUploadField({
       }
 
       setIsUploading(true)
-      const formDataAction = new FormData()
-      formDataAction.append("file", file)
-
       try {
-        const primary = await uploadFileAction(formDataAction)
-        if (primary?.success && primary.url) {
-          handleValueChange(primary.url)
-          toast({
-            title: isAr ? "تم بنجاح" : "Success",
-            description: isAr ? "تم رفع الملف بنجاح" : "File uploaded successfully",
-          })
-          return
-        }
-
         const formDataFetch = new FormData()
         formDataFetch.append("file", file)
         const response = await fetch("/api/upload", {
@@ -113,7 +100,21 @@ export function MediaUploadField({
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}))
-          throw new Error(primary?.error || errorData.error || `Upload failed with status: ${response.status}`)
+          if (response.status === 401 || response.status === 403) {
+            const formDataAction = new FormData()
+            formDataAction.append("file", file)
+            const fallback = await uploadFileAction(formDataAction)
+            if (fallback?.success && fallback.url) {
+              handleValueChange(fallback.url)
+              toast({
+                title: isAr ? "تم بنجاح" : "Success",
+                description: isAr ? "تم رفع الملف بنجاح" : "File uploaded successfully",
+              })
+              return
+            }
+            throw new Error(fallback?.error || errorData.error || `Upload failed with status: ${response.status}`)
+          }
+          throw new Error(errorData.error || `Upload failed with status: ${response.status}`)
         }
 
         const result = await response.json()
