@@ -178,14 +178,6 @@ export function StreamProductsCreate({ lang }: { lang: string }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="SAR">SAR</SelectItem>
-                <SelectItem value="USD">USD</SelectItem>
-                <SelectItem value="EUR">EUR</SelectItem>
-                <SelectItem value="GBP">GBP</SelectItem>
-                <SelectItem value="AED">AED</SelectItem>
-                <SelectItem value="BHD">BHD</SelectItem>
-                <SelectItem value="KWD">KWD</SelectItem>
-                <SelectItem value="OMR">OMR</SelectItem>
-                <SelectItem value="QAR">QAR</SelectItem>
               </SelectContent>
             </Select>
           </div>

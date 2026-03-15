@@ -20,6 +20,7 @@ const createLessonSchema = z.object({
   freePreview: z.boolean().default(false),
   quizConfig: z.record(z.any()).optional().nullable(),
   quizId: z.string().uuid().optional().nullable(),
+  assignmentConfig: z.record(z.any()).optional().nullable(),
 })
 
 export async function GET(

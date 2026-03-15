@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth"
-import { getCourseById, getEnrollment, getCourseLessons } from "@/lib/db/queries"
+import { getCourseById, getEnrollment, getCourseLessons, checkEnrollmentStatus } from "@/lib/db/queries"
 import { notFound, redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -34,17 +34,18 @@ export default async function StudentCourseEntryPage(props: { params: Promise<{ 
   }
 
   // 3. Fetch Course & Enrollment
-  const [course, enrollment] = await Promise.all([
+  const [course, enrollment, isEnrolledOk] = await Promise.all([
     getCourseById(courseId),
-    getEnrollment(userId, courseId)
+    getEnrollment(userId, courseId),
+    checkEnrollmentStatus(userId, courseId),
   ])
 
   if (!course) {
     notFound()
   }
 
-  // 4. Handle Not Enrolled
-  if (!enrollment) {
+  // 4. Handle Not Enrolled / Not Paid
+  if (!enrollment || (!isEnrolledOk && userRole === "student")) {
     if (userRole === "instructor" || userRole === "admin") {
        // Allow access without enrollment (preview mode)
        // Mock empty enrollment data if needed, or handle null downstream

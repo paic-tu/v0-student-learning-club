@@ -445,10 +445,38 @@ export async function joinContest(contestId: string, userId: string) {
   }
 }
 
+async function hasPaidOrderForCourse(userId: string, courseId: string) {
+  const rows = await db
+    .select({ c: count() })
+    .from(orderItems)
+    .innerJoin(orders, eq(orderItems.orderId, orders.id))
+    .where(
+      and(
+        eq(orders.userId, userId),
+        inArray(orders.status, ["paid", "shipped", "delivered"]),
+        eq(orderItems.courseId, courseId),
+      ),
+    )
+  return (rows[0]?.c ?? 0) > 0
+}
+
 export async function checkEnrollmentStatus(userId: string, courseId: string) {
   try {
-    const enrollment = await getEnrollment(userId, courseId)
-    return !!enrollment
+    const [course, enrollment] = await Promise.all([
+      db.query.courses.findFirst({ where: eq(courses.id, courseId), columns: { isFree: true, price: true } }),
+      getEnrollment(userId, courseId),
+    ])
+
+    if (!course) return false
+    if (!enrollment) return false
+
+    if (course.isFree) return true
+
+    const priceNumber = Number.parseFloat(String(course.price))
+    const isPaidCourse = Number.isFinite(priceNumber) && priceNumber > 0
+    if (!isPaidCourse) return true
+
+    return await hasPaidOrderForCourse(userId, courseId)
   } catch (error) {
     return false
   }
@@ -817,9 +845,19 @@ export async function getLearningData(userId: string, courseId: string, lessonId
        modules: courseModules
      }
 
-     // If not enrolled and not instructor/admin, return error
-     if (!enrollment && role !== "instructor" && role !== "admin") {
-       return { error: "Not enrolled" }
+     if (role !== "instructor" && role !== "admin") {
+       if (!enrollment) {
+         return { error: "Not enrolled" }
+       }
+
+       const priceNumber = Number.parseFloat(String(course.price))
+       const isPaidCourse = !course.isFree && Number.isFinite(priceNumber) && priceNumber > 0
+       if (isPaidCourse) {
+         const ok = await hasPaidOrderForCourse(userId, courseId)
+         if (!ok) {
+           return { error: "Not enrolled" }
+         }
+       }
      }
      
      // Calculate navigation

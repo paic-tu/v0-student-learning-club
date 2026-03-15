@@ -57,7 +57,9 @@ export default async function AnalyticsPage({ params }: { params: Promise<{ lang
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${Number(analytics.totalRevenue || 0).toFixed(2)}</div>
+            <div className="text-2xl font-bold">
+              {Number(analytics.totalRevenue || 0).toFixed(2)} {isAr ? "ر.س" : "SAR"}
+            </div>
           </CardContent>
         </Card>
 

@@ -11,6 +11,7 @@ import { createNote, deleteNote } from "@/lib/db/queries"
 import { formatDistanceToNow } from "date-fns"
 import { arSA, enUS } from "date-fns/locale"
 import ReactMarkdown from "react-markdown"
+import { LessonAssignmentStudent } from "@/components/learn/lesson-assignment-student"
 
 const formatTime = (seconds: number) => {
   const mins = Math.floor(seconds / 60)
@@ -321,6 +322,15 @@ export function LessonContent({ lesson, lang, userId, initialNotes = [], quiz, q
   }
 
   if (lesson.type === "article" || lesson.type === "resource" || lesson.type === "assignment") {
+    const assignmentConfig = (lesson.type === "assignment" ? (getProp(lesson, "assignmentConfig", "assignment_config") as any) : null) || {}
+    const maxBytes =
+      lesson.type === "assignment" && Number.isFinite(Number(assignmentConfig?.maxFileSizeBytes))
+        ? Number(assignmentConfig.maxFileSizeBytes)
+        : 524288000
+    const allowedMimeTypes =
+      lesson.type === "assignment" && Array.isArray(assignmentConfig?.allowedMimeTypes)
+        ? assignmentConfig.allowedMimeTypes.map((v: any) => String(v))
+        : []
     return (
       <Card className="p-8 text-start" dir={isAr ? "rtl" : "ltr"}>
         <div className="flex items-center gap-2 mb-6">
@@ -343,6 +353,11 @@ export function LessonContent({ lesson, lang, userId, initialNotes = [], quiz, q
             <div className="prose dark:prose-invert max-w-none">
               <ReactMarkdown>{isAr ? lesson.contentAr : lesson.contentEn || ""}</ReactMarkdown>
             </div>
+            {lesson.type === "assignment" && (
+              <div className="mt-6 border-t pt-6">
+                <LessonAssignmentStudent lang={lang} lessonId={lesson.id} maxBytes={maxBytes} allowedMimeTypes={allowedMimeTypes} />
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="notes">

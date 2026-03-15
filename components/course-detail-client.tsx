@@ -496,7 +496,9 @@ export function CourseDetailClient({ course, initialBookmarked, initialEnrolled 
                          <span className="text-3xl font-bold text-green-600">{language === "ar" ? "مجاني" : "Free"}</span>
                       ) : (
                          <div className="space-y-1">
-                            <span className="text-3xl font-bold">${price}</span>
+                            <span className="text-3xl font-bold">
+                              {price} {language === "ar" ? "ر.س" : "SAR"}
+                            </span>
                          </div>
                       )}
                    </div>

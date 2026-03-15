@@ -135,7 +135,7 @@ export function StoreItemForm({ lang, categories, product }: StoreItemFormProps)
               name="price"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Price (USD)</FormLabel>
+                  <FormLabel>Price (SAR)</FormLabel>
                   <FormControl>
                     <Input
                       {...field}

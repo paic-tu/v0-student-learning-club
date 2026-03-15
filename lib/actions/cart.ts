@@ -283,6 +283,11 @@ export async function checkoutAction(shippingAddress?: string, notes?: string, l
         const shouldUseStream = Boolean(process.env.STREAM_API_KEY_BASE64 || (process.env.STREAM_API_KEY && process.env.STREAM_API_SECRET))
 
         if (!shouldUseStream) {
+            const allowManual = process.env.ALLOW_MANUAL_CHECKOUT === "true"
+            if (!allowManual) {
+              return { error: "Payment is not configured (Stream keys missing)" }
+            }
+
             const [order] = await db.insert(orders).values({
                 userId,
                 status: "paid",

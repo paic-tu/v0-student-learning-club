@@ -29,6 +29,9 @@ const getLessonSchema = (isAr: boolean) => z.object({
   freePreview: z.boolean().default(false),
   moduleId: z.string().uuid().optional().nullable(),
   quizId: z.string().optional().nullable(),
+  assignmentAllowedMimeTypes: z.string().optional().nullable(),
+  assignmentMaxFileSizeMb: z.coerce.number().int().min(1).max(500).optional().nullable(),
+  assignmentDueAt: z.string().optional().nullable(),
 })
 
 type LessonFormData = z.infer<ReturnType<typeof getLessonSchema>>
@@ -50,6 +53,7 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
 
   const isAr = lang === "ar"
   const lessonSchema = getLessonSchema(isAr)
+  const assignmentCfg = (initialData?.assignmentConfig || initialData?.assignment_config || {}) as any
 
   const form = useForm<LessonFormData>({
     resolver: zodResolver(lessonSchema),
@@ -67,6 +71,9 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
       freePreview: initialData?.isPreview || initialData?.is_preview || false,
       moduleId: initialData?.moduleId || initialData?.module_id || moduleId || null,
       quizId: initialData?.quizConfig?.quizId || initialData?.quiz_config?.quizId || null,
+      assignmentAllowedMimeTypes: Array.isArray(assignmentCfg?.allowedMimeTypes) ? assignmentCfg.allowedMimeTypes.join(", ") : "",
+      assignmentMaxFileSizeMb: assignmentCfg?.maxFileSizeBytes ? Math.round(Number(assignmentCfg.maxFileSizeBytes) / 1024 / 1024) : 500,
+      assignmentDueAt: assignmentCfg?.dueAt ? String(assignmentCfg.dueAt).slice(0, 16) : "",
     },
   })
 
@@ -80,9 +87,24 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
       
       const method = lessonId ? "PATCH" : "POST"
 
-      const submitData = {
+      const submitData: any = {
         ...data,
-        quizConfig: data.contentType === "quiz" && data.quizId ? { quizId: data.quizId } : null
+        quizConfig: data.contentType === "quiz" && data.quizId ? { quizId: data.quizId } : null,
+      }
+
+      if (data.contentType === "assignment") {
+        const allowedMimeTypes = String(data.assignmentAllowedMimeTypes || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+        const maxMb = Number(data.assignmentMaxFileSizeMb || 500)
+        submitData.assignmentConfig = {
+          allowedMimeTypes,
+          maxFileSizeBytes: Math.min(500, Math.max(1, Math.round(maxMb))) * 1024 * 1024,
+          dueAt: data.assignmentDueAt ? new Date(data.assignmentDueAt).toISOString() : null,
+        }
+      } else {
+        submitData.assignmentConfig = null
       }
 
       const response = await fetch(url, {
@@ -384,15 +406,44 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
               />
             )}
 
-            {(contentType === "article" || contentType === "video") && (
+            {(contentType === "article" || contentType === "video" || contentType === "assignment") && (
               <FormField
                 control={form.control}
                 name="contentMarkdown"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{isAr ? (contentType === "article" ? "محتوى المقال (Markdown)" : "وصف الفيديو / الملاحظات") : (contentType === "article" ? "Article Content (Markdown)" : "Video Description / Notes")}</FormLabel>
+                    <FormLabel>
+                      {isAr
+                        ? contentType === "article"
+                          ? "محتوى المقال (Markdown)"
+                          : contentType === "assignment"
+                            ? "تعليمات الواجب (Markdown)"
+                            : "وصف الفيديو / الملاحظات"
+                        : contentType === "article"
+                          ? "Article Content (Markdown)"
+                          : contentType === "assignment"
+                            ? "Assignment Instructions (Markdown)"
+                            : "Video Description / Notes"}
+                    </FormLabel>
                     <FormControl>
-                      <Textarea {...field} value={field.value || ""} rows={10} placeholder={isAr ? (contentType === "article" ? "# اكتب مقالك هنا..." : "أضف ملاحظات أو وصف للفيديو...") : (contentType === "article" ? "# Write your article here..." : "Add notes or description...")} />
+                      <Textarea
+                        {...field}
+                        value={field.value || ""}
+                        rows={10}
+                        placeholder={
+                          isAr
+                            ? contentType === "article"
+                              ? "# اكتب مقالك هنا..."
+                              : contentType === "assignment"
+                                ? "اكتب تعليمات الواجب هنا..."
+                                : "أضف ملاحظات أو وصف للفيديو..."
+                            : contentType === "article"
+                              ? "# Write your article here..."
+                              : contentType === "assignment"
+                                ? "Write assignment instructions here..."
+                                : "Add notes or description..."
+                        }
+                      />
                     </FormControl>
                     <FormDescription>{isAr ? "استخدم Markdown للتنسيق" : "Use Markdown for formatting"}</FormDescription>
                     <FormMessage />
@@ -435,10 +486,57 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
             )}
             
             {contentType === "assignment" && (
-               <div className="p-4 bg-muted rounded-md text-center">
-                <p className="text-muted-foreground mb-2">
-                  {isAr ? "إعدادات الواجب ستكون متاحة قريباً." : "Assignment settings will be available soon."}
-                </p>
+              <div className="space-y-4 border rounded-md p-4">
+                <h3 className="text-lg font-medium">{isAr ? "إعدادات الواجب" : "Assignment Settings"}</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="assignmentMaxFileSizeMb"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{isAr ? "حد حجم الملف (MB)" : "Max file size (MB)"}</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={1} max={500} {...field} value={field.value ?? 500} />
+                        </FormControl>
+                        <FormDescription>{isAr ? "الحد الأقصى 500MB لكل طالب" : "Up to 500MB per student"}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="assignmentDueAt"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{isAr ? "موعد التسليم (اختياري)" : "Due date (optional)"}</FormLabel>
+                        <FormControl>
+                          <Input type="datetime-local" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="assignmentAllowedMimeTypes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{isAr ? "أنواع الملفات المسموحة (اختياري)" : "Allowed file types (optional)"}</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value || ""}
+                          placeholder={isAr ? "مثال: application/pdf, image/png" : "e.g. application/pdf, image/png"}
+                        />
+                      </FormControl>
+                      <FormDescription>{isAr ? "اتركها فارغة للسماح بأي نوع" : "Leave empty to allow any type"}</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             )}
           </div>

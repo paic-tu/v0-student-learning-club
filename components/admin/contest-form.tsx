@@ -166,7 +166,7 @@ export function ContestForm({ initialData }: ContestFormProps) {
                 <FormItem className="md:col-span-2">
                   <FormLabel>Prize Pool</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="e.g., $5,000 in prizes" />
+                    <Input {...field} placeholder="e.g., SAR 5,000 in prizes" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

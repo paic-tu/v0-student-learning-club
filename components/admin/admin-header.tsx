@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import type { User } from "@/lib/types"
-import { Bell, Search, LogOut, Menu, Moon, Sun, Globe } from "lucide-react"
+import { Bell, Search, LogOut, Menu, Moon, Sun, Globe, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { useLanguage } from "@/lib/language-context"
 import { useTheme } from "@/lib/theme-context"
+import { hasPermission } from "@/lib/rbac/permissions"
 
 import {
   Sheet,
@@ -75,6 +76,16 @@ export function AdminHeader({ user, mobileNav }: AdminHeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
+        {hasPermission(user.role as any, "lessons:write" as any) && (
+          <Button
+            variant="outline"
+            className="hidden md:inline-flex"
+            onClick={() => router.push(`/${language}/admin/assignments/new`)}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            {language === "ar" ? "إضافة واجب" : "Add assignment"}
+          </Button>
+        )}
         <Button variant="ghost" size="icon" onClick={toggleTheme}>
           {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
         </Button>

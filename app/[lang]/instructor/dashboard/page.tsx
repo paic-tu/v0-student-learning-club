@@ -35,9 +35,14 @@ export default async function InstructorDashboardPage({ params }: { params: Prom
     <div className="container py-8 space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">{isAr ? "لوحة تحكم المدرب" : "Instructor Dashboard"}</h1>
-        <Button asChild>
-          <Link href={`/${lang}/instructor/courses/new`}>{isAr ? "إنشاء دورة جديدة" : "Create New Course"}</Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link href={`/${lang}/instructor/assignments/new`}>{isAr ? "إضافة واجب" : "Add assignment"}</Link>
+          </Button>
+          <Button asChild>
+            <Link href={`/${lang}/instructor/courses/new`}>{isAr ? "إنشاء دورة جديدة" : "Create New Course"}</Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -67,7 +72,9 @@ export default async function InstructorDashboardPage({ params }: { params: Prom
             <BarChart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${Number(analytics.totalRevenue || 0).toFixed(2)}</div>
+            <div className="text-2xl font-bold">
+              {Number(analytics.totalRevenue || 0).toFixed(2)} {isAr ? "ر.س" : "SAR"}
+            </div>
             <p className="text-xs text-muted-foreground">{isAr ? "إجمالي الأرباح" : "Total earnings"}</p>
           </CardContent>
         </Card>
@@ -92,7 +99,9 @@ export default async function InstructorDashboardPage({ params }: { params: Prom
                       </p>
                     </div>
                     <div className="ml-auto font-medium flex flex-col items-end gap-1">
-                      <span>${Number(course.revenue).toFixed(2)}</span>
+                      <span>
+                        {Number(course.revenue).toFixed(2)} {isAr ? "ر.س" : "SAR"}
+                      </span>
                       <span className="text-xs text-muted-foreground">
                         {course.enrollment_count} {isAr ? "طالب" : "students"}
                       </span>

@@ -20,6 +20,7 @@ const createLessonSchema = z.object({
   thumbnailUrl: z.string().optional().or(z.literal("")).nullable(),
   contentMarkdown: z.string().optional().nullable(),
   freePreview: z.boolean().default(false),
+  assignmentConfig: z.record(z.any()).optional().nullable(),
 })
 
 export async function GET(req: NextRequest) {
@@ -119,7 +120,9 @@ export async function POST(req: NextRequest) {
         videoUrl: data.videoUrl,
         thumbnailUrl: data.thumbnailUrl,
         contentEn: data.contentMarkdown, // mapped to contentEn
+        contentAr: data.contentMarkdown, // mapped to contentAr
         isPreview: data.freePreview, // mapped to isPreview
+        assignmentConfig: data.assignmentConfig ?? null,
       })
       .returning()
 

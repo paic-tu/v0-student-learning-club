@@ -14,7 +14,8 @@ import {
   User,
   Settings,
   MessageCircle,
-  Video
+  Video,
+  FileText
 } from "lucide-react"
 import { useEffect, useState } from "react"
 
@@ -87,6 +88,11 @@ export function StudentNav({ isCollapsed }: { isCollapsed?: boolean }) {
       href: "/student/my-courses",
       label: t("myCourses", locale),
       icon: BookOpen,
+    },
+    {
+      href: "/student/assignments",
+      label: isAr ? "واجباتي" : "My Assignments",
+      icon: FileText,
     },
     {
       href: "/student/browse",

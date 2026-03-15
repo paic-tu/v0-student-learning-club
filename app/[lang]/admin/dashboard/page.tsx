@@ -3,6 +3,8 @@ import { getPlatformStats } from "@/lib/db/queries"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, BookOpen, Trophy, Award, ShoppingCart, Activity } from "lucide-react"
 import { translations, type Language } from "@/lib/i18n"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 async function DashboardStats({ lang }: { lang: Language }) {
   const stats = await getPlatformStats()
@@ -79,12 +81,25 @@ export default async function AdminDashboardPage(props: { params: Promise<{ lang
   const params = await props.params
   const { lang } = params
 
+  const isAr = lang === "ar"
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{translations.dashboard[lang]}</h1>
         <p className="text-muted-foreground">Overview of your learning platform statistics.</p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{isAr ? "إجراءات سريعة" : "Quick actions"}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Button asChild>
+            <Link href={`/${lang}/admin/assignments/new`}>{isAr ? "إضافة واجب" : "Add assignment"}</Link>
+          </Button>
+        </CardContent>
+      </Card>
 
       <Suspense fallback={<div>Loading stats...</div>}>
         {/* @ts-expect-error Server Component */}

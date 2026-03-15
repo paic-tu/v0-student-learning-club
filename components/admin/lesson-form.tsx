@@ -32,6 +32,9 @@ const lessonSchema = z.object({
   contentMarkdown: z.string().optional().nullable(),
   freePreview: z.boolean().default(false),
   prerequisites: z.array(z.string()).default([]),
+  assignmentAllowedMimeTypes: z.string().optional().nullable(),
+  assignmentMaxFileSizeMb: z.coerce.number().int().min(1).max(500).optional().nullable(),
+  assignmentDueAt: z.string().optional().nullable(),
 })
 
 type LessonFormData = z.infer<typeof lessonSchema>
@@ -45,6 +48,7 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [modules, setModules] = useState<any[]>([])
+  const assignmentCfg = (initialData?.assignmentConfig || initialData?.assignment_config || {}) as any
 
   const form = useForm<LessonFormData>({
     resolver: zodResolver(lessonSchema),
@@ -62,6 +66,9 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
       thumbnailUrl: initialData?.thumbnailUrl || initialData?.thumbnail_url || "",
       contentMarkdown: initialData?.contentEn || initialData?.content_en || "",
       freePreview: initialData?.freePreview || initialData?.free_preview || false,
+      assignmentAllowedMimeTypes: Array.isArray(assignmentCfg?.allowedMimeTypes) ? assignmentCfg.allowedMimeTypes.join(", ") : "",
+      assignmentMaxFileSizeMb: assignmentCfg?.maxFileSizeBytes ? Math.round(Number(assignmentCfg.maxFileSizeBytes) / 1024 / 1024) : 500,
+      assignmentDueAt: assignmentCfg?.dueAt ? String(assignmentCfg.dueAt).slice(0, 16) : "",
     },
   })
 
@@ -98,12 +105,27 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
   async function onSubmit(data: LessonFormData) {
     setIsLoading(true)
     try {
-      const cleanData = {
+      const cleanData: any = {
         ...data,
         moduleId: data.moduleId || null,
         durationMinutes: data.durationMinutes || null,
         videoUrl: data.videoUrl || null,
         contentMarkdown: data.contentMarkdown || null,
+      }
+
+      if (data.contentType === "assignment") {
+        const allowedMimeTypes = String(data.assignmentAllowedMimeTypes || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+        const maxMb = Number(data.assignmentMaxFileSizeMb || 500)
+        cleanData.assignmentConfig = {
+          allowedMimeTypes,
+          maxFileSizeBytes: Math.min(500, Math.max(1, Math.round(maxMb))) * 1024 * 1024,
+          dueAt: data.assignmentDueAt ? new Date(data.assignmentDueAt).toISOString() : null,
+        }
+      } else {
+        cleanData.assignmentConfig = null
       }
 
       const isEdit = !!initialData?.id
@@ -421,15 +443,71 @@ export function LessonForm({ courses, initialData }: LessonFormProps) {
             name="contentMarkdown"
             render={({ field }: { field: any }) => (
               <FormItem>
-                <FormLabel>Content (Markdown)</FormLabel>
+                <FormLabel>{form.getValues("contentType") === "assignment" ? "Assignment Instructions (Markdown)" : "Content (Markdown)"}</FormLabel>
                 <FormControl>
-                  <Textarea {...field} value={field.value || ""} rows={10} placeholder="# Lesson Content..." />
+                  <Textarea
+                    {...field}
+                    value={field.value || ""}
+                    rows={10}
+                    placeholder={form.getValues("contentType") === "assignment" ? "Write assignment instructions here..." : "# Lesson Content..."}
+                  />
                 </FormControl>
                 <FormDescription>Use Markdown for formatting</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
+
+          {form.watch("contentType") === "assignment" && (
+            <div className="space-y-4 border rounded-md p-4">
+              <h3 className="text-lg font-medium">Assignment Settings</h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="assignmentMaxFileSizeMb"
+                  render={({ field }: { field: any }) => (
+                    <FormItem>
+                      <FormLabel>Max file size (MB)</FormLabel>
+                      <FormControl>
+                        <Input type="number" min={1} max={500} {...field} value={field.value ?? 500} />
+                      </FormControl>
+                      <FormDescription>Up to 500MB per student</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="assignmentDueAt"
+                  render={({ field }: { field: any }) => (
+                    <FormItem>
+                      <FormLabel>Due date (optional)</FormLabel>
+                      <FormControl>
+                        <Input type="datetime-local" {...field} value={field.value || ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="assignmentAllowedMimeTypes"
+                render={({ field }: { field: any }) => (
+                  <FormItem>
+                    <FormLabel>Allowed file types (optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ""} placeholder="e.g. application/pdf, image/png" />
+                    </FormControl>
+                    <FormDescription>Leave empty to allow any type</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          )}
         </FormLayout>
 
         <div className="flex gap-4">

@@ -20,6 +20,7 @@ const updateLessonSchema = z.object({
   thumbnailUrl: z.string().optional().or(z.literal("")).nullable(),
   contentMarkdown: z.string().optional().nullable(),
   freePreview: z.boolean().optional(),
+  assignmentConfig: z.record(z.any()).optional().nullable(),
 })
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -83,8 +84,12 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     if (data.durationMinutes !== undefined) updateData.durationMinutes = data.durationMinutes
     if (data.videoUrl !== undefined) updateData.videoUrl = data.videoUrl
     if (data.thumbnailUrl !== undefined) updateData.thumbnailUrl = data.thumbnailUrl
-    if (data.contentMarkdown !== undefined) updateData.contentEn = data.contentMarkdown
+    if (data.contentMarkdown !== undefined) {
+      updateData.contentEn = data.contentMarkdown
+      updateData.contentAr = data.contentMarkdown
+    }
     if (data.freePreview !== undefined) updateData.isPreview = data.freePreview
+    if (data.assignmentConfig !== undefined) updateData.assignmentConfig = data.assignmentConfig
 
     const result = await db
       .update(lessons)

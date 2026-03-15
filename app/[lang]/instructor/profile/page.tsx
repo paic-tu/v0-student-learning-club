@@ -20,8 +20,12 @@ export default async function InstructorProfilePage({ params }: { params: Promis
   const user = await getCurrentUser()
   const isAr = lang === "ar"
 
-  if (!user || user.role !== "instructor") {
-    redirect(`/${lang}/auth/login`)
+  if (!user) {
+    redirect(`/${lang}/auth/login?callbackUrl=/${lang}/instructor/profile`)
+  }
+
+  if (user.role !== "instructor") {
+    redirect(`/${lang}/dashboard`)
   }
 
   const profile = await getUserProfile(user.id)

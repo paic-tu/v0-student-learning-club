@@ -670,7 +670,7 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                   name="price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{isAr ? "السعر (دولار)" : "Price (USD)"}</FormLabel>
+                      <FormLabel>{isAr ? "السعر (ر.س)" : "Price (SAR)"}</FormLabel>
                       <FormControl>
                         <div className="flex items-center gap-2">
                           <DollarSign className="h-4 w-4 text-muted-foreground" />

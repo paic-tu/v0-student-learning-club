@@ -885,3 +885,84 @@ export const files = pgTable("files", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 })
 
+export const assignments = pgTable("assignments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  courseId: uuid("course_id")
+    .notNull()
+    .references(() => courses.id, { onDelete: "cascade" }),
+  titleEn: varchar("title_en", { length: 255 }).notNull(),
+  titleAr: varchar("title_ar", { length: 255 }).notNull(),
+  descriptionEn: text("description_en"),
+  descriptionAr: text("description_ar"),
+  dueAt: timestamp("due_at"),
+  maxFileSizeBytes: integer("max_file_size_bytes").notNull().default(524288000),
+  isPublished: boolean("is_published").notNull().default(true),
+  createdById: uuid("created_by_id").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+export const assignmentSubmissions = pgTable(
+  "assignment_submissions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    assignmentId: uuid("assignment_id")
+      .notNull()
+      .references(() => assignments.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    fileUrl: text("file_url").notNull(),
+    fileName: varchar("file_name", { length: 255 }).notNull(),
+    fileSize: integer("file_size").notNull(),
+    mimeType: varchar("mime_type", { length: 100 }).notNull(),
+    status: varchar("status", { length: 50 }).notNull().default("submitted"),
+    submittedAt: timestamp("submitted_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => ({
+    onePerUser: uniqueIndex("assignment_submissions_assignment_user_unique").on(t.assignmentId, t.userId),
+  }),
+)
+
+export const assignmentsRelations = relations(assignments, ({ one, many }) => ({
+  course: one(courses, { fields: [assignments.courseId], references: [courses.id] }),
+  createdBy: one(users, { fields: [assignments.createdById], references: [users.id] }),
+  submissions: many(assignmentSubmissions),
+}))
+
+export const assignmentSubmissionsRelations = relations(assignmentSubmissions, ({ one }) => ({
+  assignment: one(assignments, { fields: [assignmentSubmissions.assignmentId], references: [assignments.id] }),
+  user: one(users, { fields: [assignmentSubmissions.userId], references: [users.id] }),
+}))
+
+export const lessonAssignmentSubmissions = pgTable(
+  "lesson_assignment_submissions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    lessonId: uuid("lesson_id")
+      .notNull()
+      .references(() => lessons.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    fileUrl: text("file_url").notNull(),
+    fileName: varchar("file_name", { length: 255 }).notNull(),
+    fileSize: integer("file_size").notNull(),
+    mimeType: varchar("mime_type", { length: 100 }).notNull(),
+    status: varchar("status", { length: 50 }).notNull().default("submitted"),
+    submittedAt: timestamp("submitted_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => ({
+    onePerUser: uniqueIndex("lesson_assignment_submissions_lesson_user_unique").on(t.lessonId, t.userId),
+  }),
+)
+
+export const lessonAssignmentSubmissionsRelations = relations(lessonAssignmentSubmissions, ({ one }) => ({
+  lesson: one(lessons, { fields: [lessonAssignmentSubmissions.lessonId], references: [lessons.id] }),
+  user: one(users, { fields: [lessonAssignmentSubmissions.userId], references: [users.id] }),
+}))
+

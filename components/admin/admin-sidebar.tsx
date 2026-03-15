@@ -127,6 +127,12 @@ function AdminNav({ user, isCollapsed }: AdminSidebarProps) {
       permission: "lessons:read" as const,
     },
     {
+      href: "/admin/assignments",
+      label: isAr ? "الواجبات" : "Assignments",
+      icon: FileText,
+      permission: "lessons:read" as const,
+    },
+    {
       href: "/admin/enrollments",
       label: isAr ? "التسجيلات" : "Enrollments",
       icon: Users,

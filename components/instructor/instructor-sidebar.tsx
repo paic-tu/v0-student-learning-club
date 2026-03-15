@@ -14,7 +14,8 @@ import {
   BarChart,
   HelpCircle,
   MessageCircle,
-  Video
+  Video,
+  FileText
 } from "lucide-react"
 
 function InstructorNav({ isCollapsed, unreadCount = 0 }: { isCollapsed?: boolean, unreadCount?: number }) {
@@ -90,6 +91,11 @@ function InstructorNav({ isCollapsed, unreadCount = 0 }: { isCollapsed?: boolean
       href: "/instructor/courses/new",
       label: isAr ? "إنشاء دورة" : "Create Course",
       icon: PlusCircle,
+    },
+    {
+      href: "/instructor/assignments",
+      label: isAr ? "الواجبات" : "Assignments",
+      icon: FileText,
     },
     {
       href: "/instructor/live",

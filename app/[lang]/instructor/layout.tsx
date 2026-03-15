@@ -15,10 +15,14 @@ export default async function InstructorLayout({
   const session = await auth()
 
   if (!session?.user?.id) {
-    redirect(`/${lang}/auth/login`)
+    redirect(`/${lang}/auth/login?callbackUrl=/${lang}/instructor/dashboard`)
   }
 
-  if (session.user.role !== "instructor" && session.user.role !== "admin") {
+  if (session.user.role === "admin") {
+    redirect(`/${lang}/admin/dashboard`)
+  }
+
+  if (session.user.role !== "instructor") {
     redirect(`/${lang}/access-denied`)
   }
 

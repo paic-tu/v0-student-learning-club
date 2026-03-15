@@ -1,48 +1,45 @@
-import { MetadataRoute } from 'next'
-import { getAllCourses } from '@/lib/db/queries'
+import { MetadataRoute } from "next"
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://neonedu.org'
-  const courses = await getAllCourses()
+export default function sitemap(): MetadataRoute.Sitemap {
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://neonedu.org").replace(/\/+$/, "")
+  const now = new Date()
 
-  const staticRoutes = [
-    '',
-    '/courses',
-    '/about',
-    '/contact',
-    '/pricing',
-    '/faq',
-    '/auth/login',
-    '/auth/register',
+  const corePaths = [
+    "",
+    "/about",
+    "/courses",
+    "/store",
+    "/pricing",
+    "/mentors",
+    "/cohorts",
+    "/contact",
+    "/faq",
+    "/privacy",
+    "/terms",
+    "/content-policy",
   ]
 
-  const languages = ['ar', 'en']
+  const urls: MetadataRoute.Sitemap = []
 
-  const routes: MetadataRoute.Sitemap = []
-
-  // Add static routes for each language
-  languages.forEach(lang => {
-    staticRoutes.forEach(route => {
-      routes.push({
-        url: `${baseUrl}/${lang}${route}`,
-        lastModified: new Date(),
-        changeFrequency: 'weekly',
-        priority: route === '' ? 1 : 0.8,
+  for (const lang of ["ar", "en"] as const) {
+    for (const path of corePaths) {
+      const url = `${baseUrl}/${lang}${path}`
+      urls.push({
+        url,
+        lastModified: now,
+        changeFrequency: path === "" ? "daily" : "weekly",
+        priority: path === "" ? 1 : 0.7,
       })
-    })
+    }
+  }
+
+  urls.push({
+    url: `${baseUrl}/`,
+    lastModified: now,
+    changeFrequency: "daily",
+    priority: 1,
   })
 
-  // Add course routes for each language
-  courses.forEach((course: any) => {
-    languages.forEach(lang => {
-      routes.push({
-        url: `${baseUrl}/${lang}/courses/${course.id}`,
-        lastModified: new Date(course.updatedAt),
-        changeFrequency: 'weekly',
-        priority: 0.9,
-      })
-    })
-  })
-
-  return routes
+  return urls
 }
+

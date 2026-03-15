@@ -19,12 +19,27 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { Reveal } from "@/components/reveal"
 import { RotatingWords } from "@/components/rotating-words"
+import Script from "next/script"
 
 export default function HomePage() {
   const { language } = useLanguage()
   const isRTL = language === "ar"
   const { user, isAuthenticated } = useAuth()
   const router = useRouter()
+  const baseUrl = "https://neonedu.org"
+  const organizationLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": `${baseUrl}/#organization`,
+    name: "Neon",
+    alternateName: "نيون",
+    url: baseUrl,
+    logo: `${baseUrl}/logo.svg`,
+    description:
+      language === "ar"
+        ? "منصة نيون التعليمية للدورات والشهادات المعتمدة في البرمجة والتقنية."
+        : "Neon educational platform for accredited courses and certificates in programming and technology.",
+  }
   const [stats, setStats] = useState({
     courses: 0,
     students: 0,
@@ -70,6 +85,9 @@ export default function HomePage() {
         <GlowBlob className="bottom-1/6 right-1/4 translate-x-1/2 translate-y-1/2 opacity-40 dark:opacity-25" color="accent" size="640px" />
       </div>
       <NavBar />
+      <Script id="ld-org" type="application/ld+json" strategy="afterInteractive">
+        {JSON.stringify(organizationLd)}
+      </Script>
 
       <main>
         <section className="relative overflow-hidden py-24 md:py-40">

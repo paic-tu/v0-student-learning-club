@@ -78,7 +78,7 @@ export default async function OrdersManagementPage() {
                       <p className="text-sm text-muted-foreground">{order.user_email}</p>
                     </div>
                   </TableCell>
-                  <TableCell>${Number(order.totalAmount).toFixed(2)}</TableCell>
+                  <TableCell>{Number(order.totalAmount).toFixed(2)} SAR</TableCell>
                   <TableCell>
                     <Badge
                       variant={
