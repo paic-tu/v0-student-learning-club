@@ -151,8 +151,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result)
   } catch (error: any) {
-    const status = typeof error?.status === "number" ? error.status : 500
     const message = error?.message ? String(error.message) : "Internal server error"
+    const status =
+      typeof error?.status === "number"
+        ? error.status
+        : message.toLowerCase().includes("unexpected end of form")
+          ? 400
+          : 500
     return NextResponse.json({ error: message }, { status })
   }
 }

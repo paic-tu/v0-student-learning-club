@@ -89,11 +89,11 @@ export function MediaUploadField({
       }
 
       setIsUploading(true)
-      const formData = new FormData()
-      formData.append("file", file)
+      const formDataAction = new FormData()
+      formDataAction.append("file", file)
 
       try {
-        const primary = await uploadFileAction(formData)
+        const primary = await uploadFileAction(formDataAction)
         if (primary?.success && primary.url) {
           handleValueChange(primary.url)
           toast({
@@ -103,9 +103,11 @@ export function MediaUploadField({
           return
         }
 
+        const formDataFetch = new FormData()
+        formDataFetch.append("file", file)
         const response = await fetch("/api/upload", {
           method: "POST",
-          body: formData,
+          body: formDataFetch,
           credentials: "include",
         })
 

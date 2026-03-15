@@ -75,9 +75,11 @@ export function ImageUpload({
       if (primary?.success && primary.url) {
         onChange(primary.url)
       } else {
+        const formDataFetch = new FormData()
+        formDataFetch.append("file", croppedImageBlob, "image.jpg")
         const response = await fetch("/api/upload", {
           method: "POST",
-          body: formData,
+          body: formDataFetch,
           credentials: "include",
         })
 

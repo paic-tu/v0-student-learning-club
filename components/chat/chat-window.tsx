@@ -50,17 +50,19 @@ export function ChatWindow({ conversationId, currentUserId, recipientName, recip
 
     setIsUploading(true)
     try {
-      const formData = new FormData()
-      formData.append("file", file)
+      const formDataAction = new FormData()
+      formDataAction.append("file", file)
 
       let url = ""
-      const primary = await uploadFileAction(formData)
+      const primary = await uploadFileAction(formDataAction)
       if (primary?.success && primary.url) {
         url = primary.url
       } else {
+        const formDataFetch = new FormData()
+        formDataFetch.append("file", file)
         const response = await fetch("/api/upload", {
           method: "POST",
-          body: formData,
+          body: formDataFetch,
           credentials: "include",
         })
 
