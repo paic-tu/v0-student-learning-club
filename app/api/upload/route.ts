@@ -4,24 +4,44 @@ import { createWriteStream, promises as fs } from "fs"
 import path from "path"
 import { randomUUID } from "crypto"
 import { Readable } from "stream"
+import { auth } from "@/lib/auth"
+import { db } from "@/lib/db"
+import { files } from "@/lib/db/schema"
+
+export const runtime = "nodejs"
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
     const contentType = request.headers.get("content-type") || ""
     if (!contentType.toLowerCase().includes("multipart/form-data")) {
       return NextResponse.json({ error: "Invalid content type" }, { status: 400 })
     }
 
     const MAX_BYTES = 500 * 1024 * 1024
+    const DB_MAX_BYTES = 15 * 1024 * 1024
     const uploadsDir = path.join(process.cwd(), "public", "uploads")
-    await fs.mkdir(uploadsDir, { recursive: true })
+    let useDb = false
+    try {
+      await fs.mkdir(uploadsDir, { recursive: true })
+    } catch (e: any) {
+      const code = String(e?.code || "")
+      const msg = String(e?.message || "")
+      if (code === "EROFS" || msg.toLowerCase().includes("read-only file system")) {
+        useDb = true
+      } else {
+        throw e
+      }
+    }
 
     const body = request.body
     if (!body) return NextResponse.json({ error: "Missing request body" }, { status: 400 })
 
     const bb = Busboy({
       headers: { "content-type": contentType },
-      limits: { files: 1, fileSize: MAX_BYTES },
+      limits: { files: 1, fileSize: useDb ? DB_MAX_BYTES : MAX_BYTES },
     })
 
     const result = await new Promise<{ url: string; name: string; size: number; type: string }>((resolve, reject) => {
@@ -31,6 +51,7 @@ export async function POST(request: NextRequest) {
       let outType = ""
       let size = 0
       let fileReceived = false
+      let chunks: Buffer[] = []
 
       bb.on("file", (_name, file, info) => {
         fileReceived = true
@@ -46,33 +67,38 @@ export async function POST(request: NextRequest) {
         outType = String(info.mimeType || "application/octet-stream")
         outPath = path.join(uploadsDir, outName)
 
-        const ws = createWriteStream(outPath)
+        const ws = useDb ? null : createWriteStream(outPath)
 
         file.on("data", (chunk: Buffer) => {
           size += chunk.length
+          if (useDb) chunks.push(chunk)
         })
 
         file.on("limit", () => {
-          ws.destroy()
-          file.unpipe(ws)
-          fs.unlink(outPath).catch(() => {})
+          if (ws) {
+            ws.destroy()
+            file.unpipe(ws)
+            fs.unlink(outPath).catch(() => {})
+          }
           if (!done) {
             done = true
-            reject({ status: 413, message: "File too large (max 500MB)" })
+            reject({ status: 413, message: useDb ? "File too large (max 15MB on this host)" : "File too large (max 500MB)" })
           }
         })
 
-        ws.on("error", (err) => {
-          fs.unlink(outPath).catch(() => {})
-          if (!done) {
-            done = true
-            reject(err)
-          }
-        })
+        if (ws) {
+          ws.on("error", (err) => {
+            fs.unlink(outPath).catch(() => {})
+            if (!done) {
+              done = true
+              reject(err)
+            }
+          })
 
-        ws.on("close", () => {})
+          ws.on("close", () => {})
 
-        file.pipe(ws)
+          file.pipe(ws)
+        }
       })
 
       bb.on("error", (err) => {
@@ -90,6 +116,23 @@ export async function POST(request: NextRequest) {
           return
         }
         done = true
+        if (useDb) {
+          const buf = Buffer.concat(chunks)
+          const base64Data = buf.toString("base64")
+          db.insert(files)
+            .values({ name: outName, type: outType, data: base64Data, size })
+            .returning({ id: files.id })
+            .then((rows) => {
+              const id = rows[0]?.id
+              if (!id) {
+                reject({ status: 500, message: "Upload failed" })
+                return
+              }
+              resolve({ url: `/api/files/${id}`, name: outName, size, type: outType })
+            })
+            .catch((err) => reject(err))
+          return
+        }
         resolve({ url: `/uploads/${outName}`, name: outName, size, type: outType })
       })
 
