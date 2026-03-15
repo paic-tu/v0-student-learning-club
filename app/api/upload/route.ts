@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const storageMode = (process.env.UPLOAD_STORAGE || "db").toLowerCase()
     const MAX_BYTES = 500 * 1024 * 1024
     const DB_MAX_BYTES =
-      (Number.parseInt(process.env.UPLOAD_DB_MAX_MB || "", 10) > 0 ? Number.parseInt(process.env.UPLOAD_DB_MAX_MB || "", 10) : 15) *
+      (Number.parseInt(process.env.UPLOAD_DB_MAX_MB || "", 10) > 0 ? Number.parseInt(process.env.UPLOAD_DB_MAX_MB || "", 10) : 100) *
       1024 *
       1024
     const uploadsDir = path.join(process.cwd(), "public", "uploads")

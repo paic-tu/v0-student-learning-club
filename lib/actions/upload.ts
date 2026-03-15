@@ -12,7 +12,7 @@ export async function uploadFileAction(formData: FormData) {
     const file = formData.get("file") as File
     
     if (!file) return { error: "No file provided" }
-    const maxMb = Number.parseInt(process.env.UPLOAD_DB_MAX_MB || "", 10) > 0 ? Number.parseInt(process.env.UPLOAD_DB_MAX_MB || "", 10) : 15
+    const maxMb = Number.parseInt(process.env.UPLOAD_DB_MAX_MB || "", 10) > 0 ? Number.parseInt(process.env.UPLOAD_DB_MAX_MB || "", 10) : 100
     if (file.size > maxMb * 1024 * 1024) return { error: `File too large (max ${maxMb}MB)` }
 
     const arrayBuffer = await file.arrayBuffer()
