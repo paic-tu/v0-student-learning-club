@@ -912,10 +912,11 @@ export const assignmentSubmissions = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    fileUrl: text("file_url").notNull(),
-    fileName: varchar("file_name", { length: 255 }).notNull(),
-    fileSize: integer("file_size").notNull(),
-    mimeType: varchar("mime_type", { length: 100 }).notNull(),
+    textContent: text("text_content"),
+    fileUrl: text("file_url"),
+    fileName: varchar("file_name", { length: 255 }),
+    fileSize: integer("file_size"),
+    mimeType: varchar("mime_type", { length: 100 }),
     status: varchar("status", { length: 50 }).notNull().default("submitted"),
     submittedAt: timestamp("submitted_at").notNull().defaultNow(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -947,10 +948,11 @@ export const lessonAssignmentSubmissions = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    fileUrl: text("file_url").notNull(),
-    fileName: varchar("file_name", { length: 255 }).notNull(),
-    fileSize: integer("file_size").notNull(),
-    mimeType: varchar("mime_type", { length: 100 }).notNull(),
+    textContent: text("text_content"),
+    fileUrl: text("file_url"),
+    fileName: varchar("file_name", { length: 255 }),
+    fileSize: integer("file_size"),
+    mimeType: varchar("mime_type", { length: 100 }),
     status: varchar("status", { length: 50 }).notNull().default("submitted"),
     submittedAt: timestamp("submitted_at").notNull().defaultNow(),
     createdAt: timestamp("created_at").notNull().defaultNow(),

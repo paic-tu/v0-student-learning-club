@@ -6,10 +6,22 @@ import { and, count, eq, inArray } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 
 const submitSchema = z.object({
-  fileUrl: z.string().min(1),
-  fileName: z.string().min(1).max(255),
-  fileSize: z.number().int().min(1),
-  mimeType: z.string().min(1).max(100),
+  textContent: z.string().optional().nullable(),
+  fileUrl: z.string().optional().nullable(),
+  fileName: z.string().optional().nullable(),
+  fileSize: z.number().int().min(1).optional().nullable(),
+  mimeType: z.string().optional().nullable(),
+}).superRefine((val, ctx) => {
+  const hasText = Boolean(val.textContent && val.textContent.trim())
+  const hasFile = Boolean(val.fileUrl && String(val.fileUrl).trim())
+  if (!hasText && !hasFile) {
+    ctx.addIssue({ code: "custom", message: "Submission must include text or file" })
+  }
+  if (hasFile) {
+    if (!val.fileName) ctx.addIssue({ code: "custom", message: "fileName is required" })
+    if (!val.fileSize) ctx.addIssue({ code: "custom", message: "fileSize is required" })
+    if (!val.mimeType) ctx.addIssue({ code: "custom", message: "mimeType is required" })
+  }
 })
 
 async function canAccessCourse(userId: string, courseId: string) {
@@ -60,12 +72,16 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   if (!parsed.success) return NextResponse.json({ error: "Invalid input" }, { status: 400 })
 
   const input = parsed.data
-  if (input.fileSize > assignment.maxFileSizeBytes) {
-    return NextResponse.json({ error: "File too large" }, { status: 413 })
-  }
+  const hasFile = Boolean(input.fileUrl && String(input.fileUrl).trim())
 
-  const okUrl = input.fileUrl.startsWith("/uploads/") || input.fileUrl.startsWith("/api/files/")
-  if (!okUrl) return NextResponse.json({ error: "Invalid file url" }, { status: 400 })
+  if (hasFile) {
+    const size = Number(input.fileSize || 0)
+    if (size > assignment.maxFileSizeBytes) {
+      return NextResponse.json({ error: "File too large" }, { status: 413 })
+    }
+    const okUrl = String(input.fileUrl).startsWith("/uploads/") || String(input.fileUrl).startsWith("/api/files/")
+    if (!okUrl) return NextResponse.json({ error: "Invalid file url" }, { status: 400 })
+  }
 
   const now = new Date()
   const existing = await db.query.assignmentSubmissions.findFirst({
@@ -74,17 +90,23 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   })
 
   if (existing) {
+    const updateData: any = {
+      status: "submitted",
+      submittedAt: now,
+      updatedAt: now,
+    }
+
+    if (input.textContent !== undefined) updateData.textContent = input.textContent?.trim() || null
+    if (hasFile) {
+      updateData.fileUrl = input.fileUrl
+      updateData.fileName = input.fileName
+      updateData.fileSize = input.fileSize
+      updateData.mimeType = input.mimeType
+    }
+
     await db
       .update(assignmentSubmissions)
-      .set({
-        fileUrl: input.fileUrl,
-        fileName: input.fileName,
-        fileSize: input.fileSize,
-        mimeType: input.mimeType,
-        status: "submitted",
-        submittedAt: now,
-        updatedAt: now,
-      })
+      .set(updateData)
       .where(eq(assignmentSubmissions.id, existing.id))
     return NextResponse.json({ success: true, updated: true })
   }
@@ -92,10 +114,11 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   await db.insert(assignmentSubmissions).values({
     assignmentId: id,
     userId,
-    fileUrl: input.fileUrl,
-    fileName: input.fileName,
-    fileSize: input.fileSize,
-    mimeType: input.mimeType,
+    textContent: input.textContent?.trim() || null,
+    fileUrl: hasFile ? input.fileUrl : null,
+    fileName: hasFile ? input.fileName : null,
+    fileSize: hasFile ? input.fileSize : null,
+    mimeType: hasFile ? input.mimeType : null,
     status: "submitted",
     submittedAt: now,
     createdAt: now,
@@ -104,4 +127,3 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
 
   return NextResponse.json({ success: true })
 }
-

@@ -116,10 +116,9 @@ export function AssignmentForm(props: {
         <div className="text-sm">{isAr ? "منشور للطلاب" : "Published for students"}</div>
       </div>
 
-      <Button onClick={submit} disabled={!canSubmit || isPending}>
+      <Button type="button" onClick={submit} disabled={!canSubmit || isPending}>
         {isPending ? (isAr ? "جاري الحفظ..." : "Saving...") : isAr ? "إنشاء الواجب" : "Create assignment"}
       </Button>
     </div>
   )
 }
-

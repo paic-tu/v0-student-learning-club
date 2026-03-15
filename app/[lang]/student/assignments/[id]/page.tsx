@@ -66,7 +66,7 @@ export default async function StudentAssignmentDetailsPage(props: { params: Prom
 
   const submission = await db.query.assignmentSubmissions.findFirst({
     where: and(eq(assignmentSubmissions.assignmentId, id), eq(assignmentSubmissions.userId, user.id)),
-    columns: { fileUrl: true, fileName: true, fileSize: true, submittedAt: true, status: true },
+    columns: { textContent: true, fileUrl: true, fileName: true, fileSize: true, submittedAt: true, status: true },
   })
 
   return (
@@ -98,11 +98,17 @@ export default async function StudentAssignmentDetailsPage(props: { params: Prom
           <CardTitle>{isAr ? "تسليم الواجب" : "Submission"}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <AssignmentSubmitForm lang={lang} assignmentId={id} maxBytes={assignment.maxBytes} existingFileUrl={submission?.fileUrl || null} />
+          <AssignmentSubmitForm
+            lang={lang}
+            assignmentId={id}
+            maxBytes={assignment.maxBytes}
+            existingFileUrl={submission?.fileUrl || null}
+            existingTextContent={submission?.textContent || null}
+          />
           {submission && (
             <div className="text-sm text-muted-foreground" dir={isAr ? "rtl" : "ltr"}>
-              {isAr ? "آخر تسليم:" : "Last submitted:"} {submission.submittedAt ? new Date(submission.submittedAt).toLocaleString() : "-"} •{" "}
-              {Math.round(submission.fileSize / 1024 / 1024)} MB
+              {isAr ? "آخر تسليم:" : "Last submitted:"} {submission.submittedAt ? new Date(submission.submittedAt).toLocaleString() : "-"}
+              {submission.fileSize ? ` • ${Math.round(Number(submission.fileSize) / 1024 / 1024)} MB` : ""}
             </div>
           )}
         </CardContent>
@@ -110,4 +116,3 @@ export default async function StudentAssignmentDetailsPage(props: { params: Prom
     </div>
   )
 }
-

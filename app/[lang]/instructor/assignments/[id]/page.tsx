@@ -41,6 +41,7 @@ export default async function InstructorAssignmentDetailsPage(props: { params: P
   const submissions = await db
     .select({
       id: assignmentSubmissions.id,
+      textContent: assignmentSubmissions.textContent,
       fileUrl: assignmentSubmissions.fileUrl,
       fileName: assignmentSubmissions.fileName,
       fileSize: assignmentSubmissions.fileSize,
@@ -103,10 +104,19 @@ export default async function InstructorAssignmentDetailsPage(props: { params: P
                     <Badge variant={s.status === "submitted" ? "default" : "secondary"}>{s.status}</Badge>
                   </TableCell>
                   <TableCell>
-                    <a className="underline" href={s.fileUrl} target="_blank" rel="noreferrer">
-                      {s.fileName}
-                    </a>
-                    <div className="text-xs text-muted-foreground">{Math.round(s.fileSize / 1024 / 1024)} MB</div>
+                    {s.fileUrl && s.fileName ? (
+                      <div className="space-y-1">
+                        <a className="underline" href={s.fileUrl} target="_blank" rel="noreferrer">
+                          {s.fileName}
+                        </a>
+                        {s.fileSize ? (
+                          <div className="text-xs text-muted-foreground">{Math.round(Number(s.fileSize) / 1024 / 1024)} MB</div>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">-</div>
+                    )}
+                    {s.textContent ? <div className="mt-2 text-sm whitespace-pre-wrap">{s.textContent}</div> : null}
                   </TableCell>
                 </TableRow>
               ))}
@@ -117,4 +127,3 @@ export default async function InstructorAssignmentDetailsPage(props: { params: P
     </div>
   )
 }
-
