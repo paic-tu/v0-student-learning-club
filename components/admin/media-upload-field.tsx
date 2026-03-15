@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Loader2, Upload, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
+import { uploadFileAction } from "@/lib/actions/upload"
 
 interface MediaUploadFieldProps {
   id?: string
@@ -96,10 +97,23 @@ export function MediaUploadField({
         const response = await fetch("/api/upload", {
           method: "POST",
           body: formData,
+          credentials: "include",
         })
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}))
+          if (response.status === 401 || response.status === 403) {
+            const fallback = await uploadFileAction(formData)
+            if (fallback?.success && fallback.url) {
+              handleValueChange(fallback.url)
+              toast({
+                title: isAr ? "تم بنجاح" : "Success",
+                description: isAr ? "تم رفع الملف بنجاح" : "File uploaded successfully",
+              })
+              return
+            }
+            throw new Error(fallback?.error || errorData.error || `Upload failed with status: ${response.status}`)
+          }
           throw new Error(errorData.error || `Upload failed with status: ${response.status}`)
         }
 
