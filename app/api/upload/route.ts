@@ -20,19 +20,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid content type" }, { status: 400 })
     }
 
+    const storageMode = (process.env.UPLOAD_STORAGE || "db").toLowerCase()
     const MAX_BYTES = 500 * 1024 * 1024
-    const DB_MAX_BYTES = 15 * 1024 * 1024
+    const DB_MAX_BYTES =
+      (Number.parseInt(process.env.UPLOAD_DB_MAX_MB || "", 10) > 0 ? Number.parseInt(process.env.UPLOAD_DB_MAX_MB || "", 10) : 15) *
+      1024 *
+      1024
     const uploadsDir = path.join(process.cwd(), "public", "uploads")
-    let useDb = false
-    try {
-      await fs.mkdir(uploadsDir, { recursive: true })
-    } catch (e: any) {
-      const code = String(e?.code || "")
-      const msg = String(e?.message || "")
-      if (code === "EROFS" || msg.toLowerCase().includes("read-only file system")) {
-        useDb = true
-      } else {
-        throw e
+    let useDb = storageMode === "db"
+    if (storageMode === "fs") useDb = false
+    if (storageMode === "auto") useDb = false
+
+    if (!useDb) {
+      try {
+        await fs.mkdir(uploadsDir, { recursive: true })
+      } catch (e: any) {
+        const code = String(e?.code || "")
+        const msg = String(e?.message || "")
+        if (storageMode === "auto" && (code === "EROFS" || msg.toLowerCase().includes("read-only file system"))) {
+          useDb = true
+        } else {
+          throw e
+        }
       }
     }
 
@@ -82,7 +91,8 @@ export async function POST(request: NextRequest) {
           }
           if (!done) {
             done = true
-            reject({ status: 413, message: useDb ? "File too large (max 15MB on this host)" : "File too large (max 500MB)" })
+            const maxMb = Math.max(1, Math.floor((useDb ? DB_MAX_BYTES : MAX_BYTES) / 1024 / 1024))
+            reject({ status: 413, message: `File too large (max ${maxMb}MB)` })
           }
         })
 
