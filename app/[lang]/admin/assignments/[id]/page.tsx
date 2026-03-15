@@ -35,23 +35,55 @@ export default async function AdminAssignmentDetailsPage(props: { params: Promis
     return <div>{isAr ? "غير موجود" : "Not found"}</div>
   }
 
-  const submissions = await db
-    .select({
-      id: assignmentSubmissions.id,
-      textContent: assignmentSubmissions.textContent,
-      fileUrl: assignmentSubmissions.fileUrl,
-      fileName: assignmentSubmissions.fileName,
-      fileSize: assignmentSubmissions.fileSize,
-      submittedAt: assignmentSubmissions.submittedAt,
-      status: assignmentSubmissions.status,
-      userName: users.name,
-      userEmail: users.email,
-    })
-    .from(assignmentSubmissions)
-    .innerJoin(users, eq(assignmentSubmissions.userId, users.id))
-    .where(eq(assignmentSubmissions.assignmentId, id))
-    .orderBy(desc(assignmentSubmissions.submittedAt))
-    .limit(500)
+  let submissions: Array<{
+    id: string
+    textContent?: string | null
+    fileUrl?: string | null
+    fileName?: string | null
+    fileSize?: number | null
+    submittedAt: Date | null
+    status: string
+    userName: string
+    userEmail: string
+  }> = []
+
+  try {
+    submissions = await db
+      .select({
+        id: assignmentSubmissions.id,
+        textContent: assignmentSubmissions.textContent,
+        fileUrl: assignmentSubmissions.fileUrl,
+        fileName: assignmentSubmissions.fileName,
+        fileSize: assignmentSubmissions.fileSize,
+        submittedAt: assignmentSubmissions.submittedAt,
+        status: assignmentSubmissions.status,
+        userName: users.name,
+        userEmail: users.email,
+      })
+      .from(assignmentSubmissions)
+      .innerJoin(users, eq(assignmentSubmissions.userId, users.id))
+      .where(eq(assignmentSubmissions.assignmentId, id))
+      .orderBy(desc(assignmentSubmissions.submittedAt))
+      .limit(500)
+  } catch {
+    const rows = await db
+      .select({
+        id: assignmentSubmissions.id,
+        fileUrl: assignmentSubmissions.fileUrl,
+        fileName: assignmentSubmissions.fileName,
+        fileSize: assignmentSubmissions.fileSize,
+        submittedAt: assignmentSubmissions.submittedAt,
+        status: assignmentSubmissions.status,
+        userName: users.name,
+        userEmail: users.email,
+      })
+      .from(assignmentSubmissions)
+      .innerJoin(users, eq(assignmentSubmissions.userId, users.id))
+      .where(eq(assignmentSubmissions.assignmentId, id))
+      .orderBy(desc(assignmentSubmissions.submittedAt))
+      .limit(500)
+    submissions = rows.map((r) => ({ ...r, textContent: null }))
+  }
 
   return (
     <div className="space-y-6">

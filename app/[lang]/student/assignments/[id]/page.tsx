@@ -64,10 +64,28 @@ export default async function StudentAssignmentDetailsPage(props: { params: Prom
   const allowed = await canAccessCourse(user.id, assignment.courseId)
   if (!allowed) redirect(`/${lang}/courses/${assignment.courseId}`)
 
-  const submission = await db.query.assignmentSubmissions.findFirst({
-    where: and(eq(assignmentSubmissions.assignmentId, id), eq(assignmentSubmissions.userId, user.id)),
-    columns: { textContent: true, fileUrl: true, fileName: true, fileSize: true, submittedAt: true, status: true },
-  })
+  let submission:
+    | {
+        textContent?: string | null
+        fileUrl?: string | null
+        fileName?: string | null
+        fileSize?: number | null
+        submittedAt: Date | null
+        status: string
+      }
+    | null = null
+
+  try {
+    submission = await db.query.assignmentSubmissions.findFirst({
+      where: and(eq(assignmentSubmissions.assignmentId, id), eq(assignmentSubmissions.userId, user.id)),
+      columns: { textContent: true, fileUrl: true, fileName: true, fileSize: true, submittedAt: true, status: true },
+    })
+  } catch {
+    submission = await db.query.assignmentSubmissions.findFirst({
+      where: and(eq(assignmentSubmissions.assignmentId, id), eq(assignmentSubmissions.userId, user.id)),
+      columns: { fileUrl: true, fileName: true, fileSize: true, submittedAt: true, status: true },
+    })
+  }
 
   return (
     <div className="space-y-6">
