@@ -21,6 +21,7 @@ import { StringListInput } from "@/components/ui/string-list-input"
 
 import { MediaUploadField } from "@/components/admin/media-upload-field"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
+import ReactMarkdown from "react-markdown"
 
 const getCourseSchema = (isAr: boolean) => z.object({
   titleEn: z.string().min(1, isAr ? "العنوان بالإنجليزية مطلوب" : "English title is required"),
@@ -465,18 +466,31 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                   <FormItem>
                     <FormLabel>{isAr ? "الوصف بالإنجليزية *" : "Description (English) *"}</FormLabel>
                     <FormControl>
-                      <Textarea
-                        {...field}
-                        rows={8}
-                        placeholder={isAr ? "قدم وصفاً شاملاً للدورة..." : "Provide a comprehensive description of your course..."}
-                        dir="ltr"
-                        lang="en"
-                        autoComplete="off"
-                        autoCorrect="off"
-                        autoCapitalize="none"
-                        spellCheck={false}
-                        className="font-mono text-sm"
-                      />
+                      <Tabs defaultValue="edit" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                          <TabsTrigger value="edit">{isAr ? "تحرير" : "Edit"}</TabsTrigger>
+                          <TabsTrigger value="preview">{isAr ? "معاينة" : "Preview"}</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="edit" className="mt-2">
+                          <Textarea
+                            {...field}
+                            rows={8}
+                            placeholder={isAr ? "قدم وصفاً شاملاً للدورة..." : "Provide a comprehensive description of your course..."}
+                            dir="ltr"
+                            lang="en"
+                            autoComplete="off"
+                            autoCorrect="off"
+                            autoCapitalize="none"
+                            spellCheck={false}
+                            className="font-mono text-sm"
+                          />
+                        </TabsContent>
+                        <TabsContent value="preview" className="mt-2">
+                          <div className="prose dark:prose-invert max-w-none rounded-md border p-4" dir="ltr" lang="en">
+                            <ReactMarkdown>{String(field.value || "")}</ReactMarkdown>
+                          </div>
+                        </TabsContent>
+                      </Tabs>
                     </FormControl>
                     <p className="text-xs text-muted-foreground">{field.value?.length || 0} {isAr ? "حرف" : "characters"}</p>
                     <FormMessage />
@@ -491,13 +505,26 @@ export function CourseForm({ categories: initialCategories, instructors, redirec
                   <FormItem>
                     <FormLabel>{isAr ? "الوصف بالعربية *" : "Description (Arabic) *"}</FormLabel>
                     <FormControl>
-                      <Textarea
-                        {...field}
-                        rows={8}
-                        placeholder="قدم وصفاً شاملاً لدورتك..."
-                        dir="rtl"
-                        className="font-mono text-sm"
-                      />
+                      <Tabs defaultValue="edit" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                          <TabsTrigger value="edit">{isAr ? "تحرير" : "Edit"}</TabsTrigger>
+                          <TabsTrigger value="preview">{isAr ? "معاينة" : "Preview"}</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="edit" className="mt-2">
+                          <Textarea
+                            {...field}
+                            rows={8}
+                            placeholder="قدم وصفاً شاملاً لدورتك..."
+                            dir="rtl"
+                            className="font-mono text-sm"
+                          />
+                        </TabsContent>
+                        <TabsContent value="preview" className="mt-2">
+                          <div className="prose dark:prose-invert max-w-none rounded-md border p-4" dir="rtl" lang="ar">
+                            <ReactMarkdown>{String(field.value || "")}</ReactMarkdown>
+                          </div>
+                        </TabsContent>
+                      </Tabs>
                     </FormControl>
                     <p className="text-xs text-muted-foreground">{field.value?.length || 0} {isAr ? "حرف" : "أحرف"}</p>
                     <FormMessage />

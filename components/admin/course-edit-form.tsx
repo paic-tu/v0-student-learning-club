@@ -10,10 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { Plus, X } from "lucide-react"
 import { StringListInput } from "@/components/ui/string-list-input"
+import ReactMarkdown from "react-markdown"
 
 import {
   Dialog,
@@ -56,6 +58,8 @@ export function CourseEditForm({
     thumbnail_url: course.thumbnail_url || "",
     title_en: course.title_en || "",
     title_ar: course.title_ar || "",
+    description_en: course.description_en || "",
+    description_ar: course.description_ar || "",
   })
 
   const updatePreview = (field: string, value: any) => {
@@ -383,12 +387,57 @@ export function CourseEditForm({
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="description_en">{isAr ? "الوصف بالإنجليزية" : "Description (English)"}</Label>
-                <Textarea id="description_en" name="description_en" defaultValue={course.description_en} rows={4} required />
+                <Tabs defaultValue="edit" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="edit">{isAr ? "تحرير" : "Edit"}</TabsTrigger>
+                    <TabsTrigger value="preview">{isAr ? "معاينة" : "Preview"}</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="edit" className="mt-2">
+                    <Textarea
+                      id="description_en"
+                      name="description_en"
+                      value={String((previewData as any).description_en || "")}
+                      onChange={(e) => updatePreview("description_en", e.target.value)}
+                      rows={6}
+                      required
+                      dir="ltr"
+                      lang="en"
+                      className="font-mono text-sm"
+                    />
+                  </TabsContent>
+                  <TabsContent value="preview" className="mt-2">
+                    <div className="prose dark:prose-invert max-w-none rounded-md border p-4" dir="ltr" lang="en">
+                      <ReactMarkdown>{String((previewData as any).description_en || "")}</ReactMarkdown>
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="description_ar">{isAr ? "الوصف بالعربية" : "Description (Arabic)"}</Label>
-                <Textarea id="description_ar" name="description_ar" defaultValue={course.description_ar} rows={4} required />
+                <Tabs defaultValue="edit" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="edit">{isAr ? "تحرير" : "Edit"}</TabsTrigger>
+                    <TabsTrigger value="preview">{isAr ? "معاينة" : "Preview"}</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="edit" className="mt-2">
+                    <Textarea
+                      id="description_ar"
+                      name="description_ar"
+                      value={String((previewData as any).description_ar || "")}
+                      onChange={(e) => updatePreview("description_ar", e.target.value)}
+                      rows={6}
+                      required
+                      dir="rtl"
+                      className="font-mono text-sm"
+                    />
+                  </TabsContent>
+                  <TabsContent value="preview" className="mt-2">
+                    <div className="prose dark:prose-invert max-w-none rounded-md border p-4" dir="rtl" lang="ar">
+                      <ReactMarkdown>{String((previewData as any).description_ar || "")}</ReactMarkdown>
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </div>
             </CardContent>
           </Card>
