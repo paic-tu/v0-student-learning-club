@@ -182,6 +182,23 @@ export function MediaUploadField({
           }
         }
 
+        if (type === "video" || isVideoFile) {
+          for (const mb of [4, 2, 1]) {
+            try {
+              await tryChunkedUpload(mb)
+              toast({
+                title: isAr ? "تم بنجاح" : "Success",
+                description: isAr ? "تم رفع الفيديو بنجاح" : "Video uploaded successfully",
+              })
+              return
+            } catch (e: any) {
+              const msg = String(e?.message || "")
+              if (!msg.includes("413") && !msg.toLowerCase().includes("too large")) throw e
+            }
+          }
+          throw new Error("Upload failed with status: 413")
+        }
+
         const formDataFetch = new FormData()
         formDataFetch.append("file", file)
         const response = await fetch("/api/upload", {
@@ -192,21 +209,6 @@ export function MediaUploadField({
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}))
-          if (response.status === 413 && isVideoFile) {
-            for (const mb of [4, 2, 1]) {
-              try {
-                await tryChunkedUpload(mb)
-                toast({
-                  title: isAr ? "تم بنجاح" : "Success",
-                  description: isAr ? "تم رفع الفيديو بنجاح" : "Video uploaded successfully",
-                })
-                return
-              } catch (e: any) {
-                const msg = String(e?.message || "")
-                if (!msg.includes("413") && !msg.toLowerCase().includes("too large")) throw e
-              }
-            }
-          }
           if (response.status === 401 || response.status === 403) {
             const formDataAction = new FormData()
             formDataAction.append("file", file)

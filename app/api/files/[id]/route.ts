@@ -1,10 +1,78 @@
 import { db } from "@/lib/db"
 import { fileChunks, files } from "@/lib/db/schema"
-import { and, asc, eq, inArray } from "drizzle-orm"
+import { and, asc, eq, gte, inArray, lte } from "drizzle-orm"
 import { NextRequest, NextResponse } from "next/server"
 
 function safeFilename(name: string) {
   return name.replace(/[\r\n"]/g, "_").slice(0, 180) || "file"
+}
+
+function parseRangeHeader(range: string, size: number) {
+  const m = range.match(/^bytes=(\d*)-(\d*)$/)
+  if (!m) return null
+  const startRaw = m[1]
+  const endRaw = m[2]
+
+  if (startRaw === "" && endRaw === "") return null
+
+  if (startRaw === "" && endRaw !== "") {
+    const suffix = Number.parseInt(endRaw, 10)
+    if (!Number.isFinite(suffix) || suffix <= 0) return null
+    const start = Math.max(0, size - suffix)
+    const end = size > 0 ? size - 1 : 0
+    return { start, end }
+  }
+
+  const start = Number.parseInt(startRaw, 10)
+  if (!Number.isFinite(start) || start < 0) return null
+
+  if (endRaw === "") {
+    const end = size > 0 ? size - 1 : 0
+    return { start, end }
+  }
+
+  const end = Number.parseInt(endRaw, 10)
+  if (!Number.isFinite(end) || end < 0) return null
+  return { start, end: Math.min(end, Math.max(0, size - 1)) }
+}
+
+function streamBase64Range(base64: string, start: number, end: number) {
+  const bytesTotal = Math.max(0, end - start + 1)
+  const base64Start = Math.floor(start / 3) * 4
+  const base64End = Math.ceil((end + 1) / 3) * 4
+  const firstBlockByteStart = Math.floor(start / 3) * 3
+  let bytesToSkip = start - firstBlockByteStart
+  let remaining = bytesTotal
+  let pos = base64Start
+  const stepChars = 4 * 65536
+
+  return new ReadableStream<Uint8Array>({
+    pull(controller) {
+      if (remaining <= 0) {
+        controller.close()
+        return
+      }
+
+      const nextPos = Math.min(base64End, pos + stepChars)
+      if (nextPos <= pos) {
+        controller.close()
+        return
+      }
+
+      const slice = base64.slice(pos, nextPos)
+      pos = nextPos
+
+      let buf = Buffer.from(slice, "base64")
+      if (bytesToSkip > 0) {
+        buf = buf.subarray(bytesToSkip)
+        bytesToSkip = 0
+      }
+
+      if (buf.length > remaining) buf = buf.subarray(0, remaining)
+      remaining -= buf.length
+      controller.enqueue(buf)
+    },
+  })
 }
 
 async function getFileMeta(id: string) {
@@ -69,6 +137,7 @@ export async function GET(
     const fileSize = Number(file.size || 0)
     const range = req.headers.get("range")
     const filename = safeFilename(String(file.name || "file"))
+    const rangeParsed = range && fileSize > 0 ? parseRangeHeader(range, fileSize) : null
 
     if (file.storage === "chunked") {
       if (!file.isComplete || !file.chunkSize || !file.chunkCount) {
@@ -78,115 +147,110 @@ export async function GET(
       const chunkSize = Number(file.chunkSize)
       const chunkCount = Number(file.chunkCount)
 
-      if (!range) {
-        const rows = await db
-          .select({ data: fileChunks.data })
-          .from(fileChunks)
-          .where(eq(fileChunks.fileId, id))
-          .orderBy(asc(fileChunks.chunkIndex))
+      const start = rangeParsed ? rangeParsed.start : 0
+      const end = Math.min(rangeParsed ? rangeParsed.end : Math.max(0, fileSize - 1), Math.max(0, fileSize - 1))
 
-        let i = 0
-        const stream = new ReadableStream<Uint8Array>({
-          pull(controller) {
-            if (i >= rows.length) {
-              controller.close()
-              return
-            }
-            controller.enqueue(Buffer.from(rows[i]!.data as any, "base64"))
-            i += 1
-          },
-        })
-
-        return new NextResponse(stream, {
+      if (fileSize <= 0) return new NextResponse("File not found", { status: 404 })
+      if (start >= fileSize || start < 0 || end < start) {
+        return new NextResponse(null, {
+          status: 416,
           headers: {
-            "Content-Type": file.type,
-            "Content-Length": fileSize.toString(),
-            "Cache-Control": "public, max-age=31536000, immutable",
+            "Content-Range": `bytes */${fileSize}`,
             "Accept-Ranges": "bytes",
-            "Content-Disposition": `inline; filename="${filename}"`,
+            "Content-Type": file.type,
           },
         })
-      }
-
-      let start = 0
-      let end = fileSize > 0 ? fileSize - 1 : 0
-      if (range) {
-        const parts = range.replace(/bytes=/, "").split("-")
-        start = parseInt(parts[0], 10)
-        end = parts[1] ? parseInt(parts[1], 10) : end
-        if (!Number.isFinite(start) || start < 0) start = 0
-        if (!Number.isFinite(end) || end >= fileSize) end = fileSize - 1
       }
 
       const firstChunk = Math.floor(start / chunkSize)
       const lastChunk = Math.floor(end / chunkSize)
-      const needed = []
-      for (let i = firstChunk; i <= lastChunk; i++) {
-        if (i >= 0 && i < chunkCount) needed.push(i)
+      if (firstChunk < 0 || lastChunk >= chunkCount) return new NextResponse("File not found", { status: 404 })
+
+      const rows =
+        firstChunk <= lastChunk
+          ? await db
+              .select({ chunkIndex: fileChunks.chunkIndex, data: fileChunks.data })
+              .from(fileChunks)
+              .where(and(eq(fileChunks.fileId, id), gte(fileChunks.chunkIndex, firstChunk), lte(fileChunks.chunkIndex, lastChunk)))
+              .orderBy(asc(fileChunks.chunkIndex))
+          : []
+
+      const byIndex = new Map<number, string>()
+      for (const r of rows) byIndex.set(Number(r.chunkIndex), String(r.data))
+
+      let currentChunk = firstChunk
+      let offsetInFirst = start - firstChunk * chunkSize
+      let remaining = end - start + 1
+
+      const stream = new ReadableStream<Uint8Array>({
+        pull(controller) {
+          if (remaining <= 0) {
+            controller.close()
+            return
+          }
+
+          const data = byIndex.get(currentChunk)
+          if (!data) {
+            controller.error(new Error("Missing chunk"))
+            return
+          }
+
+          let buf = Buffer.from(data, "base64")
+          if (currentChunk === firstChunk && offsetInFirst > 0) {
+            buf = buf.subarray(offsetInFirst)
+            offsetInFirst = 0
+          }
+
+          if (buf.length > remaining) buf = buf.subarray(0, remaining)
+          remaining -= buf.length
+          currentChunk += 1
+          controller.enqueue(buf)
+        },
+      })
+
+      const headers: Record<string, string> = {
+        "Content-Type": file.type,
+        "Content-Length": (end - start + 1).toString(),
+        "Accept-Ranges": "bytes",
+        "Content-Disposition": `inline; filename="${filename}"`,
       }
 
-      const rows = needed.length
-        ? await db
-            .select({ chunkIndex: fileChunks.chunkIndex, data: fileChunks.data, size: fileChunks.size })
-            .from(fileChunks)
-            .where(and(eq(fileChunks.fileId, id), inArray(fileChunks.chunkIndex, needed)))
-        : []
-
-      const byIndex = new Map<number, { data: string; size: number }>()
-      for (const r of rows) byIndex.set(Number(r.chunkIndex), { data: String(r.data), size: Number(r.size) })
-
-      const partsBuffers: Buffer[] = []
-      for (let i = firstChunk; i <= lastChunk; i++) {
-        const entry = byIndex.get(i)
-        if (!entry) return new NextResponse("File not found", { status: 404 })
-        partsBuffers.push(Buffer.from(entry.data, "base64"))
+      if (rangeParsed) {
+        headers["Content-Range"] = `bytes ${start}-${end}/${fileSize}`
+        return new NextResponse(stream, { status: 206, headers })
       }
 
-      const merged = Buffer.concat(partsBuffers)
-      const offsetStart = start - firstChunk * chunkSize
-      const sliceLen = end - start + 1
-      const fileChunk = merged.subarray(offsetStart, offsetStart + sliceLen)
+      headers["Cache-Control"] = "public, max-age=31536000, immutable"
+      return new NextResponse(stream, { headers })
+    }
 
-      if (range) {
-        return new NextResponse(fileChunk, {
-          status: 206,
+    const base64 = String(file.data || "")
+    const size = fileSize || Math.floor((base64.length * 3) / 4)
+    
+    // Handle Range requests (required for video seek/streaming)
+    if (size <= 0) return new NextResponse("File not found", { status: 404 })
+    if (rangeParsed) {
+      let start = rangeParsed.start
+      let end = rangeParsed.end
+      if (start >= size || start < 0 || end < start) {
+        return new NextResponse(null, {
+          status: 416,
           headers: {
-            "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+            "Content-Range": `bytes */${size}`,
             "Accept-Ranges": "bytes",
-            "Content-Length": fileChunk.length.toString(),
             "Content-Type": file.type,
-            "Content-Disposition": `inline; filename="${filename}"`,
           },
         })
       }
+      if (end >= size) end = size - 1
 
-      return new NextResponse(fileChunk, {
-        headers: {
-          "Content-Type": file.type,
-          "Content-Length": fileChunk.length.toString(),
-          "Cache-Control": "public, max-age=31536000, immutable",
-          "Accept-Ranges": "bytes",
-          "Content-Disposition": `inline; filename="${filename}"`,
-        },
-      })
-    }
-
-    const buffer = Buffer.from(String(file.data || ""), "base64")
-    
-    // Handle Range requests (required for video seek/streaming)
-    if (range) {
-      const parts = range.replace(/bytes=/, "").split("-")
-      const start = parseInt(parts[0], 10)
-      const end = parts[1] ? parseInt(parts[1], 10) : buffer.length - 1
-      const chunksize = (end - start) + 1
-      const fileChunk = buffer.subarray(start, end + 1)
-      
-      return new NextResponse(fileChunk, {
+      const stream = streamBase64Range(base64, start, end)
+      return new NextResponse(stream, {
         status: 206,
         headers: {
-          "Content-Range": `bytes ${start}-${end}/${buffer.length}`,
+          "Content-Range": `bytes ${start}-${end}/${size}`,
           "Accept-Ranges": "bytes",
-          "Content-Length": chunksize.toString(),
+          "Content-Length": (end - start + 1).toString(),
           "Content-Type": file.type,
           "Content-Disposition": `inline; filename="${filename}"`,
         },
@@ -194,10 +258,11 @@ export async function GET(
     }
 
     // Return full file
-    return new NextResponse(buffer, {
+    const stream = streamBase64Range(base64, 0, size - 1)
+    return new NextResponse(stream, {
       headers: {
         "Content-Type": file.type,
-        "Content-Length": buffer.length.toString(),
+        "Content-Length": size.toString(),
         "Cache-Control": "public, max-age=31536000, immutable",
         "Accept-Ranges": "bytes", // Announce range support
         "Content-Disposition": `inline; filename="${filename}"`,
