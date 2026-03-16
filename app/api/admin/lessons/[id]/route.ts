@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm"
 import { z } from "zod"
 import { requirePermission } from "@/lib/rbac/require-permission"
 import { logAudit, type AuditResource } from "@/lib/audit/audit-logger"
+import { extractYouTubeVideoId, toYouTubeStorageValue } from "@/lib/video/youtube"
 
 const updateLessonSchema = z.object({
   titleEn: z.string().min(1).optional(),
@@ -82,7 +83,12 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     if (data.status !== undefined) updateData.status = data.status
     if (data.orderIndex !== undefined) updateData.orderIndex = data.orderIndex
     if (data.durationMinutes !== undefined) updateData.durationMinutes = data.durationMinutes
-    if (data.videoUrl !== undefined) updateData.videoUrl = data.videoUrl
+    if (data.videoUrl !== undefined) {
+      const rawVideoUrl = data.videoUrl ? String(data.videoUrl) : ""
+      const youtubeId = extractYouTubeVideoId(rawVideoUrl)
+      updateData.videoUrl = youtubeId ? toYouTubeStorageValue(youtubeId) : data.videoUrl
+      updateData.videoProvider = youtubeId ? "youtube" : "upload"
+    }
     if (data.thumbnailUrl !== undefined) updateData.thumbnailUrl = data.thumbnailUrl
     if (data.contentMarkdown !== undefined) {
       updateData.contentEn = data.contentMarkdown

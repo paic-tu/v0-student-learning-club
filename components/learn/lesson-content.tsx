@@ -156,12 +156,17 @@ export function LessonContent({ lesson, lang, userId, initialNotes = [], quiz, q
 
   const getEmbedUrl = (url: string) => {
     if (!url) return null
+
+    if (url.startsWith("yt:")) {
+      const id = url.slice(3).trim()
+      if (id.length === 11) return `https://www.youtube-nocookie.com/embed/${id}`
+    }
     
     // YouTube
     const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
     const youtubeMatch = url.match(youtubeRegex)
     if (youtubeMatch) {
-      return `https://www.youtube.com/embed/${youtubeMatch[1]}`
+      return `https://www.youtube-nocookie.com/embed/${youtubeMatch[1]}`
     }
     
     // Vimeo
@@ -218,13 +223,24 @@ export function LessonContent({ lesson, lang, userId, initialNotes = [], quiz, q
 
   if (lesson.type === "video") {
     const videoUrl = getProp(lesson, "videoUrl", "video_url")
-    const isExternalVideo = videoUrl && (videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be") || videoUrl.includes("vimeo.com"))
+    const videoProvider = getProp(lesson, "videoProvider", "video_provider")
+    const isYouTube =
+      videoProvider === "youtube" ||
+      (typeof videoUrl === "string" && (videoUrl.startsWith("yt:") || videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be")))
+    const isVimeo = typeof videoUrl === "string" && videoUrl.includes("vimeo.com")
     
     return (
       <div className="space-y-6">
         <div className="aspect-video bg-black rounded-lg overflow-hidden relative group">
           {videoUrl ? (
-            isExternalVideo ? (
+            isYouTube ? (
+              <iframe
+                src={`/api/lessons/${encodeURIComponent(String(lesson.id))}/embed`}
+                className="absolute inset-0 w-full h-full"
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+              />
+            ) : isVimeo ? (
                <iframe 
                  src={getEmbedUrl(videoUrl) || ""} 
                  className="absolute inset-0 w-full h-full" 

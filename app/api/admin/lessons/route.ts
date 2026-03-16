@@ -5,6 +5,7 @@ import { eq, desc, asc, and, sql, getTableColumns, isNull, or } from "drizzle-or
 import { z } from "zod"
 import { requirePermission } from "@/lib/rbac/require-permission"
 import { logAudit, type AuditResource } from "@/lib/audit/audit-logger"
+import { extractYouTubeVideoId, toYouTubeStorageValue } from "@/lib/video/youtube"
 
 const createLessonSchema = z.object({
   titleEn: z.string().min(1, "English title is required"),
@@ -87,6 +88,10 @@ export async function POST(req: NextRequest) {
     }
 
     const data = parsed.data
+
+    const rawVideoUrl = data.videoUrl ? String(data.videoUrl) : ""
+    const youtubeId = extractYouTubeVideoId(rawVideoUrl)
+    const normalizedVideoUrl = youtubeId ? toYouTubeStorageValue(youtubeId) : data.videoUrl
     
     // Calculate next order index if not provided or 0
     let orderIndex = data.orderIndex
@@ -117,7 +122,8 @@ export async function POST(req: NextRequest) {
         status: data.status,
         orderIndex: orderIndex,
         durationMinutes: data.durationMinutes,
-        videoUrl: data.videoUrl,
+        videoUrl: normalizedVideoUrl,
+        videoProvider: youtubeId ? "youtube" : "upload",
         thumbnailUrl: data.thumbnailUrl,
         contentEn: data.contentMarkdown, // mapped to contentEn
         contentAr: data.contentMarkdown, // mapped to contentAr
