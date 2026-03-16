@@ -397,7 +397,7 @@ export function CourseEditForm({
 
                 <div className="space-y-2">
                   <Label htmlFor="stream_product_id">Stream product_id</Label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <Input
                       id="stream_product_id"
                       name="stream_product_id"
@@ -406,7 +406,13 @@ export function CourseEditForm({
                       placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                       dir="ltr"
                     />
-                    <Button type="button" variant="outline" onClick={handleGenerateStreamProductId} disabled={loading}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleGenerateStreamProductId}
+                      disabled={loading}
+                      className="sm:shrink-0"
+                    >
                       {isAr ? "توليد" : "Generate"}
                     </Button>
                   </div>
