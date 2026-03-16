@@ -13,6 +13,7 @@ type Submission = {
   fileName?: string | null
   fileSize?: number | null
   mimeType?: string | null
+  attachments?: Array<{ url: string; name: string; size?: number; mimeType?: string }> | null
   submittedAt: string | Date
   status: string
 }
@@ -22,6 +23,9 @@ export function LessonAssignmentStudent(props: {
   lessonId: string
   maxBytes: number
   allowedMimeTypes?: string[]
+  allowText?: boolean
+  allowFiles?: boolean
+  maxFiles?: number
 }) {
   const isAr = props.lang === "ar"
   const [submission, setSubmission] = useState<Submission | null>(null)
@@ -47,61 +51,64 @@ export function LessonAssignmentStudent(props: {
   }, [props.lessonId])
 
   const uploadAndSubmit = () => {
-    const file = fileRef.current?.files?.[0]
-    const hasText = Boolean(textContent.trim())
-    const hasFile = Boolean(file)
-    if (!hasText && !hasFile) {
-      toast.error(isAr ? "اكتب نصًا أو ارفع ملفًا" : "Enter text or upload a file")
+    const allowText = props.allowText !== false
+    const allowFiles = props.allowFiles !== false
+    const maxFiles = Math.min(10, Math.max(1, Number(props.maxFiles || 1)))
+
+    const files = Array.from(fileRef.current?.files || []).slice(0, allowFiles ? maxFiles : 0)
+    const hasText = allowText ? Boolean(textContent.trim()) : false
+    const hasFiles = allowFiles ? files.length > 0 : false
+
+    if (!hasText && !hasFiles) {
+      toast.error(isAr ? "اكتب إجابة أو ارفع ملفات" : "Enter an answer or upload files")
       return
     }
-    if (file && file.size > props.maxBytes) {
-      toast.error(isAr ? "حجم الملف أكبر من المسموح" : "File is too large")
-      return
-    }
-    if (file && props.allowedMimeTypes && props.allowedMimeTypes.length > 0 && !props.allowedMimeTypes.includes(file.type)) {
-      toast.error(isAr ? "نوع الملف غير مسموح" : "File type not allowed")
-      return
+    for (const f of files) {
+      if (f.size > props.maxBytes) {
+        toast.error(isAr ? "حجم الملف أكبر من المسموح" : "File is too large")
+        return
+      }
+      if (props.allowedMimeTypes && props.allowedMimeTypes.length > 0 && !props.allowedMimeTypes.includes(f.type)) {
+        toast.error(isAr ? "نوع الملف غير مسموح" : "File type not allowed")
+        return
+      }
     }
 
     startTransition(async () => {
       try {
-        let fileUrl = ""
-        if (file) {
+        const attachments: Array<{ url: string; name: string; size?: number; mimeType?: string }> = []
+        for (const f of files) {
           const fd = new FormData()
-          fd.append("file", file)
+          fd.append("file", f)
 
           const up = await fetch("/api/upload", { method: "POST", body: fd })
           const upBody = await up.json().catch(() => null)
           if (!up.ok) throw new Error(upBody?.error || "Upload failed")
 
-          fileUrl = String(upBody?.url || "")
-          if (!fileUrl) throw new Error("Upload failed")
+          const url = String(upBody?.url || "")
+          if (!url) throw new Error("Upload failed")
+          attachments.push({
+            url,
+            name: f.name,
+            size: f.size,
+            mimeType: f.type || "application/octet-stream",
+          })
         }
 
         const res = await fetch(`/api/student/lessons/${encodeURIComponent(props.lessonId)}/assignment`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            textContent: textContent.trim() || null,
-            ...(fileUrl
-              ? {
-                  fileUrl,
-                  fileName: file?.name,
-                  fileSize: file?.size,
-                  mimeType: file?.type || "application/octet-stream",
-                }
-              : {}),
+            textContent: allowText ? textContent.trim() || null : null,
+            attachments: attachments.length > 0 ? attachments : null,
           }),
         })
         const body = await res.json().catch(() => null)
         if (!res.ok) throw new Error(body?.error || "Submit failed")
 
         setSubmission({
-          textContent: textContent.trim() || null,
-          fileUrl: fileUrl || null,
-          fileName: file?.name || null,
-          fileSize: file?.size || null,
-          mimeType: file?.type || null,
+          textContent: allowText ? textContent.trim() || null : null,
+          attachments: attachments.length > 0 ? attachments : null,
           submittedAt: new Date().toISOString(),
           status: "submitted",
         })
@@ -116,29 +123,47 @@ export function LessonAssignmentStudent(props: {
 
   return (
     <div className="space-y-3" dir={isAr ? "rtl" : "ltr"}>
-      <div className="space-y-2">
-        <Label>{isAr ? "تسليم نصي (اختياري)" : "Text submission (optional)"}</Label>
-        <Textarea value={textContent} onChange={(e) => setTextContent(e.target.value)} disabled={isPending} rows={5} />
-      </div>
-      <div className="space-y-2">
-        <Label>{isAr ? "تسليم الواجب" : "Assignment submission"}</Label>
-        <Input ref={fileRef} type="file" disabled={isPending} />
-        <div className="text-xs text-muted-foreground">
-          {isAr ? "الحد الأقصى:" : "Max:"} {Math.round(props.maxBytes / 1024 / 1024)}MB
-          {props.allowedMimeTypes && props.allowedMimeTypes.length > 0 ? (
-            <span>
-              {" "}
-              • {isAr ? "الأنواع:" : "Types:"} {props.allowedMimeTypes.join(", ")}
-            </span>
-          ) : null}
+      {props.allowText !== false && (
+        <div className="space-y-2">
+          <Label>{isAr ? "الإجابة" : "Answer"}</Label>
+          <Textarea value={textContent} onChange={(e) => setTextContent(e.target.value)} disabled={isPending} rows={5} />
         </div>
-      </div>
+      )}
+      {props.allowFiles !== false && (
+        <div className="space-y-2">
+          <Label>{isAr ? "إرفاق ملفات (اختياري)" : "Attach files (optional)"}</Label>
+          <Input ref={fileRef} type="file" disabled={isPending} multiple={Math.min(10, Math.max(1, Number(props.maxFiles || 1))) > 1} />
+          <div className="text-xs text-muted-foreground">
+            {isAr ? "الحد الأقصى لكل ملف:" : "Max per file:"} {Math.round(props.maxBytes / 1024 / 1024)}MB
+            {Number(props.maxFiles || 1) > 1 ? <span> • {isAr ? "عدد الملفات:" : "Files:"} {Math.min(10, Math.max(1, Number(props.maxFiles || 1)))}</span> : null}
+            {props.allowedMimeTypes && props.allowedMimeTypes.length > 0 ? (
+              <span>
+                {" "}
+                • {isAr ? "الأنواع:" : "Types:"} {props.allowedMimeTypes.join(", ")}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      )}
       <Button type="button" onClick={uploadAndSubmit} disabled={isPending}>
         {isPending ? (isAr ? "جاري الإرسال..." : "Submitting...") : isAr ? "تسليم" : "Submit"}
       </Button>
       {submission && (
         <div className="text-sm space-y-1">
-          {submission.fileUrl && submission.fileName && submission.fileSize ? (
+          {Array.isArray(submission.attachments) && submission.attachments.length > 0 ? (
+            <div className="space-y-1">
+              <div className="text-muted-foreground">{isAr ? "الملفات:" : "Files:"}</div>
+              <div className="space-y-1">
+                {submission.attachments.map((a, idx) => (
+                  <div key={`${a.url}-${idx}`}>
+                    <a className="underline" href={a.url} target="_blank" rel="noreferrer">
+                      {a.name}
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : submission.fileUrl && submission.fileName && submission.fileSize ? (
             <>
               <div className="text-muted-foreground">
                 {isAr ? "آخر ملف:" : "Last file:"} {Math.round(Number(submission.fileSize) / 1024 / 1024)} MB

@@ -32,6 +32,10 @@ const getLessonSchema = (isAr: boolean) => z.object({
   assignmentAllowedMimeTypes: z.string().optional().nullable(),
   assignmentMaxFileSizeMb: z.coerce.number().int().min(1).max(500).optional().nullable(),
   assignmentDueAt: z.string().optional().nullable(),
+  assignmentQuestionMarkdown: z.string().optional().nullable(),
+  assignmentAllowText: z.boolean().optional().default(true),
+  assignmentAllowFiles: z.boolean().optional().default(true),
+  assignmentMaxFiles: z.coerce.number().int().min(1).max(10).optional().nullable(),
 })
 
 type LessonFormData = z.infer<ReturnType<typeof getLessonSchema>>
@@ -74,6 +78,10 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
       assignmentAllowedMimeTypes: Array.isArray(assignmentCfg?.allowedMimeTypes) ? assignmentCfg.allowedMimeTypes.join(", ") : "",
       assignmentMaxFileSizeMb: assignmentCfg?.maxFileSizeBytes ? Math.round(Number(assignmentCfg.maxFileSizeBytes) / 1024 / 1024) : 500,
       assignmentDueAt: assignmentCfg?.dueAt ? String(assignmentCfg.dueAt).slice(0, 16) : "",
+      assignmentQuestionMarkdown: typeof assignmentCfg?.questionMarkdown === "string" ? assignmentCfg.questionMarkdown : "",
+      assignmentAllowText: assignmentCfg?.allowText !== undefined ? Boolean(assignmentCfg.allowText) : true,
+      assignmentAllowFiles: assignmentCfg?.allowFiles !== undefined ? Boolean(assignmentCfg.allowFiles) : true,
+      assignmentMaxFiles: Number.isFinite(Number(assignmentCfg?.maxFiles)) ? Number(assignmentCfg.maxFiles) : 1,
     },
   })
 
@@ -98,10 +106,18 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
           .map((s) => s.trim())
           .filter(Boolean)
         const maxMb = Number(data.assignmentMaxFileSizeMb || 500)
+        const allowText = Boolean((data as any).assignmentAllowText)
+        const allowFiles = Boolean((data as any).assignmentAllowFiles)
+        const maxFilesRaw = Number((data as any).assignmentMaxFiles || 1)
+        const maxFiles = Math.min(10, Math.max(1, Number.isFinite(maxFilesRaw) ? Math.round(maxFilesRaw) : 1))
         submitData.assignmentConfig = {
           allowedMimeTypes,
           maxFileSizeBytes: Math.min(500, Math.max(1, Math.round(maxMb))) * 1024 * 1024,
           dueAt: data.assignmentDueAt ? new Date(data.assignmentDueAt).toISOString() : null,
+          questionMarkdown: (data as any).assignmentQuestionMarkdown?.trim() || null,
+          allowText,
+          allowFiles,
+          maxFiles: allowFiles ? maxFiles : 0,
         }
       } else {
         submitData.assignmentConfig = null
@@ -488,6 +504,68 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
             {contentType === "assignment" && (
               <div className="space-y-4 border rounded-md p-4">
                 <h3 className="text-lg font-medium">{isAr ? "إعدادات الواجب" : "Assignment Settings"}</h3>
+                <FormField
+                  control={form.control}
+                  name="assignmentQuestionMarkdown"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{isAr ? "سؤال الواجب (Markdown)" : "Assignment question (Markdown)"}</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          value={field.value || ""}
+                          rows={4}
+                          placeholder={isAr ? "اكتب السؤال الذي سيجيب عليه الطالب..." : "Write the question the student should answer..."}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  <FormField
+                    control={form.control}
+                    name="assignmentAllowText"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3">
+                        <FormControl>
+                          <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>{isAr ? "السماح بإجابة نصية" : "Allow text answer"}</FormLabel>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="assignmentAllowFiles"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3">
+                        <FormControl>
+                          <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>{isAr ? "السماح برفع ملفات" : "Allow file upload"}</FormLabel>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="assignmentMaxFiles"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{isAr ? "عدد الملفات" : "Max files"}</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={1} max={10} {...field} value={field.value ?? 1} disabled={!form.watch("assignmentAllowFiles")} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}

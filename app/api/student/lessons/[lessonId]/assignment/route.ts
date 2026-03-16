@@ -11,10 +11,23 @@ const submitSchema = z.object({
   fileName: z.string().optional().nullable(),
   fileSize: z.number().int().min(1).optional().nullable(),
   mimeType: z.string().optional().nullable(),
+  attachments: z
+    .array(
+      z.object({
+        url: z.string().min(1),
+        name: z.string().min(1),
+        size: z.number().int().min(1).optional().nullable(),
+        mimeType: z.string().optional().nullable(),
+      }),
+    )
+    .optional()
+    .nullable(),
 }).superRefine((val, ctx) => {
   const hasText = Boolean(val.textContent && val.textContent.trim())
+  const attachments = Array.isArray(val.attachments) ? val.attachments : []
+  const hasAttachments = attachments.length > 0
   const hasFile = Boolean(val.fileUrl && String(val.fileUrl).trim())
-  if (!hasText && !hasFile) {
+  if (!hasText && !hasFile && !hasAttachments) {
     ctx.addIssue({ code: "custom", message: "Submission must include text or file" })
   }
   if (hasFile) {
@@ -85,7 +98,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ lessonId
 
   const submission = await db.query.lessonAssignmentSubmissions.findFirst({
     where: and(eq(lessonAssignmentSubmissions.lessonId, lessonId), eq(lessonAssignmentSubmissions.userId, session.user.id)),
-    columns: { textContent: true, fileUrl: true, fileName: true, fileSize: true, mimeType: true, submittedAt: true, status: true },
+    columns: { textContent: true, fileUrl: true, fileName: true, fileSize: true, mimeType: true, attachments: true, submittedAt: true, status: true },
   })
 
   return NextResponse.json({ submission: submission || null, maxBytes, allowedMimeTypes })
@@ -113,16 +126,51 @@ export async function POST(req: NextRequest, props: { params: Promise<{ lessonId
 
   const input = parsed.data
   const hasFile = Boolean(input.fileUrl && String(input.fileUrl).trim())
+  const attachmentsInput = Array.isArray(input.attachments) ? input.attachments : []
+  const normalizedAttachments = attachmentsInput
+    .map((a) => ({
+      url: String(a.url || "").trim(),
+      name: String(a.name || "").trim(),
+      size: a.size === null || a.size === undefined ? null : Number(a.size),
+      mimeType: a.mimeType === null || a.mimeType === undefined ? null : String(a.mimeType),
+    }))
+    .filter((a) => a.url && a.name)
 
+  const filesToCheck: Array<{ url: string; name: string; size: number; mimeType: string }> = []
   if (hasFile) {
-    const size = Number(input.fileSize || 0)
-    if (size > maxBytes) return NextResponse.json({ error: "File too large" }, { status: 413 })
-    const okUrl = String(input.fileUrl).startsWith("/uploads/") || String(input.fileUrl).startsWith("/api/files/")
+    filesToCheck.push({
+      url: String(input.fileUrl || ""),
+      name: String(input.fileName || ""),
+      size: Number(input.fileSize || 0),
+      mimeType: String(input.mimeType || "application/octet-stream"),
+    })
+  }
+  for (const a of normalizedAttachments) {
+    filesToCheck.push({
+      url: a.url,
+      name: a.name,
+      size: Number(a.size || 0),
+      mimeType: String(a.mimeType || "application/octet-stream"),
+    })
+  }
+  for (const f of filesToCheck) {
+    if (f.size > maxBytes) return NextResponse.json({ error: "File too large" }, { status: 413 })
+    const okUrl = String(f.url).startsWith("/uploads/") || String(f.url).startsWith("/api/files/")
     if (!okUrl) return NextResponse.json({ error: "Invalid file url" }, { status: 400 })
-    if (allowedMimeTypes.length > 0 && !allowedMimeTypes.includes(String(input.mimeType))) {
+    if (allowedMimeTypes.length > 0 && !allowedMimeTypes.includes(String(f.mimeType))) {
       return NextResponse.json({ error: "File type not allowed" }, { status: 400 })
     }
   }
+
+  const attachments =
+    normalizedAttachments.length > 0
+      ? normalizedAttachments.map((a) => ({
+          url: a.url,
+          name: a.name,
+          size: a.size && Number.isFinite(Number(a.size)) ? Number(a.size) : undefined,
+          mimeType: a.mimeType ? String(a.mimeType) : undefined,
+        }))
+      : []
 
   const now = new Date()
   const existing = await db.query.lessonAssignmentSubmissions.findFirst({
@@ -143,7 +191,13 @@ export async function POST(req: NextRequest, props: { params: Promise<{ lessonId
       updateData.fileName = input.fileName
       updateData.fileSize = input.fileSize
       updateData.mimeType = input.mimeType
+    } else {
+      updateData.fileUrl = null
+      updateData.fileName = null
+      updateData.fileSize = null
+      updateData.mimeType = null
     }
+    updateData.attachments = attachments
 
     await db
       .update(lessonAssignmentSubmissions)
@@ -160,6 +214,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ lessonId
     fileName: hasFile ? input.fileName : null,
     fileSize: hasFile ? input.fileSize : null,
     mimeType: hasFile ? input.mimeType : null,
+    attachments,
     status: "submitted",
     submittedAt: now,
     createdAt: now,

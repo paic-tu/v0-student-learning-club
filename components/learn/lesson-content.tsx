@@ -347,6 +347,18 @@ export function LessonContent({ lesson, lang, userId, initialNotes = [], quiz, q
       lesson.type === "assignment" && Array.isArray(assignmentConfig?.allowedMimeTypes)
         ? assignmentConfig.allowedMimeTypes.map((v: any) => String(v))
         : []
+    const allowText = lesson.type === "assignment" ? assignmentConfig?.allowText !== false : true
+    const allowFiles = lesson.type === "assignment" ? assignmentConfig?.allowFiles !== false : true
+    const maxFiles =
+      lesson.type === "assignment" && Number.isFinite(Number(assignmentConfig?.maxFiles))
+        ? Number(assignmentConfig.maxFiles)
+        : 1
+    const questionMarkdown =
+      lesson.type === "assignment" && typeof assignmentConfig?.questionMarkdown === "string"
+        ? String(assignmentConfig.questionMarkdown)
+        : ""
+    const fallbackContent = isAr ? lesson.contentAr : lesson.contentEn || ""
+    const contentToRender = questionMarkdown.trim() ? questionMarkdown : fallbackContent
     return (
       <Card className="p-8 text-start" dir={isAr ? "rtl" : "ltr"}>
         <div className="flex items-center gap-2 mb-6">
@@ -367,11 +379,19 @@ export function LessonContent({ lesson, lang, userId, initialNotes = [], quiz, q
           
           <TabsContent value="content">
             <div className="prose dark:prose-invert max-w-none">
-              <ReactMarkdown>{isAr ? lesson.contentAr : lesson.contentEn || ""}</ReactMarkdown>
+              <ReactMarkdown>{contentToRender}</ReactMarkdown>
             </div>
             {lesson.type === "assignment" && (
               <div className="mt-6 border-t pt-6">
-                <LessonAssignmentStudent lang={lang} lessonId={lesson.id} maxBytes={maxBytes} allowedMimeTypes={allowedMimeTypes} />
+                <LessonAssignmentStudent
+                  lang={lang}
+                  lessonId={lesson.id}
+                  maxBytes={maxBytes}
+                  allowedMimeTypes={allowedMimeTypes}
+                  allowText={allowText}
+                  allowFiles={allowFiles}
+                  maxFiles={maxFiles}
+                />
               </div>
             )}
           </TabsContent>
