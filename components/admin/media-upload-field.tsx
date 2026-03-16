@@ -90,6 +90,60 @@ export function MediaUploadField({
 
       setIsUploading(true)
       try {
+        const shouldChunk = type === "video"
+        if (shouldChunk) {
+          const initRes = await fetch("/api/upload/init", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ name: file.name, type: file.type || "application/octet-stream", size: file.size }),
+          })
+
+          if (!initRes.ok) {
+            const errorData = await initRes.json().catch(() => ({}))
+            throw new Error(errorData.error || `Upload init failed with status: ${initRes.status}`)
+          }
+
+          const init = await initRes.json()
+          const fileId = String(init?.fileId || "")
+          const url = String(init?.url || "")
+          const chunkSize = Number(init?.chunkSize || 0)
+          if (!fileId || !url || !chunkSize) throw new Error("Upload init failed")
+
+          const totalChunks = Math.ceil(file.size / chunkSize)
+          for (let i = 0; i < totalChunks; i++) {
+            const start = i * chunkSize
+            const end = Math.min(file.size, start + chunkSize)
+            const part = file.slice(start, end)
+            const buf = await part.arrayBuffer()
+
+            const chunkRes = await fetch(`/api/upload/chunk/${encodeURIComponent(fileId)}/${i}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/octet-stream" },
+              credentials: "include",
+              body: buf,
+            })
+            if (!chunkRes.ok) {
+              const errorData = await chunkRes.json().catch(() => ({}))
+              throw new Error(errorData.error || `Upload failed with status: ${chunkRes.status}`)
+            }
+          }
+
+          const completeRes = await fetch(`/api/upload/complete/${encodeURIComponent(fileId)}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ chunkCount: totalChunks }),
+          })
+          if (!completeRes.ok) {
+            const errorData = await completeRes.json().catch(() => ({}))
+            throw new Error(errorData.error || `Upload failed with status: ${completeRes.status}`)
+          }
+
+          handleValueChange(url)
+          return
+        }
+
         const formDataFetch = new FormData()
         formDataFetch.append("file", file)
         const response = await fetch("/api/upload", {

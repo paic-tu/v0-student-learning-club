@@ -880,10 +880,31 @@ export const files = pgTable("files", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   type: varchar("type", { length: 100 }).notNull(), // MIME type
-  data: text("data").notNull(), // Base64 encoded content
+  storage: varchar("storage", { length: 20 }).notNull().default("inline"),
+  data: text("data"), // Base64 encoded content (inline)
+  chunkSize: integer("chunk_size").notNull().default(0),
+  chunkCount: integer("chunk_count").notNull().default(0),
+  isComplete: boolean("is_complete").notNull().default(true),
   size: integer("size").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 })
+
+export const fileChunks = pgTable(
+  "file_chunks",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    fileId: uuid("file_id")
+      .notNull()
+      .references(() => files.id, { onDelete: "cascade" }),
+    chunkIndex: integer("chunk_index").notNull(),
+    data: text("data").notNull(),
+    size: integer("size").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => ({
+    fileChunkUnique: uniqueIndex("file_chunks_file_index_unique").on(t.fileId, t.chunkIndex),
+  }),
+)
 
 export const assignments = pgTable("assignments", {
   id: uuid("id").defaultRandom().primaryKey(),
