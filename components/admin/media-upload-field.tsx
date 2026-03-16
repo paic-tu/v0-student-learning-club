@@ -111,7 +111,11 @@ export function MediaUploadField({
           if (!fileId || !url || !chunkSize) throw new Error("Upload init failed")
 
           const totalChunks = Math.ceil(file.size / chunkSize)
-          for (let i = 0; i < totalChunks; i++) {
+          const concurrency = 4
+          let nextIndex = 0
+          let firstError: Error | null = null
+
+          const uploadOne = async (i: number) => {
             const start = i * chunkSize
             const end = Math.min(file.size, start + chunkSize)
             const part = file.slice(start, end)
@@ -128,6 +132,24 @@ export function MediaUploadField({
               throw new Error(errorData.error || `Upload failed with status: ${chunkRes.status}`)
             }
           }
+
+          const worker = async () => {
+            while (true) {
+              if (firstError) return
+              const i = nextIndex
+              nextIndex += 1
+              if (i >= totalChunks) return
+              try {
+                await uploadOne(i)
+              } catch (e: any) {
+                firstError = e instanceof Error ? e : new Error(String(e?.message || e))
+                return
+              }
+            }
+          }
+
+          await Promise.all(Array.from({ length: Math.min(concurrency, totalChunks) }, () => worker()))
+          if (firstError) throw firstError
 
           const completeRes = await fetch(`/api/upload/complete/${encodeURIComponent(fileId)}`, {
             method: "POST",

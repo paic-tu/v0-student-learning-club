@@ -1,6 +1,6 @@
 import { db } from "@/lib/db"
 import { fileChunks, files } from "@/lib/db/schema"
-import { and, eq, inArray } from "drizzle-orm"
+import { and, asc, eq, inArray } from "drizzle-orm"
 import { NextRequest, NextResponse } from "next/server"
 
 function safeFilename(name: string) {
@@ -78,6 +78,36 @@ export async function GET(
       const chunkSize = Number(file.chunkSize)
       const chunkCount = Number(file.chunkCount)
 
+      if (!range) {
+        const rows = await db
+          .select({ data: fileChunks.data })
+          .from(fileChunks)
+          .where(eq(fileChunks.fileId, id))
+          .orderBy(asc(fileChunks.chunkIndex))
+
+        let i = 0
+        const stream = new ReadableStream<Uint8Array>({
+          pull(controller) {
+            if (i >= rows.length) {
+              controller.close()
+              return
+            }
+            controller.enqueue(Buffer.from(rows[i]!.data as any, "base64"))
+            i += 1
+          },
+        })
+
+        return new NextResponse(stream, {
+          headers: {
+            "Content-Type": file.type,
+            "Content-Length": fileSize.toString(),
+            "Cache-Control": "public, max-age=31536000, immutable",
+            "Accept-Ranges": "bytes",
+            "Content-Disposition": `inline; filename="${filename}"`,
+          },
+        })
+      }
+
       let start = 0
       let end = fileSize > 0 ? fileSize - 1 : 0
       if (range) {
@@ -103,7 +133,7 @@ export async function GET(
         : []
 
       const byIndex = new Map<number, { data: string; size: number }>()
-      for (const r of rows) byIndex.set(Number(r.chunkIndex), { data: r.data, size: Number(r.size) })
+      for (const r of rows) byIndex.set(Number(r.chunkIndex), { data: String(r.data), size: Number(r.size) })
 
       const partsBuffers: Buffer[] = []
       for (let i = firstChunk; i <= lastChunk; i++) {
@@ -141,7 +171,7 @@ export async function GET(
       })
     }
 
-    const buffer = Buffer.from(file.data || "", "base64")
+    const buffer = Buffer.from(String(file.data || ""), "base64")
     
     // Handle Range requests (required for video seek/streaming)
     if (range) {

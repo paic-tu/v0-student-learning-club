@@ -28,14 +28,19 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ fileId: s
   if (!buf.length) return NextResponse.json({ error: "Empty chunk" }, { status: 400 })
   if (file.chunkSize && buf.length > file.chunkSize) return NextResponse.json({ error: "Chunk too large" }, { status: 413 })
 
-  await db.delete(fileChunks).where(and(eq(fileChunks.fileId, fileId), eq(fileChunks.chunkIndex, chunkIndex)))
-  await db.insert(fileChunks).values({
-    fileId,
-    chunkIndex,
-    data: buf.toString("base64"),
-    size: buf.length,
-  })
+  const base64Data = buf.toString("base64")
+  await db
+    .insert(fileChunks)
+    .values({
+      fileId,
+      chunkIndex,
+      data: base64Data,
+      size: buf.length,
+    })
+    .onConflictDoUpdate({
+      target: [fileChunks.fileId, fileChunks.chunkIndex],
+      set: { data: base64Data, size: buf.length },
+    })
 
   return NextResponse.json({ success: true })
 }
-

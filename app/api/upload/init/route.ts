@@ -20,7 +20,8 @@ export async function POST(req: NextRequest) {
   const parsed = initSchema.safeParse(json)
   if (!parsed.success) return NextResponse.json({ error: "Invalid payload" }, { status: 400 })
 
-  const chunkSize = 2 * 1024 * 1024
+  const chunkMb = Number.parseInt(process.env.UPLOAD_CHUNK_MB || "", 10) > 0 ? Number.parseInt(process.env.UPLOAD_CHUNK_MB || "", 10) : 8
+  const chunkSize = chunkMb * 1024 * 1024
 
   const [row] = await db
     .insert(files)
@@ -41,4 +42,3 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ fileId: id, url: `/api/files/${id}`, chunkSize })
 }
-
