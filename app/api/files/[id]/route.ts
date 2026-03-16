@@ -3,6 +3,8 @@ import { fileChunks, files } from "@/lib/db/schema"
 import { and, asc, eq, gte, lte } from "drizzle-orm"
 import { NextRequest, NextResponse } from "next/server"
 
+export const runtime = "nodejs"
+
 function safeFilename(name: string) {
   return name.replace(/[\r\n"]/g, "_").slice(0, 180) || "file"
 }
