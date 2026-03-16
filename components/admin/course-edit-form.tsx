@@ -41,6 +41,7 @@ export function CourseEditForm({
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const isAr = lang === "ar"
+  const [streamProductId, setStreamProductId] = useState<string>(course.stream_product_id || course.streamProductId || "")
   
   // Category management
   const [localCategories, setLocalCategories] = useState(categories)
@@ -183,7 +184,7 @@ export function CourseEditForm({
         is_published: formData.get("is_published") === "on",
         thumbnail_url: formData.get("thumbnail_url") || null,
         video_url: formData.get("video_url") || null,
-        stream_product_id: formData.get("stream_product_id") || null,
+        stream_product_id: streamProductId.trim() ? streamProductId.trim() : null,
       }
 
       const response = await fetch(`/api/admin/courses/${course.id}`, {
@@ -204,6 +205,34 @@ export function CourseEditForm({
       toast({
         title: isAr ? "خطأ" : "Error",
         description: isAr ? "فشل تحديث الدورة" : "Failed to update course",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGenerateStreamProductId = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/admin/stream/courses/${encodeURIComponent(String(course.id))}/sync`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body?.error || "Failed")
+      const id = String(body?.streamProductId || "")
+      if (!id) throw new Error("Stream product id missing")
+      setStreamProductId(id)
+      toast({
+        title: isAr ? "تم توليد المعرف" : "Generated",
+        description: isAr ? "تم توليد stream_product_id وربطه بالدورة" : "Stream product id generated and linked",
+      })
+      router.refresh()
+    } catch (e: any) {
+      toast({
+        title: isAr ? "خطأ" : "Error",
+        description: e instanceof Error ? e.message : isAr ? "فشل التوليد" : "Failed",
         variant: "destructive",
       })
     } finally {
@@ -368,13 +397,19 @@ export function CourseEditForm({
 
                 <div className="space-y-2">
                   <Label htmlFor="stream_product_id">Stream product_id</Label>
-                  <Input
-                    id="stream_product_id"
-                    name="stream_product_id"
-                    defaultValue={course.stream_product_id || course.streamProductId || ""}
-                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                    dir="ltr"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="stream_product_id"
+                      name="stream_product_id"
+                      value={streamProductId}
+                      onChange={(e) => setStreamProductId(e.target.value)}
+                      placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                      dir="ltr"
+                    />
+                    <Button type="button" variant="outline" onClick={handleGenerateStreamProductId} disabled={loading}>
+                      {isAr ? "توليد" : "Generate"}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
