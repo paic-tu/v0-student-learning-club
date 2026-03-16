@@ -24,6 +24,13 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid payload" }, { status: 400 })
 
   const shouldUseS3 = isS3StorageEnabled()
+  const externalRequiredMb = Number.parseInt(process.env.UPLOAD_EXTERNAL_REQUIRED_MB || "", 10) > 0 ? Number.parseInt(process.env.UPLOAD_EXTERNAL_REQUIRED_MB || "", 10) : 200
+  if (!shouldUseS3 && parsed.data.size > externalRequiredMb * 1024 * 1024) {
+    return NextResponse.json(
+      { error: `External storage required for files > ${externalRequiredMb}MB` },
+      { status: 400 },
+    )
+  }
 
   const [row] = await db
     .insert(files)

@@ -1,4 +1,4 @@
-import { S3Client, CreateMultipartUploadCommand, UploadPartCommand, CompleteMultipartUploadCommand, AbortMultipartUploadCommand, GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3"
+import { S3Client, CreateMultipartUploadCommand, UploadPartCommand, CompleteMultipartUploadCommand, AbortMultipartUploadCommand, GetObjectCommand, HeadObjectCommand, HeadBucketCommand } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 
 export function isS3StorageEnabled() {
@@ -18,11 +18,13 @@ function getS3Client() {
   const region = process.env.STORAGE_REGION || "auto"
   const accessKeyId = process.env.STORAGE_ACCESS_KEY || ""
   const secretAccessKey = process.env.STORAGE_SECRET_KEY || ""
+  const forcePathStyleRaw = (process.env.STORAGE_FORCE_PATH_STYLE || "").toLowerCase().trim()
+  const forcePathStyle = forcePathStyleRaw === "1" || forcePathStyleRaw === "true" || forcePathStyleRaw === "yes"
 
   return new S3Client({
     region,
     endpoint: endpoint || undefined,
-    forcePathStyle: Boolean(process.env.STORAGE_FORCE_PATH_STYLE),
+    forcePathStyle,
     credentials: { accessKeyId, secretAccessKey },
   })
 }
@@ -134,6 +136,16 @@ export async function objectExists({ bucket, key }: { bucket: string; key: strin
   }
 }
 
+export async function canAccessBucket(bucket: string) {
+  const client = getS3Client()
+  try {
+    await client.send(new HeadBucketCommand({ Bucket: bucket }))
+    return true
+  } catch {
+    return false
+  }
+}
+
 export async function signGetObjectUrl({
   bucket,
   key,
@@ -158,4 +170,3 @@ export async function signGetObjectUrl({
 export function getRecommendedPartSizeBytes(sizeBytes: number) {
   return choosePartSizeBytes(sizeBytes)
 }
-
