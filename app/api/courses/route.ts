@@ -2,8 +2,8 @@
 
 import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { courses, users, categories } from "@/lib/db/schema"
-import { eq, desc } from "drizzle-orm"
+import { courses, users, categories, enrollments } from "@/lib/db/schema"
+import { eq, desc, sql } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 
 export async function POST(req: Request) {
@@ -56,7 +56,7 @@ export async function GET() {
         tags: courses.tags,
         requirements: courses.requirements,
         learningOutcomes: courses.learningOutcomes,
-        enrollmentCount: courses.enrollmentCount,
+        enrollmentCount: sql<number>`(select count(*)::int from ${enrollments} where ${enrollments.courseId} = ${courses.id} and ${enrollments.status} = 'active')`,
         rating: courses.rating,
         reviewsCount: courses.reviewsCount,
         createdAt: courses.createdAt,
