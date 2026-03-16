@@ -3,6 +3,54 @@ import { fileChunks, files } from "@/lib/db/schema"
 import { and, eq, inArray } from "drizzle-orm"
 import { NextRequest, NextResponse } from "next/server"
 
+function safeFilename(name: string) {
+  return name.replace(/[\r\n"]/g, "_").slice(0, 180) || "file"
+}
+
+async function getFileMeta(id: string) {
+  const rows = await db
+    .select({
+      name: files.name,
+      storage: files.storage,
+      type: files.type,
+      data: files.data,
+      size: files.size,
+      chunkSize: files.chunkSize,
+      chunkCount: files.chunkCount,
+      isComplete: files.isComplete,
+    })
+    .from(files)
+    .where(eq(files.id, id))
+    .limit(1)
+  return rows[0] || null
+}
+
+export async function HEAD(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await props.params
+    const file = await getFileMeta(id)
+    if (!file) return new NextResponse(null, { status: 404 })
+    if (file.storage === "chunked" && (!file.isComplete || !file.chunkSize || !file.chunkCount)) {
+      return new NextResponse(null, { status: 404 })
+    }
+
+    const fileSize = Number(file.size || 0)
+    const filename = safeFilename(String(file.name || "file"))
+    return new NextResponse(null, {
+      status: 200,
+      headers: {
+        "Content-Type": file.type,
+        "Content-Length": fileSize.toString(),
+        "Accept-Ranges": "bytes",
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Disposition": `inline; filename="${filename}"`,
+      },
+    })
+  } catch {
+    return new NextResponse(null, { status: 500 })
+  }
+}
+
 export async function GET(
   req: NextRequest,
   props: { params: Promise<{ id: string }> }
@@ -12,21 +60,7 @@ export async function GET(
     const { id } = params
     
     // Find file in database
-    const result = await db
-      .select({
-        storage: files.storage,
-        type: files.type,
-        data: files.data,
-        size: files.size,
-        chunkSize: files.chunkSize,
-        chunkCount: files.chunkCount,
-        isComplete: files.isComplete,
-      })
-      .from(files)
-      .where(eq(files.id, id))
-      .limit(1)
-
-    const file = result[0]
+    const file = await getFileMeta(id)
 
     if (!file) {
       return new NextResponse("File not found", { status: 404 })
@@ -34,6 +68,7 @@ export async function GET(
 
     const fileSize = Number(file.size || 0)
     const range = req.headers.get("range")
+    const filename = safeFilename(String(file.name || "file"))
 
     if (file.storage === "chunked") {
       if (!file.isComplete || !file.chunkSize || !file.chunkCount) {
@@ -90,6 +125,7 @@ export async function GET(
             "Accept-Ranges": "bytes",
             "Content-Length": fileChunk.length.toString(),
             "Content-Type": file.type,
+            "Content-Disposition": `inline; filename="${filename}"`,
           },
         })
       }
@@ -100,6 +136,7 @@ export async function GET(
           "Content-Length": fileChunk.length.toString(),
           "Cache-Control": "public, max-age=31536000, immutable",
           "Accept-Ranges": "bytes",
+          "Content-Disposition": `inline; filename="${filename}"`,
         },
       })
     }
@@ -121,6 +158,7 @@ export async function GET(
           "Accept-Ranges": "bytes",
           "Content-Length": chunksize.toString(),
           "Content-Type": file.type,
+          "Content-Disposition": `inline; filename="${filename}"`,
         },
       })
     }
@@ -132,6 +170,7 @@ export async function GET(
         "Content-Length": buffer.length.toString(),
         "Cache-Control": "public, max-age=31536000, immutable",
         "Accept-Ranges": "bytes", // Announce range support
+        "Content-Disposition": `inline; filename="${filename}"`,
       },
     })
   } catch (error) {
