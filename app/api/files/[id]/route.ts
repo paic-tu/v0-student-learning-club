@@ -1,9 +1,15 @@
-import { db } from "@/lib/db"
-import { fileChunks, files } from "@/lib/db/schema"
-import { and, asc, eq, gte, lte } from "drizzle-orm"
+import { Pool } from "pg"
 import { NextRequest, NextResponse } from "next/server"
 
 export const runtime = "nodejs"
+
+const globalForPg = globalThis as any
+const pool: Pool | null =
+  globalForPg.__filesPool ||
+  (process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL
+    ? new Pool({ connectionString: process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL })
+    : null)
+globalForPg.__filesPool = pool
 
 function safeFilename(name: string) {
   return name.replace(/[\r\n"]/g, "_").slice(0, 180) || "file"
@@ -89,21 +95,30 @@ function streamBase64Range(base64: string, start: number, end: number) {
 }
 
 async function getFileMeta(id: string) {
-  const rows = await db
-    .select({
-      name: files.name,
-      storage: files.storage,
-      type: files.type,
-      data: files.data,
-      size: files.size,
-      chunkSize: files.chunkSize,
-      chunkCount: files.chunkCount,
-      isComplete: files.isComplete,
-    })
-    .from(files)
-    .where(eq(files.id, id))
-    .limit(1)
-  return rows[0] || null
+  if (!pool) throw new Error("Database not configured")
+
+  const metaRes = await pool.query(
+    'select name, storage, type, size, chunk_size as "chunkSize", chunk_count as "chunkCount", is_complete as "isComplete" from files where id=$1 limit 1',
+    [id],
+  )
+  const meta = metaRes.rows[0] as
+    | {
+        name: string
+        storage: string
+        type: string
+        size: number
+        chunkSize: number
+        chunkCount: number
+        isComplete: boolean
+      }
+    | undefined
+
+  if (!meta) return null
+  if (meta.storage !== "inline") return { ...meta, data: null }
+
+  const dataRes = await pool.query("select data from files where id=$1 limit 1", [id])
+  const dataRow = dataRes.rows[0] as { data: string | null } | undefined
+  return { ...meta, data: dataRow?.data ?? null }
 }
 
 export async function HEAD(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -186,11 +201,13 @@ export async function GET(
 
       const rows =
         firstChunk <= lastChunk
-          ? await db
-              .select({ chunkIndex: fileChunks.chunkIndex, data: fileChunks.data })
-              .from(fileChunks)
-              .where(and(eq(fileChunks.fileId, id), gte(fileChunks.chunkIndex, firstChunk), lte(fileChunks.chunkIndex, lastChunk)))
-              .orderBy(asc(fileChunks.chunkIndex))
+          ? (
+              await pool!.query('select chunk_index as "chunkIndex", data from file_chunks where file_id=$1 and chunk_index between $2 and $3 order by chunk_index asc', [
+                id,
+                firstChunk,
+                lastChunk,
+              ])
+            ).rows
           : []
 
       const byIndex = new Map<number, string>()
