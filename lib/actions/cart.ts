@@ -14,23 +14,60 @@ import { and, desc, eq, isNotNull } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { createStreamConsumer, createStreamPaymentLink, findStreamConsumerByEmail, findStreamConsumerByPhone, getAppBaseUrl, normalizeSaudiPhone, streamRequest } from "@/lib/payments/stream"
 
-function normalizeCouponIds(input: string[] | null | undefined) {
-  const ids = Array.isArray(input) ? input.map((x) => String(x || "").trim()).filter(Boolean) : []
-  return Array.from(new Set(ids)).sort()
+function normalizeCouponIds(input: unknown) {
+  if (!input) return []
+  if (Array.isArray(input)) {
+    return Array.from(new Set(input.map((x) => String(x || "").trim()).filter(Boolean))).sort()
+  }
+  if (typeof input === "string") {
+    const s = input.trim()
+    if (!s) return []
+    try {
+      const parsed = JSON.parse(s)
+      return normalizeCouponIds(parsed)
+    } catch {
+      return [s]
+    }
+  }
+  return []
 }
 
-async function ensureValidCoupons(couponIds: string[] | null | undefined) {
-  const ids = normalizeCouponIds(couponIds)
-  if (ids.length === 0) return []
+function estimateDiscount(total: number, coupon: { isPercentage: boolean; discountValue: number }) {
+  if (!Number.isFinite(total) || total <= 0) return 0
+  const dv = Number(coupon.discountValue) || 0
+  if (!Number.isFinite(dv) || dv <= 0) return 0
+  const raw = coupon.isPercentage ? total * (dv / 100) : dv
+  const capped = Math.max(0, Math.min(total, raw))
+  return Number(capped.toFixed(2))
+}
 
-  const checked: string[] = []
+async function ensureValidCouponsWithDetails(couponIds: unknown) {
+  const ids = normalizeCouponIds(couponIds)
+  if (ids.length === 0) return { ids: [], details: [] as Array<{ id: string; isPercentage: boolean; discountValue: number }> }
+
+  const details: Array<{ id: string; isPercentage: boolean; discountValue: number }> = []
   for (const id of ids) {
     const c = await streamRequest<any>(`/coupons/${encodeURIComponent(id)}`, { method: "GET" })
     if (!c?.id) throw new Error("Invalid coupon")
     if (c?.is_active === false) throw new Error("Coupon is inactive")
-    checked.push(String(c.id))
+    const discountValue = Number.parseFloat(String(c?.discount_value))
+    const isPercentage = Boolean(c?.is_percentage)
+    if (!Number.isFinite(discountValue) || discountValue <= 0) throw new Error("Invalid coupon")
+    details.push({ id: String(c.id), isPercentage, discountValue })
   }
-  return checked
+  return { ids: details.map((d) => d.id), details }
+}
+
+function extractCouponIdsFromGatewayPayload(payload: any) {
+  if (!payload) return []
+  const fromTop = normalizeCouponIds(payload?.coupons)
+  if (fromTop.length > 0) return fromTop
+  const items = Array.isArray(payload?.items) ? payload.items : []
+  for (const it of items) {
+    const ids = normalizeCouponIds((it as any)?.coupons)
+    if (ids.length > 0) return ids
+  }
+  return []
 }
 
 export async function getCartAction() {
@@ -411,7 +448,16 @@ export async function checkoutAction(shippingAddress?: string, notes?: string, l
           where: and(eq(orders.userId, userId), eq(orders.status, "pending"), eq(orders.paymentProvider, "stream"), isNotNull(orders.paymentLinkUrl)),
           orderBy: [desc(orders.createdAt)],
           with: { items: { columns: { courseId: true, productId: true, quantity: true } } },
-          columns: { id: true, paymentLinkUrl: true, couponIds: true },
+          columns: {
+            id: true,
+            paymentLinkId: true,
+            paymentLinkUrl: true,
+            totalAmount: true,
+            couponIds: true,
+            gatewayPayload: true,
+            originalAmount: true,
+            discountAmount: true,
+          },
         })
 
         if (existingOrder?.paymentLinkUrl && Array.isArray(existingOrder.items) && existingOrder.items.length > 0) {
@@ -426,15 +472,117 @@ export async function checkoutAction(shippingAddress?: string, notes?: string, l
             .sort()
             .join("|")
           const requestedCoupons = normalizeCouponIds(couponIds)
-          const existingCoupons = normalizeCouponIds(existingOrder.couponIds as any)
+          const existingCoupons =
+            normalizeCouponIds(existingOrder.couponIds as any).length > 0
+              ? normalizeCouponIds(existingOrder.couponIds as any)
+              : extractCouponIdsFromGatewayPayload(existingOrder.gatewayPayload as any)
           const couponKey = requestedCoupons.join("|")
           const existingCouponKey = existingCoupons.join("|")
-          if (cartKey && cartKey === orderKey && couponKey === existingCouponKey) {
+          const existingDiscountRaw = Number.parseFloat(String(existingOrder.discountAmount || "0"))
+          const existingDiscount = Number.isFinite(existingDiscountRaw) ? existingDiscountRaw : 0
+          const couponMismatch = couponKey !== existingCouponKey
+          const couponRemovedButDiscounted = requestedCoupons.length === 0 && existingDiscount > 0
+          if (cartKey && cartKey === orderKey && !couponMismatch && !couponRemovedButDiscounted) {
+            const storedTotal = Number.parseFloat(String(existingOrder.totalAmount || ""))
+            const payloadTotal = Number.parseFloat(String((existingOrder.gatewayPayload as any)?.amount || ""))
+            const existingFinalTotal = Number.isFinite(storedTotal) ? storedTotal : Number.isFinite(payloadTotal) ? payloadTotal : null
+
+            if (existingFinalTotal !== null && existingFinalTotal <= 0) {
+              await db
+                .update(orders)
+                .set({
+                  status: "paid",
+                  paidAt: new Date(),
+                  gatewayStatus: "COUPON_FREE",
+                  paymentProvider: "coupon",
+                  updatedAt: new Date(),
+                })
+                .where(eq(orders.id, existingOrder.id))
+
+              for (const item of validItems) {
+                if (item.type !== "course") continue
+                const existing = await db.query.enrollments.findFirst({
+                  where: and(eq(enrollments.userId, userId), eq(enrollments.courseId, item.id)),
+                })
+                if (!existing) {
+                  await db.insert(enrollments).values({
+                    userId,
+                    courseId: item.id,
+                    status: "active",
+                  })
+                }
+              }
+
+              await db.delete(cartItems).where(eq(cartItems.cartId, cart.id))
+              revalidatePath("/cart")
+              revalidatePath("/ar/cart")
+              revalidatePath("/en/cart")
+              revalidatePath("/ar/student/my-courses")
+              revalidatePath("/en/student/my-courses")
+              return { success: true, orderId: existingOrder.id }
+            }
+
             return { success: true, orderId: existingOrder.id, checkoutUrl: existingOrder.paymentLinkUrl }
           }
         }
 
-        const verifiedCouponIds = await ensureValidCoupons(couponIds)
+        const verified = await ensureValidCouponsWithDetails(couponIds)
+        const verifiedCouponIds = verified.ids
+        const verifiedDetails = verified.details
+
+        const safeTotal = Number.isFinite(total) ? total : 0
+        const isFreeByCoupon = verifiedDetails.length === 1 ? safeTotal - estimateDiscount(safeTotal, verifiedDetails[0]) <= 0 : false
+        const isAlreadyFree = safeTotal <= 0
+
+        if (isAlreadyFree || isFreeByCoupon) {
+          const [order] = await db
+            .insert(orders)
+            .values({
+              userId,
+              status: "paid",
+              totalAmount: "0.00",
+              originalAmount: safeTotal.toFixed(2),
+              discountAmount: safeTotal.toFixed(2),
+              couponIds: verifiedCouponIds.length > 0 ? verifiedCouponIds : null,
+              shippingAddress: shippingAddress || null,
+              notes: notes || null,
+              paymentProvider: "coupon",
+              gatewayStatus: "COUPON_FREE",
+              paidAt: new Date(),
+            })
+            .returning()
+
+          for (const item of validItems) {
+            await db.insert(orderItems).values({
+              orderId: order.id,
+              courseId: item.type === "course" ? item.id : null,
+              productId: item.type === "product" ? item.id : null,
+              price: item.price.toString(),
+              quantity: item.quantity || 1,
+            })
+
+            if (item.type === "course") {
+              const existing = await db.query.enrollments.findFirst({
+                where: and(eq(enrollments.userId, userId), eq(enrollments.courseId, item.id)),
+              })
+              if (!existing) {
+                await db.insert(enrollments).values({
+                  userId,
+                  courseId: item.id,
+                  status: "active",
+                })
+              }
+            }
+          }
+
+          await db.delete(cartItems).where(eq(cartItems.cartId, cart.id))
+          revalidatePath("/cart")
+          revalidatePath("/ar/cart")
+          revalidatePath("/en/cart")
+          revalidatePath("/ar/student/my-courses")
+          revalidatePath("/en/student/my-courses")
+          return { success: true, orderId: order.id }
+        }
 
         const [order] = await db
             .insert(orders)
@@ -511,6 +659,32 @@ export async function checkoutAction(shippingAddress?: string, notes?: string, l
             discountAmount: finalDiscount.toFixed(2),
             updatedAt: new Date(),
         }).where(eq(orders.id, order.id))
+
+        if (finalTotal <= 0) {
+          await db.update(orders).set({ status: "paid", paidAt: new Date(), gatewayStatus: "COUPON_FREE", paymentProvider: "coupon", updatedAt: new Date() }).where(eq(orders.id, order.id))
+
+          for (const item of validItems) {
+            if (item.type !== "course") continue
+            const existing = await db.query.enrollments.findFirst({
+              where: and(eq(enrollments.userId, userId), eq(enrollments.courseId, item.id)),
+            })
+            if (!existing) {
+              await db.insert(enrollments).values({
+                userId,
+                courseId: item.id,
+                status: "active",
+              })
+            }
+          }
+
+          await db.delete(cartItems).where(eq(cartItems.cartId, cart.id))
+          revalidatePath("/cart")
+          revalidatePath("/ar/cart")
+          revalidatePath("/en/cart")
+          revalidatePath("/ar/student/my-courses")
+          revalidatePath("/en/student/my-courses")
+          return { success: true, orderId: order.id }
+        }
 
         revalidatePath("/cart")
         revalidatePath("/ar/cart")
