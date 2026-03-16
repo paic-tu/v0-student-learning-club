@@ -1,15 +1,10 @@
-import { Pool } from "pg"
 import { NextRequest, NextResponse } from "next/server"
+import { db } from "@/lib/db"
+import { fileChunks, files } from "@/lib/db/schema"
+import { and, asc, eq, gte, lte } from "drizzle-orm"
+import { getS3Bucket, getS3KeyForFileId, isS3StorageEnabled, objectExists, signGetObjectUrl } from "@/lib/storage/s3"
 
 export const runtime = "nodejs"
-
-const globalForPg = globalThis as any
-const pool: Pool | null =
-  globalForPg.__filesPool ||
-  (process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL
-    ? new Pool({ connectionString: process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL })
-    : null)
-globalForPg.__filesPool = pool
 
 function safeFilename(name: string) {
   return name.replace(/[\r\n"]/g, "_").slice(0, 180) || "file"
@@ -95,30 +90,35 @@ function streamBase64Range(base64: string, start: number, end: number) {
 }
 
 async function getFileMeta(id: string) {
-  if (!pool) throw new Error("Database not configured")
+  const rows = await db
+    .select({
+      name: files.name,
+      storage: files.storage,
+      type: files.type,
+      size: files.size,
+      data: files.data,
+      storageKey: files.storageKey,
+      storageBucket: files.storageBucket,
+      isComplete: files.isComplete,
+      chunkSize: files.chunkSize,
+      chunkCount: files.chunkCount,
+    })
+    .from(files)
+    .where(eq(files.id, id))
+    .limit(1)
+  return rows[0] || null
+}
 
-  const metaRes = await pool.query(
-    'select name, storage, type, size, chunk_size as "chunkSize", chunk_count as "chunkCount", is_complete as "isComplete" from files where id=$1 limit 1',
-    [id],
-  )
-  const meta = metaRes.rows[0] as
-    | {
-        name: string
-        storage: string
-        type: string
-        size: number
-        chunkSize: number
-        chunkCount: number
-        isComplete: boolean
-      }
-    | undefined
-
-  if (!meta) return null
-  if (meta.storage !== "inline") return { ...meta, data: null }
-
-  const dataRes = await pool.query("select data from files where id=$1 limit 1", [id])
-  const dataRow = dataRes.rows[0] as { data: string | null } | undefined
-  return { ...meta, data: dataRow?.data ?? null }
+async function tryRedirectToS3(fileId: string, file?: any) {
+  if (!isS3StorageEnabled()) return null
+  const bucket = String(file?.storageBucket || getS3Bucket())
+  const key = String(file?.storageKey || getS3KeyForFileId(fileId))
+  const filename = safeFilename(String(file?.name || fileId))
+  const type = file?.type ? String(file.type) : undefined
+  const exists = await objectExists({ bucket, key })
+  if (!exists) return null
+  const url = await signGetObjectUrl({ bucket, key, filename, contentType: type })
+  return NextResponse.redirect(url, { status: 307 })
 }
 
 export async function HEAD(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -126,9 +126,8 @@ export async function HEAD(_req: NextRequest, props: { params: Promise<{ id: str
     const { id } = await props.params
     const file = await getFileMeta(id)
     if (!file) return new NextResponse(null, { status: 404 })
-    if (file.storage === "chunked" && (!file.isComplete || !file.chunkSize || !file.chunkCount)) {
-      return new NextResponse(null, { status: 404 })
-    }
+    const redirect = await tryRedirectToS3(id, file)
+    if (redirect) return redirect
 
     const fileSize = Number(file.size || 0)
     const filename = safeFilename(String(file.name || "file"))
@@ -163,6 +162,9 @@ export async function GET(
       return new NextResponse("File not found", { status: 404, headers: { "Cache-Control": "no-store" } })
     }
 
+    const redirect = await tryRedirectToS3(id, file)
+    if (redirect) return redirect
+
     const fileSize = Number(file.size || 0)
     const range = req.headers.get("range")
     const filename = safeFilename(String(file.name || "file"))
@@ -175,11 +177,12 @@ export async function GET(
 
       const chunkSize = Number(file.chunkSize)
       const chunkCount = Number(file.chunkCount)
+      if (fileSize <= 0 || !chunkSize || !chunkCount) {
+        return new NextResponse("File not found", { status: 404, headers: { "Cache-Control": "no-store" } })
+      }
 
       const start = rangeParsed ? rangeParsed.start : 0
-      const end = Math.min(rangeParsed ? rangeParsed.end : Math.max(0, fileSize - 1), Math.max(0, fileSize - 1))
-
-      if (fileSize <= 0) return new NextResponse("File not found", { status: 404, headers: { "Cache-Control": "no-store" } })
+      const end = rangeParsed ? rangeParsed.end : fileSize - 1
       if (start >= fileSize || start < 0 || end < start) {
         return new NextResponse(null, {
           status: 416,
@@ -188,7 +191,6 @@ export async function GET(
             "Accept-Ranges": "bytes",
             "Content-Type": file.type,
             "Cache-Control": "no-store",
-            "X-File-Storage": "chunked",
           },
         })
       }
@@ -199,16 +201,11 @@ export async function GET(
         return new NextResponse("File not found", { status: 404, headers: { "Cache-Control": "no-store" } })
       }
 
-      const rows =
-        firstChunk <= lastChunk
-          ? (
-              await pool!.query('select chunk_index as "chunkIndex", data from file_chunks where file_id=$1 and chunk_index between $2 and $3 order by chunk_index asc', [
-                id,
-                firstChunk,
-                lastChunk,
-              ])
-            ).rows
-          : []
+      const rows = await db
+        .select({ chunkIndex: fileChunks.chunkIndex, data: fileChunks.data })
+        .from(fileChunks)
+        .where(and(eq(fileChunks.fileId, id), gte(fileChunks.chunkIndex, firstChunk), lte(fileChunks.chunkIndex, lastChunk)))
+        .orderBy(asc(fileChunks.chunkIndex))
 
       const byIndex = new Map<number, string>()
       for (const r of rows) byIndex.set(Number(r.chunkIndex), String(r.data))
@@ -228,7 +225,6 @@ export async function GET(
             controller.close()
             return
           }
-
           const data = byIndex.get(currentChunk)
           if (!data) {
             controller.error(new Error("Missing chunk"))
@@ -250,14 +246,10 @@ export async function GET(
 
       const headers: Record<string, string> = {
         "Content-Type": file.type,
-        "Content-Length": (end - start + 1).toString(),
         "Accept-Ranges": "bytes",
         "Content-Disposition": `inline; filename="${filename}"`,
         "Cache-Control": "no-store",
-        "X-File-Storage": "chunked",
-        "X-File-Size": fileSize.toString(),
-        "X-Range-Request": range ? range : "",
-        "X-Range-Applied": `bytes ${start}-${end}/${fileSize}`,
+        "Content-Length": (end - start + 1).toString(),
       }
 
       if (rangeParsed) {

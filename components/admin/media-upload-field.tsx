@@ -115,6 +115,8 @@ export function MediaUploadField({
             fileId = String(init?.fileId || "")
             const url = String(init?.url || "")
             const chunkSize = Number(init?.chunkSize || 0)
+            const storage = String(init?.storage || "chunked")
+            const uploadId = String(init?.uploadId || "")
             if (!fileId || !url || !chunkSize) throw new Error("Upload init failed")
 
             const totalChunks = Math.ceil(file.size / chunkSize)
@@ -126,20 +128,48 @@ export function MediaUploadField({
               const start = i * chunkSize
               const end = Math.min(file.size, start + chunkSize)
               const part = file.slice(start, end)
-              const buf = await part.arrayBuffer()
+              if (storage === "s3") {
+                if (!uploadId) throw new Error("Upload init failed")
+                const partNumber = i + 1
+                const signRes = await fetch(`/api/upload/part/${encodeURIComponent(fileId)}/${partNumber}`, {
+                  method: "POST",
+                  credentials: "include",
+                })
+                if (!signRes.ok) {
+                  const errorData = await signRes.json().catch(() => ({}))
+                  throw new Error(errorData.error || `Upload failed with status: ${signRes.status}`)
+                }
+                const signed = await signRes.json()
+                const signedUrl = String(signed?.url || "")
+                if (!signedUrl) throw new Error("Upload failed")
 
-              const chunkRes = await fetch(`/api/upload/chunk/${encodeURIComponent(fileId)}/${i}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/octet-stream" },
-                credentials: "include",
-                body: buf,
-              })
-              if (!chunkRes.ok) {
-                const errorData = await chunkRes.json().catch(() => ({}))
-                throw new Error(errorData.error || `Upload failed with status: ${chunkRes.status}`)
+                const putRes = await fetch(signedUrl, {
+                  method: "PUT",
+                  body: part,
+                })
+                if (!putRes.ok) throw new Error(`Upload failed with status: ${putRes.status}`)
+
+                const etag = putRes.headers.get("etag") || putRes.headers.get("ETag") || ""
+                if (!etag) throw new Error("Upload failed")
+                return { partNumber, etag }
+              } else {
+                const buf = await part.arrayBuffer()
+
+                const chunkRes = await fetch(`/api/upload/chunk/${encodeURIComponent(fileId)}/${i}`, {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/octet-stream" },
+                  credentials: "include",
+                  body: buf,
+                })
+                if (!chunkRes.ok) {
+                  const errorData = await chunkRes.json().catch(() => ({}))
+                  throw new Error(errorData.error || `Upload failed with status: ${chunkRes.status}`)
+                }
+                return null
               }
             }
 
+            const completedParts: { partNumber: number; etag: string }[] = []
             const worker = async () => {
               while (true) {
                 if (firstError) return
@@ -147,7 +177,8 @@ export function MediaUploadField({
                 nextIndex += 1
                 if (i >= totalChunks) return
                 try {
-                  await uploadOne(i)
+                  const partInfo = await uploadOne(i)
+                  if (partInfo) completedParts.push(partInfo)
                 } catch (e: any) {
                   firstError = e instanceof Error ? e : new Error(String(e?.message || e))
                   return
@@ -162,7 +193,11 @@ export function MediaUploadField({
               method: "POST",
               headers: { "Content-Type": "application/json" },
               credentials: "include",
-              body: JSON.stringify({ chunkCount: totalChunks }),
+              body: JSON.stringify(
+                storage === "s3"
+                  ? { parts: completedParts.sort((a, b) => a.partNumber - b.partNumber) }
+                  : { chunkCount: totalChunks },
+              ),
             })
             if (!completeRes.ok) {
               const errorData = await completeRes.json().catch(() => ({}))
@@ -182,21 +217,29 @@ export function MediaUploadField({
           }
         }
 
-        if (type === "video" || isVideoFile) {
-          for (const mb of [4, 2, 1]) {
-            try {
-              await tryChunkedUpload(mb)
-              toast({
-                title: isAr ? "تم بنجاح" : "Success",
-                description: isAr ? "تم رفع الفيديو بنجاح" : "Video uploaded successfully",
-              })
-              return
-            } catch (e: any) {
-              const msg = String(e?.message || "")
-              if (!msg.includes("413") && !msg.toLowerCase().includes("too large")) throw e
+        if (type === "video" || isVideoFile || file.size > 10 * 1024 * 1024) {
+          try {
+            await tryChunkedUpload()
+            toast({
+              title: isAr ? "تم بنجاح" : "Success",
+              description: isAr ? "تم رفع الملف بنجاح" : "File uploaded successfully",
+            })
+            return
+          } catch (e: any) {
+            const msg = String(e?.message || "")
+            const is413 = msg.includes("413") || msg.toLowerCase().includes("too large")
+            if (is413 && file.size < 5 * 1024 * 1024 * 1024) {
+              for (const mb of [2, 1]) {
+                await tryChunkedUpload(mb)
+                toast({
+                  title: isAr ? "تم بنجاح" : "Success",
+                  description: isAr ? "تم رفع الملف بنجاح" : "File uploaded successfully",
+                })
+                return
+              }
             }
+            throw e
           }
-          throw new Error("Upload failed with status: 413")
         }
 
         const formDataFetch = new FormData()

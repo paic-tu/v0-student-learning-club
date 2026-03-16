@@ -881,6 +881,9 @@ export const files = pgTable("files", {
   name: varchar("name", { length: 255 }).notNull(),
   type: varchar("type", { length: 100 }).notNull(), // MIME type
   storage: varchar("storage", { length: 20 }).notNull().default("inline"),
+  storageKey: text("storage_key"),
+  storageBucket: text("storage_bucket"),
+  storageUploadId: text("storage_upload_id"),
   data: text("data"), // Base64 encoded content (inline)
   chunkSize: integer("chunk_size").notNull().default(0),
   chunkCount: integer("chunk_count").notNull().default(0),
