@@ -14,6 +14,25 @@ import { and, desc, eq, isNotNull } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { createStreamConsumer, createStreamPaymentLink, findStreamConsumerByEmail, findStreamConsumerByPhone, getAppBaseUrl, normalizeSaudiPhone, streamRequest } from "@/lib/payments/stream"
 
+function normalizeCouponIds(input: string[] | null | undefined) {
+  const ids = Array.isArray(input) ? input.map((x) => String(x || "").trim()).filter(Boolean) : []
+  return Array.from(new Set(ids)).sort()
+}
+
+async function ensureValidCoupons(couponIds: string[] | null | undefined) {
+  const ids = normalizeCouponIds(couponIds)
+  if (ids.length === 0) return []
+
+  const checked: string[] = []
+  for (const id of ids) {
+    const c = await streamRequest<any>(`/coupons/${encodeURIComponent(id)}`, { method: "GET" })
+    if (!c?.id) throw new Error("Invalid coupon")
+    if (c?.is_active === false) throw new Error("Coupon is inactive")
+    checked.push(String(c.id))
+  }
+  return checked
+}
+
 export async function getCartAction() {
   console.log("[Action] getCartAction started")
   try {
@@ -392,7 +411,7 @@ export async function checkoutAction(shippingAddress?: string, notes?: string, l
           where: and(eq(orders.userId, userId), eq(orders.status, "pending"), eq(orders.paymentProvider, "stream"), isNotNull(orders.paymentLinkUrl)),
           orderBy: [desc(orders.createdAt)],
           with: { items: { columns: { courseId: true, productId: true, quantity: true } } },
-          columns: { id: true, paymentLinkUrl: true },
+          columns: { id: true, paymentLinkUrl: true, couponIds: true },
         })
 
         if (existingOrder?.paymentLinkUrl && Array.isArray(existingOrder.items) && existingOrder.items.length > 0) {
@@ -406,10 +425,16 @@ export async function checkoutAction(shippingAddress?: string, notes?: string, l
             .slice()
             .sort()
             .join("|")
-          if (cartKey && cartKey === orderKey) {
+          const requestedCoupons = normalizeCouponIds(couponIds)
+          const existingCoupons = normalizeCouponIds(existingOrder.couponIds as any)
+          const couponKey = requestedCoupons.join("|")
+          const existingCouponKey = existingCoupons.join("|")
+          if (cartKey && cartKey === orderKey && couponKey === existingCouponKey) {
             return { success: true, orderId: existingOrder.id, checkoutUrl: existingOrder.paymentLinkUrl }
           }
         }
+
+        const verifiedCouponIds = await ensureValidCoupons(couponIds)
 
         const [order] = await db
             .insert(orders)
@@ -417,6 +442,9 @@ export async function checkoutAction(shippingAddress?: string, notes?: string, l
                 userId,
                 status: "pending",
                 totalAmount: total.toString(),
+                originalAmount: total.toString(),
+                discountAmount: "0",
+                couponIds: verifiedCouponIds.length > 0 ? verifiedCouponIds : null,
                 shippingAddress: shippingAddress || null,
                 notes: notes || null,
                 paymentProvider: "stream",
@@ -448,7 +476,7 @@ export async function checkoutAction(shippingAddress?: string, notes?: string, l
                 successRedirectUrl,
                 failureRedirectUrl,
                 items: itemsForStream,
-                couponIds: Array.isArray(couponIds) && couponIds.length > 0 ? couponIds : undefined,
+                couponIds: verifiedCouponIds.length > 0 ? verifiedCouponIds : undefined,
                 customMetadata: {
                     order_id: order.id,
                     user_id: userId,
@@ -457,7 +485,7 @@ export async function checkoutAction(shippingAddress?: string, notes?: string, l
                     user_email: email || null,
                     user_phone: phoneE164 || null,
                     preferred_language: preferredLanguage || null,
-                    coupon_ids: Array.isArray(couponIds) && couponIds.length > 0 ? couponIds : null,
+                    coupon_ids: verifiedCouponIds.length > 0 ? verifiedCouponIds : null,
                 },
             })
         } catch (e) {
@@ -466,12 +494,21 @@ export async function checkoutAction(shippingAddress?: string, notes?: string, l
             return { error: e instanceof Error ? e.message : "Failed to create payment link" }
         }
 
+        const streamAmount = Number.parseFloat(String((paymentLink as any)?.amount || ""))
+        const streamOriginal = Number.parseFloat(String((paymentLink as any)?.original_amount || ""))
+        const finalOriginal = Number.isFinite(streamOriginal) && streamOriginal > 0 ? streamOriginal : total
+        const finalTotal = Number.isFinite(streamAmount) && streamAmount >= 0 ? streamAmount : total
+        const finalDiscount = Math.max(0, Number((finalOriginal - finalTotal).toFixed(2)))
+
         await db.update(orders).set({
             paymentLinkId: paymentLink.id,
             paymentLinkUrl: paymentLink.url,
             gatewayStatus: paymentLink.status || "ACTIVE",
             branchId: process.env.STREAM_BRANCH_ID || null,
             gatewayPayload: paymentLink as any,
+            totalAmount: finalTotal.toFixed(2),
+            originalAmount: finalOriginal.toFixed(2),
+            discountAmount: finalDiscount.toFixed(2),
             updatedAt: new Date(),
         }).where(eq(orders.id, order.id))
 

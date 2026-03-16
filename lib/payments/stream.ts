@@ -95,12 +95,21 @@ export async function createStreamPaymentLink(input: {
     payload.items = input.items.map((it) => ({
       product_id: it.productId,
       quantity: it.quantity,
+      ...(Array.isArray(input.couponIds) && input.couponIds.length > 0 ? { coupons: input.couponIds } : {}),
     }))
   } else if (typeof input.amount === "number") {
     payload.amount = input.amount
   }
 
-  return await streamRequest<{ id: string; url: string; status?: string; amount?: string; currency?: string }>(
+  return await streamRequest<{
+    id: string
+    url: string
+    status?: string
+    amount?: string
+    original_amount?: string
+    item_level_discounted_amount?: string
+    currency?: string
+  }>(
     "/payment_links",
     {
       method: "POST",
