@@ -151,12 +151,12 @@ export default function CoursesPage() {
                         <span>{course.rating}</span>
                       </div>
                     )}
-                    {course.enrollment_count && (
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        <span>{course.enrollment_count}</span>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-1">
+                      <Users className="h-4 w-4" />
+                      <span>
+                        {Number(course.enrollmentCount ?? course.enrollment_count ?? 0)} {language === "ar" ? "مشترك" : "Enrolled"}
+                      </span>
+                    </div>
                   </div>
                   <div className="mt-3 font-semibold text-primary">
                     {course.is_free || course.price === 0
