@@ -1,6 +1,6 @@
 import { db } from "@/lib/db"
 import { fileChunks, files } from "@/lib/db/schema"
-import { and, asc, eq, gte, inArray, lte } from "drizzle-orm"
+import { and, asc, eq, gte, lte } from "drizzle-orm"
 import { NextRequest, NextResponse } from "next/server"
 
 function safeFilename(name: string) {
@@ -8,7 +8,10 @@ function safeFilename(name: string) {
 }
 
 function parseRangeHeader(range: string, size: number) {
-  const m = range.match(/^bytes=(\d*)-(\d*)$/)
+  const normalized = range.trim()
+  if (!normalized.toLowerCase().startsWith("bytes=")) return null
+  const first = normalized.slice(6).split(",")[0]?.trim() || ""
+  const m = first.match(/^(\d*)-(\d*)$/)
   if (!m) return null
   const startRaw = m[1]
   const endRaw = m[2]
@@ -110,8 +113,9 @@ export async function HEAD(_req: NextRequest, props: { params: Promise<{ id: str
         "Content-Type": file.type,
         "Content-Length": fileSize.toString(),
         "Accept-Ranges": "bytes",
-        "Cache-Control": "public, max-age=31536000, immutable",
+        "Cache-Control": "no-store",
         "Content-Disposition": `inline; filename="${filename}"`,
+        "X-File-Storage": String(file.storage),
       },
     })
   } catch {
@@ -131,7 +135,7 @@ export async function GET(
     const file = await getFileMeta(id)
 
     if (!file) {
-      return new NextResponse("File not found", { status: 404 })
+      return new NextResponse("File not found", { status: 404, headers: { "Cache-Control": "no-store" } })
     }
 
     const fileSize = Number(file.size || 0)
@@ -141,7 +145,7 @@ export async function GET(
 
     if (file.storage === "chunked") {
       if (!file.isComplete || !file.chunkSize || !file.chunkCount) {
-        return new NextResponse("File not ready", { status: 404 })
+        return new NextResponse("File not ready", { status: 404, headers: { "Cache-Control": "no-store" } })
       }
 
       const chunkSize = Number(file.chunkSize)
@@ -150,7 +154,7 @@ export async function GET(
       const start = rangeParsed ? rangeParsed.start : 0
       const end = Math.min(rangeParsed ? rangeParsed.end : Math.max(0, fileSize - 1), Math.max(0, fileSize - 1))
 
-      if (fileSize <= 0) return new NextResponse("File not found", { status: 404 })
+      if (fileSize <= 0) return new NextResponse("File not found", { status: 404, headers: { "Cache-Control": "no-store" } })
       if (start >= fileSize || start < 0 || end < start) {
         return new NextResponse(null, {
           status: 416,
@@ -158,13 +162,17 @@ export async function GET(
             "Content-Range": `bytes */${fileSize}`,
             "Accept-Ranges": "bytes",
             "Content-Type": file.type,
+            "Cache-Control": "no-store",
+            "X-File-Storage": "chunked",
           },
         })
       }
 
       const firstChunk = Math.floor(start / chunkSize)
       const lastChunk = Math.floor(end / chunkSize)
-      if (firstChunk < 0 || lastChunk >= chunkCount) return new NextResponse("File not found", { status: 404 })
+      if (firstChunk < 0 || lastChunk >= chunkCount) {
+        return new NextResponse("File not found", { status: 404, headers: { "Cache-Control": "no-store" } })
+      }
 
       const rows =
         firstChunk <= lastChunk
@@ -177,6 +185,11 @@ export async function GET(
 
       const byIndex = new Map<number, string>()
       for (const r of rows) byIndex.set(Number(r.chunkIndex), String(r.data))
+      for (let i = firstChunk; i <= lastChunk; i++) {
+        if (!byIndex.has(i)) {
+          return new NextResponse("File not ready", { status: 404, headers: { "Cache-Control": "no-store" } })
+        }
+      }
 
       let currentChunk = firstChunk
       let offsetInFirst = start - firstChunk * chunkSize
@@ -213,6 +226,11 @@ export async function GET(
         "Content-Length": (end - start + 1).toString(),
         "Accept-Ranges": "bytes",
         "Content-Disposition": `inline; filename="${filename}"`,
+        "Cache-Control": "no-store",
+        "X-File-Storage": "chunked",
+        "X-File-Size": fileSize.toString(),
+        "X-Range-Request": range ? range : "",
+        "X-Range-Applied": `bytes ${start}-${end}/${fileSize}`,
       }
 
       if (rangeParsed) {
@@ -220,7 +238,6 @@ export async function GET(
         return new NextResponse(stream, { status: 206, headers })
       }
 
-      headers["Cache-Control"] = "public, max-age=31536000, immutable"
       return new NextResponse(stream, { headers })
     }
 
@@ -228,7 +245,7 @@ export async function GET(
     const size = fileSize || Math.floor((base64.length * 3) / 4)
     
     // Handle Range requests (required for video seek/streaming)
-    if (size <= 0) return new NextResponse("File not found", { status: 404 })
+    if (size <= 0) return new NextResponse("File not found", { status: 404, headers: { "Cache-Control": "no-store" } })
     if (rangeParsed) {
       let start = rangeParsed.start
       let end = rangeParsed.end
@@ -239,6 +256,8 @@ export async function GET(
             "Content-Range": `bytes */${size}`,
             "Accept-Ranges": "bytes",
             "Content-Type": file.type,
+            "Cache-Control": "no-store",
+            "X-File-Storage": "inline",
           },
         })
       }
@@ -253,6 +272,11 @@ export async function GET(
           "Content-Length": (end - start + 1).toString(),
           "Content-Type": file.type,
           "Content-Disposition": `inline; filename="${filename}"`,
+          "Cache-Control": "no-store",
+          "X-File-Storage": "inline",
+          "X-File-Size": size.toString(),
+          "X-Range-Request": range ? range : "",
+          "X-Range-Applied": `bytes ${start}-${end}/${size}`,
         },
       })
     }
@@ -263,9 +287,11 @@ export async function GET(
       headers: {
         "Content-Type": file.type,
         "Content-Length": size.toString(),
-        "Cache-Control": "public, max-age=31536000, immutable",
+        "Cache-Control": "no-store",
         "Accept-Ranges": "bytes", // Announce range support
         "Content-Disposition": `inline; filename="${filename}"`,
+        "X-File-Storage": "inline",
+        "X-File-Size": size.toString(),
       },
     })
   } catch (error) {
