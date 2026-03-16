@@ -9,6 +9,14 @@ function safeFilename(name: string) {
   return name.replace(/[\r\n"]/g, "_").slice(0, 180) || "file"
 }
 
+function decodeBase64(base64: string): Uint8Array {
+  if (typeof Buffer !== "undefined") return Buffer.from(base64, "base64")
+  const bin = atob(base64)
+  const out = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)
+  return out
+}
+
 function parseRangeHeader(range: string, size: number) {
   const normalized = range.trim()
   if (!normalized.toLowerCase().startsWith("bytes=")) return null
@@ -67,7 +75,7 @@ function streamBase64Range(base64: string, start: number, end: number) {
       const slice = base64.slice(pos, nextPos)
       pos = nextPos
 
-      let buf = Buffer.from(slice, "base64")
+      let buf = decodeBase64(slice)
       if (bytesToSkip > 0) {
         buf = buf.subarray(bytesToSkip)
         bytesToSkip = 0
@@ -210,7 +218,7 @@ export async function GET(
             return
           }
 
-          let buf = Buffer.from(data, "base64")
+          let buf = decodeBase64(data)
           if (currentChunk === firstChunk && offsetInFirst > 0) {
             buf = buf.subarray(offsetInFirst)
             offsetInFirst = 0
