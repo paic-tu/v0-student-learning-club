@@ -90,80 +90,96 @@ export function MediaUploadField({
 
       setIsUploading(true)
       try {
-        const shouldChunk = type === "video"
-        if (shouldChunk) {
-          const initRes = await fetch("/api/upload/init", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ name: file.name, type: file.type || "application/octet-stream", size: file.size }),
-          })
-
-          if (!initRes.ok) {
-            const errorData = await initRes.json().catch(() => ({}))
-            throw new Error(errorData.error || `Upload init failed with status: ${initRes.status}`)
-          }
-
-          const init = await initRes.json()
-          const fileId = String(init?.fileId || "")
-          const url = String(init?.url || "")
-          const chunkSize = Number(init?.chunkSize || 0)
-          if (!fileId || !url || !chunkSize) throw new Error("Upload init failed")
-
-          const totalChunks = Math.ceil(file.size / chunkSize)
-          const concurrency = 4
-          let nextIndex = 0
-          let firstError: Error | null = null
-
-          const uploadOne = async (i: number) => {
-            const start = i * chunkSize
-            const end = Math.min(file.size, start + chunkSize)
-            const part = file.slice(start, end)
-            const buf = await part.arrayBuffer()
-
-            const chunkRes = await fetch(`/api/upload/chunk/${encodeURIComponent(fileId)}/${i}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/octet-stream" },
+        const isVideoFile = file.type.startsWith("video/")
+        const tryChunkedUpload = async (chunkMb?: number) => {
+          let fileId = ""
+          try {
+            const initRes = await fetch("/api/upload/init", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
               credentials: "include",
-              body: buf,
+              body: JSON.stringify({
+                name: file.name,
+                type: file.type || "application/octet-stream",
+                size: file.size,
+                ...(chunkMb ? { chunkMb } : {}),
+              }),
             })
-            if (!chunkRes.ok) {
-              const errorData = await chunkRes.json().catch(() => ({}))
-              throw new Error(errorData.error || `Upload failed with status: ${chunkRes.status}`)
-            }
-          }
 
-          const worker = async () => {
-            while (true) {
-              if (firstError) return
-              const i = nextIndex
-              nextIndex += 1
-              if (i >= totalChunks) return
-              try {
-                await uploadOne(i)
-              } catch (e: any) {
-                firstError = e instanceof Error ? e : new Error(String(e?.message || e))
-                return
+            if (!initRes.ok) {
+              const errorData = await initRes.json().catch(() => ({}))
+              throw new Error(errorData.error || `Upload init failed with status: ${initRes.status}`)
+            }
+
+            const init = await initRes.json()
+            fileId = String(init?.fileId || "")
+            const url = String(init?.url || "")
+            const chunkSize = Number(init?.chunkSize || 0)
+            if (!fileId || !url || !chunkSize) throw new Error("Upload init failed")
+
+            const totalChunks = Math.ceil(file.size / chunkSize)
+            const concurrency = 4
+            let nextIndex = 0
+            let firstError: Error | null = null
+
+            const uploadOne = async (i: number) => {
+              const start = i * chunkSize
+              const end = Math.min(file.size, start + chunkSize)
+              const part = file.slice(start, end)
+              const buf = await part.arrayBuffer()
+
+              const chunkRes = await fetch(`/api/upload/chunk/${encodeURIComponent(fileId)}/${i}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/octet-stream" },
+                credentials: "include",
+                body: buf,
+              })
+              if (!chunkRes.ok) {
+                const errorData = await chunkRes.json().catch(() => ({}))
+                throw new Error(errorData.error || `Upload failed with status: ${chunkRes.status}`)
               }
             }
+
+            const worker = async () => {
+              while (true) {
+                if (firstError) return
+                const i = nextIndex
+                nextIndex += 1
+                if (i >= totalChunks) return
+                try {
+                  await uploadOne(i)
+                } catch (e: any) {
+                  firstError = e instanceof Error ? e : new Error(String(e?.message || e))
+                  return
+                }
+              }
+            }
+
+            await Promise.all(Array.from({ length: Math.min(concurrency, totalChunks) }, () => worker()))
+            if (firstError) throw firstError
+
+            const completeRes = await fetch(`/api/upload/complete/${encodeURIComponent(fileId)}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ chunkCount: totalChunks }),
+            })
+            if (!completeRes.ok) {
+              const errorData = await completeRes.json().catch(() => ({}))
+              throw new Error(errorData.error || `Upload failed with status: ${completeRes.status}`)
+            }
+
+            handleValueChange(url)
+            return true
+          } catch (e: any) {
+            if (fileId) {
+              await fetch(`/api/upload/cancel/${encodeURIComponent(fileId)}`, {
+                method: "DELETE",
+                credentials: "include",
+              }).catch(() => {})
+            }
+            throw e
           }
-
-          await Promise.all(Array.from({ length: Math.min(concurrency, totalChunks) }, () => worker()))
-          if (firstError) throw firstError
-
-          const completeRes = await fetch(`/api/upload/complete/${encodeURIComponent(fileId)}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ chunkCount: totalChunks }),
-          })
-          if (!completeRes.ok) {
-            const errorData = await completeRes.json().catch(() => ({}))
-            throw new Error(errorData.error || `Upload failed with status: ${completeRes.status}`)
-          }
-
-          handleValueChange(url)
-          return
         }
 
         const formDataFetch = new FormData()
@@ -176,6 +192,21 @@ export function MediaUploadField({
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}))
+          if (response.status === 413 && isVideoFile) {
+            for (const mb of [4, 2, 1]) {
+              try {
+                await tryChunkedUpload(mb)
+                toast({
+                  title: isAr ? "تم بنجاح" : "Success",
+                  description: isAr ? "تم رفع الفيديو بنجاح" : "Video uploaded successfully",
+                })
+                return
+              } catch (e: any) {
+                const msg = String(e?.message || "")
+                if (!msg.includes("413") && !msg.toLowerCase().includes("too large")) throw e
+              }
+            }
+          }
           if (response.status === 401 || response.status === 403) {
             const formDataAction = new FormData()
             formDataAction.append("file", file)

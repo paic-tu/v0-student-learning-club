@@ -10,6 +10,7 @@ const initSchema = z.object({
   name: z.string().min(1).max(255),
   type: z.string().min(1).max(100),
   size: z.number().int().min(1),
+  chunkMb: z.number().int().min(1).max(8).optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -20,7 +21,8 @@ export async function POST(req: NextRequest) {
   const parsed = initSchema.safeParse(json)
   if (!parsed.success) return NextResponse.json({ error: "Invalid payload" }, { status: 400 })
 
-  const chunkMb = Number.parseInt(process.env.UPLOAD_CHUNK_MB || "", 10) > 0 ? Number.parseInt(process.env.UPLOAD_CHUNK_MB || "", 10) : 8
+  const envChunkMb = Number.parseInt(process.env.UPLOAD_CHUNK_MB || "", 10)
+  const chunkMb = parsed.data.chunkMb ?? (envChunkMb > 0 ? envChunkMb : 4)
   const chunkSize = chunkMb * 1024 * 1024
 
   const [row] = await db
