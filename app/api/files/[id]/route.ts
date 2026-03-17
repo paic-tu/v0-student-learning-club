@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { fileChunks, files } from "@/lib/db/schema"
 import { and, asc, eq, gte, lte } from "drizzle-orm"
-import { getS3Bucket, getS3KeyForFileId, isS3StorageEnabled, objectExists, signGetObjectUrl } from "@/lib/storage/s3"
+import { getS3Bucket, getS3KeyForFileId, isS3StorageEnabled, signGetObjectUrl } from "@/lib/storage/s3"
 
 export const runtime = "nodejs"
 
@@ -110,13 +110,21 @@ async function getFileMeta(id: string) {
 }
 
 async function tryRedirectToS3(fileId: string, file?: any) {
-  if (!isS3StorageEnabled()) return null
+  const wantsS3 = file?.storage === "s3" || Boolean(file?.storageBucket) || Boolean(file?.storageKey)
+  if (!wantsS3) return null
+
+  if (!isS3StorageEnabled()) {
+    return new NextResponse("External storage not configured", { status: 500, headers: { "Cache-Control": "no-store" } })
+  }
+
   const bucket = String(file?.storageBucket || getS3Bucket())
   const key = String(file?.storageKey || getS3KeyForFileId(fileId))
+  if (!bucket || !key) {
+    return new NextResponse("File storage metadata missing", { status: 500, headers: { "Cache-Control": "no-store" } })
+  }
+
   const filename = safeFilename(String(file?.name || fileId))
   const type = file?.type ? String(file.type) : undefined
-  const exists = await objectExists({ bucket, key })
-  if (!exists) return null
   const url = await signGetObjectUrl({ bucket, key, filename, contentType: type })
   return NextResponse.redirect(url, { status: 307 })
 }
