@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { fileChunks, files } from "@/lib/db/schema"
-import { and, asc, eq, gte, lte } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { getS3Bucket, getS3KeyForFileId, isS3StorageEnabled, signGetObjectUrl } from "@/lib/storage/s3"
 
 export const runtime = "nodejs"
@@ -177,6 +177,13 @@ export async function GET(
     const range = req.headers.get("range")
     const filename = safeFilename(String(file.name || "file"))
     const rangeParsed = range && fileSize > 0 ? parseRangeHeader(range, fileSize) : null
+    const maxRangeBytesRaw = Number.parseInt(process.env.MAX_FILE_RANGE_BYTES || "", 10)
+    const maxRangeBytes = Number.isFinite(maxRangeBytesRaw) && maxRangeBytesRaw > 0 ? maxRangeBytesRaw : 5 * 1024 * 1024
+    const isOpenEndedRange = typeof range === "string" && /^bytes=\d+-\s*$/i.test(range.trim())
+    const effectiveRange =
+      rangeParsed && isOpenEndedRange
+        ? { start: rangeParsed.start, end: Math.min(rangeParsed.end, rangeParsed.start + maxRangeBytes - 1) }
+        : rangeParsed
 
     if (file.storage === "chunked") {
       if (!file.isComplete || !file.chunkSize || !file.chunkCount) {
@@ -189,8 +196,8 @@ export async function GET(
         return new NextResponse("File not found", { status: 404, headers: { "Cache-Control": "no-store" } })
       }
 
-      const start = rangeParsed ? rangeParsed.start : 0
-      const end = rangeParsed ? rangeParsed.end : fileSize - 1
+      const start = effectiveRange ? effectiveRange.start : 0
+      const end = effectiveRange ? effectiveRange.end : fileSize - 1
       if (start >= fileSize || start < 0 || end < start) {
         return new NextResponse(null, {
           status: 416,
@@ -209,34 +216,34 @@ export async function GET(
         return new NextResponse("File not found", { status: 404, headers: { "Cache-Control": "no-store" } })
       }
 
-      const rows = await db
-        .select({ chunkIndex: fileChunks.chunkIndex, data: fileChunks.data })
-        .from(fileChunks)
-        .where(and(eq(fileChunks.fileId, id), gte(fileChunks.chunkIndex, firstChunk), lte(fileChunks.chunkIndex, lastChunk)))
-        .orderBy(asc(fileChunks.chunkIndex))
-
-      const byIndex = new Map<number, string>()
-      for (const r of rows) byIndex.set(Number(r.chunkIndex), String(r.data))
-      for (let i = firstChunk; i <= lastChunk; i++) {
-        if (!byIndex.has(i)) {
-          return new NextResponse("File not ready", { status: 404, headers: { "Cache-Control": "no-store" } })
-        }
-      }
-
       let currentChunk = firstChunk
       let offsetInFirst = start - firstChunk * chunkSize
       let remaining = end - start + 1
+      const cache = new Map<number, string>()
 
       const stream = new ReadableStream<Uint8Array>({
-        pull(controller) {
+        async pull(controller) {
           if (remaining <= 0) {
             controller.close()
             return
           }
-          const data = byIndex.get(currentChunk)
+          let data = cache.get(currentChunk)
           if (!data) {
-            controller.error(new Error("Missing chunk"))
-            return
+            const row = await db
+              .select({ data: fileChunks.data })
+              .from(fileChunks)
+              .where(and(eq(fileChunks.fileId, id), eq(fileChunks.chunkIndex, currentChunk)))
+              .limit(1)
+            data = row[0]?.data ? String(row[0].data) : ""
+            if (!data) {
+              controller.error(new Error("Missing chunk"))
+              return
+            }
+            cache.set(currentChunk, data)
+            if (cache.size > 3) {
+              const firstKey = cache.keys().next().value
+              if (firstKey !== undefined) cache.delete(firstKey)
+            }
           }
 
           let buf = decodeBase64(data)
@@ -274,8 +281,8 @@ export async function GET(
     // Handle Range requests (required for video seek/streaming)
     if (size <= 0) return new NextResponse("File not found", { status: 404, headers: { "Cache-Control": "no-store" } })
     if (rangeParsed) {
-      let start = rangeParsed.start
-      let end = rangeParsed.end
+      let start = effectiveRange ? effectiveRange.start : rangeParsed.start
+      let end = effectiveRange ? effectiveRange.end : rangeParsed.end
       if (start >= size || start < 0 || end < start) {
         return new NextResponse(null, {
           status: 416,
