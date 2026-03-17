@@ -164,7 +164,10 @@ export async function signGetObjectUrl({
     ResponseContentDisposition: `inline; filename="${filename.replace(/[\r\n"]/g, "_").slice(0, 180) || "file"}"`,
     ...(contentType ? { ResponseContentType: contentType } : {}),
   })
-  return getSignedUrl(client, cmd, { expiresIn: 60 * 10 })
+  const ttlRaw = Number.parseInt(process.env.STORAGE_SIGNED_URL_TTL_SECONDS || "", 10)
+  const ttl = Number.isFinite(ttlRaw) && ttlRaw > 0 ? ttlRaw : 60 * 60
+  const expiresIn = Math.min(60 * 60 * 24, Math.max(60, ttl))
+  return getSignedUrl(client, cmd, { expiresIn })
 }
 
 export function getRecommendedPartSizeBytes(sizeBytes: number) {
