@@ -6,8 +6,17 @@ import { getS3Bucket, getS3KeyForFileId, isS3StorageEnabled, signGetObjectUrl } 
 
 export const runtime = "nodejs"
 
-function safeFilename(name: string) {
-  return name.replace(/[\r\n"]/g, "_").slice(0, 180) || "file"
+function toAsciiFilename(name: string) {
+  const cleaned = name.replace(/[\r\n"]/g, "_").slice(0, 180)
+  const ascii = cleaned.replace(/[^\x20-\x7E]+/g, "_").replace(/[\\"]/g, "_").trim() || "file"
+  return ascii
+}
+
+function contentDispositionInline(originalName: string) {
+  const original = originalName.replace(/[\r\n"]/g, "_").slice(0, 180) || "file"
+  const ascii = toAsciiFilename(original)
+  const encoded = encodeURIComponent(original)
+  return `inline; filename="${ascii}"; filename*=UTF-8''${encoded}`
 }
 
 function decodeBase64(base64: string): Uint8Array {
@@ -138,7 +147,7 @@ export async function HEAD(_req: NextRequest, props: { params: Promise<{ id: str
     if (redirect) return redirect
 
     const fileSize = Number(file.size || 0)
-    const filename = safeFilename(String(file.name || "file"))
+    const disposition = contentDispositionInline(String(file.name || "file"))
     return new NextResponse(null, {
       status: 200,
       headers: {
@@ -146,7 +155,7 @@ export async function HEAD(_req: NextRequest, props: { params: Promise<{ id: str
         "Content-Length": fileSize.toString(),
         "Accept-Ranges": "bytes",
         "Cache-Control": "no-store",
-        "Content-Disposition": `inline; filename="${filename}"`,
+        "Content-Disposition": disposition,
         "X-File-Storage": String(file.storage),
       },
     })
@@ -175,7 +184,7 @@ export async function GET(
 
     const fileSize = Number(file.size || 0)
     const range = req.headers.get("range")
-    const filename = safeFilename(String(file.name || "file"))
+    const disposition = contentDispositionInline(String(file.name || "file"))
     const rangeParsed = range && fileSize > 0 ? parseRangeHeader(range, fileSize) : null
     const maxRangeBytesRaw = Number.parseInt(process.env.MAX_FILE_RANGE_BYTES || "", 10)
     const maxRangeBytes = Number.isFinite(maxRangeBytesRaw) && maxRangeBytesRaw > 0 ? maxRangeBytesRaw : 5 * 1024 * 1024
@@ -262,7 +271,7 @@ export async function GET(
       const headers: Record<string, string> = {
         "Content-Type": file.type,
         "Accept-Ranges": "bytes",
-        "Content-Disposition": `inline; filename="${filename}"`,
+        "Content-Disposition": disposition,
         "Cache-Control": "no-store",
         "Content-Length": (end - start + 1).toString(),
       }
@@ -305,7 +314,7 @@ export async function GET(
           "Accept-Ranges": "bytes",
           "Content-Length": (end - start + 1).toString(),
           "Content-Type": file.type,
-          "Content-Disposition": `inline; filename="${filename}"`,
+          "Content-Disposition": disposition,
           "Cache-Control": "no-store",
           "X-File-Storage": "inline",
           "X-File-Size": size.toString(),
@@ -323,7 +332,7 @@ export async function GET(
         "Content-Length": size.toString(),
         "Cache-Control": "no-store",
         "Accept-Ranges": "bytes", // Announce range support
-        "Content-Disposition": `inline; filename="${filename}"`,
+        "Content-Disposition": disposition,
         "X-File-Storage": "inline",
         "X-File-Size": size.toString(),
       },

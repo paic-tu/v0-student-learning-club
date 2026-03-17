@@ -158,10 +158,13 @@ export async function signGetObjectUrl({
   contentType?: string
 }) {
   const client = getS3Client()
+  const original = filename.replace(/[\r\n"]/g, "_").slice(0, 180) || "file"
+  const ascii = original.replace(/[^\x20-\x7E]+/g, "_").replace(/[\\"]/g, "_").trim() || "file"
+  const disposition = `inline; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(original)}`
   const cmd = new GetObjectCommand({
     Bucket: bucket,
     Key: key,
-    ResponseContentDisposition: `inline; filename="${filename.replace(/[\r\n"]/g, "_").slice(0, 180) || "file"}"`,
+    ResponseContentDisposition: disposition,
     ...(contentType ? { ResponseContentType: contentType } : {}),
   })
   const ttlRaw = Number.parseInt(process.env.STORAGE_SIGNED_URL_TTL_SECONDS || "", 10)
