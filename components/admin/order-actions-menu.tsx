@@ -6,33 +6,39 @@ import { MoreHorizontal, CheckCircle, XCircle, DollarSign } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
+import { usePathname } from "next/navigation"
+import { cn } from "@/lib/utils"
 
 export function OrderActionsMenu({ orderId, currentStatus }: { orderId: string; currentStatus: string }) {
   const router = useRouter()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const pathname = usePathname()
+  const segments = pathname.split("/")
+  const locale = segments[1] || "ar"
+  const isAr = locale === "ar"
 
-  const updateOrderStatus = async (status: string) => {
+  const updateOrderStatus = async (status: string, fulfill?: boolean) => {
     setLoading(true)
     try {
       const response = await fetch(`/api/admin/orders/${orderId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, fulfill: Boolean(fulfill) }),
       })
 
       if (!response.ok) throw new Error("Failed to update order")
 
       toast({
-        title: "Success",
-        description: `Order ${status === "completed" ? "completed" : "cancelled"}`,
+        title: isAr ? "تم" : "Success",
+        description: isAr ? "تم تحديث حالة الطلب" : "Order status updated",
       })
 
       router.refresh()
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to update order",
+        title: isAr ? "خطأ" : "Error",
+        description: isAr ? "فشل تحديث الطلب" : "Failed to update order",
         variant: "destructive",
       })
     } finally {
@@ -50,19 +56,19 @@ export function OrderActionsMenu({ orderId, currentStatus }: { orderId: string; 
       <DropdownMenuContent align="end">
         {currentStatus === "pending" && (
           <>
-            <DropdownMenuItem onClick={() => updateOrderStatus("completed")}>
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Mark as Completed
+            <DropdownMenuItem onClick={() => updateOrderStatus("paid", true)}>
+              <CheckCircle className={cn("h-4 w-4", isAr ? "ml-2" : "mr-2")} />
+              {isAr ? "تأكيد الدفع (تفعيل الدورات)" : "Mark as Paid (fulfill)"}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => updateOrderStatus("cancelled")}>
-              <XCircle className="mr-2 h-4 w-4" />
-              Cancel Order
+              <XCircle className={cn("h-4 w-4", isAr ? "ml-2" : "mr-2")} />
+              {isAr ? "إلغاء الطلب" : "Cancel Order"}
             </DropdownMenuItem>
           </>
         )}
         <DropdownMenuItem>
-          <DollarSign className="mr-2 h-4 w-4" />
-          Process Refund
+          <DollarSign className={cn("h-4 w-4", isAr ? "ml-2" : "mr-2")} />
+          {isAr ? "استرجاع (لاحقًا)" : "Refund (soon)"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { OrderActionsMenu } from "@/components/admin/order-actions-menu"
 
 function money(v: any) {
   const n = Number(v)
@@ -50,6 +51,7 @@ export default async function AdminOrderDetailsPage(props: { params: Promise<{ l
           <Button variant="outline" asChild>
             <Link href={`/${lang}/admin/orders`}>{isAr ? "رجوع" : "Back"}</Link>
           </Button>
+          <OrderActionsMenu orderId={order.id} currentStatus={order.status || "pending"} />
           {order.paymentLinkUrl ? (
             <Button asChild>
               <a href={order.paymentLinkUrl} target="_blank" rel="noreferrer">
@@ -183,4 +185,3 @@ export default async function AdminOrderDetailsPage(props: { params: Promise<{ l
     </div>
   )
 }
-
