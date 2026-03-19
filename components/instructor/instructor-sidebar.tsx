@@ -76,97 +76,138 @@ function InstructorNav({ isCollapsed, unreadCount = 0 }: { isCollapsed?: boolean
     }
   }, [])
 
-  const menuItems = [
+  const navGroups = [
     {
-      href: "/instructor/dashboard",
-      label: isAr ? "لوحة التحكم" : "Dashboard",
-      icon: LayoutDashboard,
+      id: "main",
+      titleAr: "الرئيسية",
+      titleEn: "Main",
+      items: [
+        {
+          href: "/instructor/dashboard",
+          label: isAr ? "لوحة التحكم" : "Dashboard",
+          icon: LayoutDashboard,
+        },
+      ],
     },
     {
-      href: "/instructor/courses",
-      label: isAr ? "دوراتي" : "My Courses",
-      icon: BookOpen,
+      id: "courses",
+      titleAr: "الدورات",
+      titleEn: "Courses",
+      items: [
+        {
+          href: "/instructor/courses",
+          label: isAr ? "دوراتي" : "My Courses",
+          icon: BookOpen,
+        },
+        {
+          href: "/instructor/courses/new",
+          label: isAr ? "إنشاء دورة" : "Create Course",
+          icon: PlusCircle,
+        },
+        {
+          href: "/instructor/assignments",
+          label: isAr ? "الواجبات" : "Assignments",
+          icon: FileText,
+        },
+        {
+          href: "/instructor/quizzes",
+          label: isAr ? "الكويزات" : "Quizzes",
+          icon: HelpCircle,
+        },
+      ],
     },
     {
-      href: "/instructor/courses/new",
-      label: isAr ? "إنشاء دورة" : "Create Course",
-      icon: PlusCircle,
+      id: "community",
+      titleAr: "المجتمع",
+      titleEn: "Community",
+      items: [
+        {
+          href: "/instructor/chat",
+          label: isAr ? "المحادثات" : "Chat",
+          icon: MessageCircle,
+        },
+        {
+          href: "/instructor/reviews",
+          label: isAr ? "المراجعات" : "Reviews",
+          icon: MessageSquare,
+        },
+      ],
     },
     {
-      href: "/instructor/assignments",
-      label: isAr ? "الواجبات" : "Assignments",
-      icon: FileText,
+      id: "insights",
+      titleAr: "الإحصائيات",
+      titleEn: "Insights",
+      items: [
+        {
+          href: "/instructor/analytics",
+          label: isAr ? "التحليلات" : "Analytics",
+          icon: BarChart,
+        },
+      ],
     },
     {
-      href: "/instructor/live",
-      label: isAr ? "الدورات المباشرة" : "Live Courses",
-      icon: Video,
-    },
-    {
-      href: "/instructor/quizzes",
-      label: isAr ? "الكويزات" : "Quizzes",
-      icon: HelpCircle,
-    },
-    {
-      href: "/instructor/chat",
-      label: isAr ? "المحادثات" : "Chat",
-      icon: MessageCircle,
-    },
-    {
-      href: "/instructor/analytics", // Placeholder for analytics
-      label: isAr ? "التحليلات" : "Analytics",
-      icon: BarChart,
-    },
-    {
-      href: "/instructor/reviews",
-      label: isAr ? "المراجعات" : "Reviews",
-      icon: MessageSquare,
-    },
-    {
-      href: "/instructor/profile",
-      label: isAr ? "الملف الشخصي" : "Profile",
-      icon: User,
-    },
-    {
-      href: "/instructor/settings",
-      label: isAr ? "الإعدادات" : "Settings",
-      icon: Settings,
+      id: "account",
+      titleAr: "الحساب",
+      titleEn: "Account",
+      items: [
+        {
+          href: "/instructor/profile",
+          label: isAr ? "الملف الشخصي" : "Profile",
+          icon: User,
+        },
+        {
+          href: "/instructor/settings",
+          label: isAr ? "الإعدادات" : "Settings",
+          icon: Settings,
+        },
+      ],
     },
   ]
 
   return (
     <nav className="flex-1 space-y-1 overflow-y-auto p-4">
-      {menuItems.map((item) => {
-        const Icon = item.icon
-        const isActive = pathWithoutLocale === item.href || pathWithoutLocale.startsWith(item.href + "/")
-        const hrefWithLocale = `/${locale}${item.href}`
+      {navGroups.map((group) => (
+        <div key={group.id} className={cn(!isCollapsed && "mt-4 pt-4 border-t")}>
+          {!isCollapsed && (
+            <div className="px-3 pb-2 text-xs font-semibold text-muted-foreground">
+              {isAr ? group.titleAr : group.titleEn}
+            </div>
+          )}
+          {group.items.map((item) => {
+            const Icon = item.icon
+            const isActive = pathWithoutLocale === item.href || pathWithoutLocale.startsWith(item.href + "/")
+            const hrefWithLocale = `/${locale}${item.href}`
 
-        return (
-          <Link
-            key={item.href}
-            href={hrefWithLocale}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors relative",
-              isActive
-                ? "bg-indigo-100 text-indigo-900"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              isCollapsed && "justify-center px-2"
-            )}
-            title={isCollapsed ? item.label : undefined}
-          >
-            <Icon className="h-5 w-5" />
-            {!isCollapsed && <span>{item.label}</span>}
-            {item.href === "/instructor/chat" && unreadCount > 0 && (
-              <span className={cn(
-                "bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center",
-                isCollapsed ? "absolute -top-1 -right-1 h-4 w-4" : "ml-auto h-5 w-5"
-              )}>
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </span>
-            )}
-          </Link>
-        )
-      })}
+            return (
+              <Link
+                key={item.href}
+                href={hrefWithLocale}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors relative",
+                  isActive
+                    ? "bg-indigo-100 text-indigo-900"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  isCollapsed && "justify-center px-2",
+                )}
+                title={isCollapsed ? item.label : undefined}
+              >
+                <Icon className="h-5 w-5" />
+                {!isCollapsed && <span className="truncate">{item.label}</span>}
+                {item.href === "/instructor/chat" && unreadCount > 0 && (
+                  <span
+                    className={cn(
+                      "bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center",
+                      isCollapsed ? "absolute -top-1 -right-1 h-4 w-4" : "ml-auto h-5 w-5",
+                    )}
+                  >
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </Link>
+            )
+          })}
+        </div>
+      ))}
       
       {!isCollapsed && (
         <div className="mt-4 pt-4 border-t">
@@ -185,8 +226,11 @@ function InstructorNav({ isCollapsed, unreadCount = 0 }: { isCollapsed?: boolean
             <MessageCircle className="h-4 w-4" />
             <span className="truncate">{isAr ? "استشارات تقنية" : "Tech Consultation"}</span>
           </Link>
+        </div>
+      )}
 
-          <div className="mt-4 pt-4 border-t">
+      {!isCollapsed && (
+        <div className="mt-4 pt-4 border-t">
           <div className="px-3 pb-2 text-xs font-semibold text-muted-foreground">
             {isAr ? "الدورات المباشرة" : "Live Courses"}
           </div>
@@ -204,15 +248,11 @@ function InstructorNav({ isCollapsed, unreadCount = 0 }: { isCollapsed?: boolean
                 href={hrefWithLocale}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                  isActive
-                    ? "bg-red-50 text-red-700"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  isActive ? "bg-red-50 text-red-700" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
                 <Video className="h-4 w-4 text-red-600" />
-                <span className="truncate">
-                  {isAr ? c.titleAr : c.titleEn}
-                </span>
+                <span className="truncate">{isAr ? c.titleAr : c.titleEn}</span>
               </Link>
             )
           })}
@@ -221,7 +261,6 @@ function InstructorNav({ isCollapsed, unreadCount = 0 }: { isCollapsed?: boolean
               {isAr ? "لا يوجد بث مباشر الآن" : "No live courses now"}
             </div>
           )}
-          </div>
         </div>
       )}
     </nav>

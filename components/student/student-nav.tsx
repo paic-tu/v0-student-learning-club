@@ -78,90 +78,134 @@ export function StudentNav({ isCollapsed }: { isCollapsed?: boolean }) {
     }
   }, [])
 
-  const menuItems = [
+  const navGroups = [
     {
-      href: "/student/dashboard",
-      label: t("dashboard", locale),
-      icon: LayoutDashboard,
+      id: "main",
+      titleAr: "الرئيسية",
+      titleEn: "Main",
+      items: [
+        {
+          href: "/student/dashboard",
+          label: t("dashboard", locale),
+          icon: LayoutDashboard,
+        },
+      ],
     },
     {
-      href: "/student/my-courses",
-      label: t("myCourses", locale),
-      icon: BookOpen,
+      id: "learning",
+      titleAr: "التعلم",
+      titleEn: "Learning",
+      items: [
+        {
+          href: "/student/my-courses",
+          label: t("myCourses", locale),
+          icon: BookOpen,
+        },
+        {
+          href: "/student/assignments",
+          label: isAr ? "واجباتي" : "My Assignments",
+          icon: FileText,
+        },
+        {
+          href: "/student/browse",
+          label: t("browse", locale),
+          icon: Search,
+        },
+        {
+          href: "/student/certificates",
+          label: t("certificates", locale),
+          icon: Award,
+        },
+      ],
     },
     {
-      href: "/student/assignments",
-      label: isAr ? "واجباتي" : "My Assignments",
-      icon: FileText,
+      id: "tools",
+      titleAr: "الأدوات",
+      titleEn: "Tools",
+      items: [
+        {
+          href: "/student/bookmarks",
+          label: t("bookmarks", locale),
+          icon: Bookmark,
+        },
+        {
+          href: "/student/notes",
+          label: t("notes", locale),
+          icon: StickyNote,
+        },
+      ],
     },
     {
-      href: "/student/browse",
-      label: t("browse", locale),
-      icon: Search,
+      id: "community",
+      titleAr: "المجتمع",
+      titleEn: "Community",
+      items: [
+        {
+          href: "/student/chat",
+          label: locale === "ar" ? "المحادثات" : "Chat",
+          icon: MessageCircle,
+        },
+        {
+          href: "/student/consultations?room=consultation-tech",
+          label: locale === "ar" ? "استشارات تقنية" : "Tech Consultation",
+          icon: Video,
+        },
+      ],
     },
     {
-      href: "/student/certificates",
-      label: t("certificates", locale),
-      icon: Award,
-    },
-    {
-      href: "/student/bookmarks",
-      label: t("bookmarks", locale),
-      icon: Bookmark,
-    },
-    {
-      href: "/student/notes",
-      label: t("notes", locale),
-      icon: StickyNote,
-    },
-    {
-      href: "/student/chat",
-      label: locale === "ar" ? "المحادثات" : "Chat",
-      icon: MessageCircle,
-    },
-    {
-      href: "/student/consultations?room=consultation-tech",
-      label: locale === "ar" ? "استشارات تقنية" : "Tech Consultation",
-      icon: Video,
-    },
-    {
-      href: "/student/profile",
-      label: t("profile", locale),
-      icon: User,
-    },
-    {
-      href: "/student/settings",
-      label: t("settings", locale),
-      icon: Settings,
+      id: "account",
+      titleAr: "الحساب",
+      titleEn: "Account",
+      items: [
+        {
+          href: "/student/profile",
+          label: t("profile", locale),
+          icon: User,
+        },
+        {
+          href: "/student/settings",
+          label: t("settings", locale),
+          icon: Settings,
+        },
+      ],
     },
   ]
 
   return (
     <nav className="flex-1 overflow-y-auto py-4">
-      {menuItems.map((item) => {
-        const Icon = item.icon
-        const itemPath = item.href.split("?")[0]
-        const isActive = pathWithoutLocale === itemPath || pathWithoutLocale.startsWith(itemPath + "/")
-        const hrefWithLocale = `/${locale}${item.href}`
+      {navGroups.map((group) => (
+        <div key={group.id} className={cn(!isCollapsed && "mt-4 pt-4 border-t")}>
+          {!isCollapsed && (
+            <div className="px-6 pb-2 text-xs font-semibold text-muted-foreground">
+              {isAr ? group.titleAr : group.titleEn}
+            </div>
+          )}
+          {group.items.map((item) => {
+            const Icon = item.icon
+            const itemPath = item.href.split("?")[0]
+            const isActive = pathWithoutLocale === itemPath || pathWithoutLocale.startsWith(itemPath + "/")
+            const hrefWithLocale = `/${locale}${item.href}`
 
-        return (
-          <Link
-            key={item.href}
-            href={hrefWithLocale}
-            className={cn(
-              "flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors border-s-4 border-transparent",
-              isActive
-                ? "bg-primary/10 border-primary text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              isCollapsed && "justify-center px-2 border-s-0"
-            )}
-            title={isCollapsed ? item.label : undefined}
-          >
-            <Icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
-            {!isCollapsed && <span>{item.label}</span>}
-          </Link>
-        )
-      })}
+            return (
+              <Link
+                key={item.href}
+                href={hrefWithLocale}
+                className={cn(
+                  "flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors border-s-4 border-transparent",
+                  isActive
+                    ? "bg-primary/10 border-primary text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  isCollapsed && "justify-center px-2 border-s-0",
+                )}
+                title={isCollapsed ? item.label : undefined}
+              >
+                <Icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
+                {!isCollapsed && <span className="truncate">{item.label}</span>}
+              </Link>
+            )
+          })}
+        </div>
+      ))}
       
       {!isCollapsed && (
         <div className="mt-4 pt-4 border-t">
