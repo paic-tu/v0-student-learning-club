@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { OrderActionsMenu } from "@/components/admin/order-actions-menu"
 
-export default async function OrdersManagementPage() {
+export default async function OrdersManagementPage(props: { params: Promise<{ lang: string }> }) {
+  const { lang } = await props.params
   await requirePermission("orders:read")
 
   const ordersData = await db
@@ -96,7 +97,7 @@ export default async function OrdersManagementPage() {
                   <TableCell>
                     <div className="flex gap-2">
                       <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/admin/orders/${order.id}`}>View</Link>
+                        <Link href={`/${lang}/admin/orders/${order.id}`}>View</Link>
                       </Button>
                       <OrderActionsMenu orderId={order.id} currentStatus={order.status || "pending"} />
                     </div>
