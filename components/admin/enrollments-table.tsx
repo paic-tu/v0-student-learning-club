@@ -25,18 +25,21 @@ import {
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
 import { toast } from "sonner"
+import { usePathname } from "next/navigation"
 
 interface Enrollment {
-  id: number
-  user_id: number
-  course_id: number
+  id: string
+  userId: string
+  courseId: string
   user_name: string
   user_email: string
+  user_phone_number?: string | null
+  user_phone?: string | null
   course_title_en: string
   course_title_ar: string
   status: string
   progress: number
-  created_at: string
+  createdAt: string
 }
 
 interface EnrollmentsTableProps {
@@ -45,17 +48,23 @@ interface EnrollmentsTableProps {
 
 export function EnrollmentsTable({ enrollments: initialEnrollments }: EnrollmentsTableProps) {
   const router = useRouter()
+  const pathname = usePathname()
+  const segments = pathname.split("/")
+  const locale = segments[1] || "ar"
+  const isAr = locale === "ar"
   const [enrollments, setEnrollments] = useState<Enrollment[]>(initialEnrollments)
   const [search, setSearch] = useState("")
 
   const filteredEnrollments = enrollments.filter(
     (enrollment) =>
-      enrollment.user_name.toLowerCase().includes(search.toLowerCase()) ||
-      enrollment.user_email.toLowerCase().includes(search.toLowerCase()) ||
-      enrollment.course_title_en.toLowerCase().includes(search.toLowerCase())
+      String(enrollment.user_name || "").toLowerCase().includes(search.toLowerCase()) ||
+      String(enrollment.user_email || "").toLowerCase().includes(search.toLowerCase()) ||
+      String(enrollment.user_phone_number || enrollment.user_phone || "").toLowerCase().includes(search.toLowerCase()) ||
+      String(enrollment.course_title_en || "").toLowerCase().includes(search.toLowerCase()) ||
+      String(enrollment.course_title_ar || "").toLowerCase().includes(search.toLowerCase())
   )
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this enrollment?")) return
 
     try {
@@ -111,16 +120,19 @@ export function EnrollmentsTable({ enrollments: initialEnrollments }: Enrollment
                   <TableCell>
                     <div className="font-medium">{enrollment.user_name}</div>
                     <div className="text-xs text-muted-foreground">{enrollment.user_email}</div>
+                    {(enrollment.user_phone_number || enrollment.user_phone) ? (
+                      <div className="text-xs text-muted-foreground">{enrollment.user_phone_number || enrollment.user_phone}</div>
+                    ) : null}
                   </TableCell>
-                  <TableCell>{enrollment.course_title_en}</TableCell>
+                  <TableCell>{isAr ? enrollment.course_title_ar : enrollment.course_title_en}</TableCell>
                   <TableCell>
                     <Badge
                       variant={
                         enrollment.status === "completed"
                           ? "default"
-                          : enrollment.status === "dropped"
-                          ? "destructive"
-                          : "secondary"
+                          : enrollment.status === "cancelled"
+                            ? "destructive"
+                            : "secondary"
                       }
                     >
                       {enrollment.status}
@@ -133,7 +145,7 @@ export function EnrollmentsTable({ enrollments: initialEnrollments }: Enrollment
                     </div>
                   </TableCell>
                   <TableCell>
-                    {new Date(enrollment.created_at).toLocaleDateString()}
+                    {new Date(enrollment.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -146,7 +158,7 @@ export function EnrollmentsTable({ enrollments: initialEnrollments }: Enrollment
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem asChild>
-                            <Link href={`/admin/users/${enrollment.user_id}`}>
+                            <Link href={`/${locale}/admin/users/${enrollment.userId}`}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 View User
                             </Link>

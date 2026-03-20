@@ -136,9 +136,14 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ i
           <h1 className="text-3xl font-bold">{course.titleEn}</h1>
           <p className="text-muted-foreground">by {course.instructor_name}</p>
         </div>
-        <Badge variant={course.isPublished ? "default" : "secondary"} className="ml-auto">
-          {course.isPublished ? "Published" : "Draft"}
-        </Badge>
+        <div className="ml-auto flex items-center gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/${lang}/admin/enrollments?courseId=${courseId}`}>Enrollments</Link>
+          </Button>
+          <Badge variant={course.isPublished ? "default" : "secondary"}>
+            {course.isPublished ? "Published" : "Draft"}
+          </Badge>
+        </div>
       </div>
 
       <Card>

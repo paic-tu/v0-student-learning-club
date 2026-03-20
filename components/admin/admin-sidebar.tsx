@@ -95,121 +95,168 @@ function AdminNav({ user, isCollapsed }: AdminSidebarProps) {
     }
   }, [])
 
-  const menuItems = [
+  const navGroups = [
     {
-      href: "/admin",
-      label: isAr ? "لوحة التحكم" : "Dashboard",
-      icon: LayoutDashboard,
-      permission: null,
+      id: "main",
+      titleAr: "الرئيسية",
+      titleEn: "Main",
+      items: [
+        {
+          href: "/admin",
+          label: isAr ? "لوحة التحكم" : "Dashboard",
+          icon: LayoutDashboard,
+          permission: null,
+        },
+      ],
     },
     {
-      href: "/admin/users",
-      label: isAr ? "المستخدمين والصلاحيات" : "Users & Roles",
-      icon: Users,
-      permission: "users:read" as const,
+      id: "content",
+      titleAr: "المحتوى",
+      titleEn: "Content",
+      items: [
+        {
+          href: "/admin/courses",
+          label: isAr ? "الدورات" : "Courses",
+          icon: GraduationCap,
+          permission: "courses:read" as const,
+        },
+        {
+          href: "/admin/lessons",
+          label: isAr ? "الدروس" : "Lessons",
+          icon: BookOpen,
+          permission: "lessons:read" as const,
+        },
+        {
+          href: "/admin/assignments",
+          label: isAr ? "الواجبات" : "Assignments",
+          icon: FileText,
+          permission: "lessons:read" as const,
+        },
+        {
+          href: "/admin/categories",
+          label: isAr ? "الأقسام" : "Categories",
+          icon: BookOpen,
+          permission: "courses:write" as const,
+        },
+        {
+          href: "/admin/enrollments",
+          label: isAr ? "التسجيلات" : "Enrollments",
+          icon: Users,
+          permission: "enrollments:read" as const,
+        },
+      ],
     },
     {
-      href: "/admin/categories",
-      label: isAr ? "الأقسام" : "Categories",
-      icon: BookOpen,
-      permission: "courses:write" as const,
+      id: "commerce",
+      titleAr: "المبيعات",
+      titleEn: "Commerce",
+      items: [
+        {
+          href: "/admin/store",
+          label: isAr ? "المتجر" : "Store",
+          icon: ShoppingCart,
+          permission: "store:read" as const,
+        },
+        {
+          href: "/admin/orders",
+          label: isAr ? "الطلبات" : "Orders",
+          icon: FileText,
+          permission: "orders:read" as const,
+        },
+        {
+          href: "/admin/stream-pay",
+          label: "Stream Pay",
+          icon: CreditCard,
+          permission: "store:read" as const,
+        },
+      ],
     },
     {
-      href: "/admin/courses",
-      label: isAr ? "الدورات" : "Courses",
-      icon: GraduationCap,
-      permission: "courses:read" as const,
+      id: "community",
+      titleAr: "المجتمع",
+      titleEn: "Community",
+      items: [
+        {
+          href: "/admin/reviews",
+          label: isAr ? "المراجعات" : "Reviews",
+          icon: MessageSquare,
+          permission: "reviews:read" as const,
+        },
+        {
+          href: "/admin/chat",
+          label: isAr ? "المحادثات" : "Chat",
+          icon: MessageCircle,
+          permission: null,
+        },
+        {
+          href: "/admin/contests",
+          label: isAr ? "المسابقات" : "Contests",
+          icon: Trophy,
+          permission: "contests:read" as const,
+        },
+        {
+          href: "/admin/challenges",
+          label: isAr ? "التحديات" : "Challenges",
+          icon: Zap,
+          permission: "challenges:read" as const,
+        },
+        {
+          href: "/admin/quizzes",
+          label: isAr ? "الكويزات" : "Quizzes",
+          icon: HelpCircle,
+          permission: "challenges:read" as const,
+        },
+        {
+          href: "/admin/certificates",
+          label: isAr ? "الشهادات" : "Certificates",
+          icon: Award,
+          permission: "certificates:read" as const,
+        },
+      ],
     },
     {
-      href: "/admin/lessons",
-      label: isAr ? "الدروس" : "Lessons",
-      icon: BookOpen,
-      permission: "lessons:read" as const,
+      id: "access",
+      titleAr: "المستخدمون",
+      titleEn: "Users",
+      items: [
+        {
+          href: "/admin/users",
+          label: isAr ? "المستخدمين والصلاحيات" : "Users & Roles",
+          icon: Users,
+          permission: "users:read" as const,
+        },
+      ],
     },
     {
-      href: "/admin/assignments",
-      label: isAr ? "الواجبات" : "Assignments",
-      icon: FileText,
-      permission: "lessons:read" as const,
-    },
-    {
-      href: "/admin/enrollments",
-      label: isAr ? "التسجيلات" : "Enrollments",
-      icon: Users,
-      permission: "enrollments:read" as const,
-    },
-    {
-      href: "/admin/store",
-      label: isAr ? "المتجر" : "Store",
-      icon: ShoppingCart,
-      permission: "store:read" as const,
-    },
-    {
-      href: "/admin/orders",
-      label: isAr ? "الطلبات" : "Orders",
-      icon: FileText,
-      permission: "orders:read" as const,
-    },
-    {
-      href: "/admin/stream-pay",
-      label: isAr ? "Stream Pay" : "Stream Pay",
-      icon: CreditCard,
-      permission: "store:read" as const,
-    },
-    {
-      href: "/admin/challenges",
-      label: isAr ? "التحديات" : "Challenges",
-      icon: Zap,
-      permission: "challenges:read" as const,
-    },
-    {
-      href: "/admin/quizzes",
-      label: isAr ? "الكويزات" : "Quizzes",
-      icon: HelpCircle,
-      permission: "challenges:read" as const,
-    },
-    {
-      href: "/admin/reviews",
-      label: isAr ? "المراجعات" : "Reviews",
-      icon: MessageSquare,
-      permission: "reviews:read" as const,
-    },
-    {
-      href: "/admin/chat",
-      label: isAr ? "المحادثات" : "Chat",
-      icon: MessageCircle,
-      permission: null,
-    },
-    {
-      href: "/admin/contests",
-      label: isAr ? "المسابقات" : "Contests",
-      icon: Trophy,
-      permission: "contests:read" as const,
-    },
-    {
-      href: "/admin/certificates",
-      label: isAr ? "الشهادات" : "Certificates",
-      icon: Award,
-      permission: "certificates:read" as const,
-    },
-    {
-      href: "/admin/settings",
-      label: isAr ? "الإعدادات" : "Settings",
-      icon: Settings,
-      permission: "settings:read" as const,
-    },
-    {
-      href: "/admin/audit-logs",
-      label: isAr ? "سجلات التدقيق" : "Audit Logs",
-      icon: FileText,
-      permission: "audit:read" as const,
+      id: "system",
+      titleAr: "النظام",
+      titleEn: "System",
+      items: [
+        {
+          href: "/admin/settings",
+          label: isAr ? "الإعدادات" : "Settings",
+          icon: Settings,
+          permission: "settings:read" as const,
+        },
+        {
+          href: "/admin/audit-logs",
+          label: isAr ? "سجلات التدقيق" : "Audit Logs",
+          icon: FileText,
+          permission: "audit:read" as const,
+        },
+      ],
     },
   ]
 
-  const visibleItems = menuItems.filter((item) => {
-    if (!item.permission) return true
-    return hasPermission(user.role as any, item.permission)
-  })
+  const visibleGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        if (!item.permission) return true
+        return hasPermission(user.role as any, item.permission)
+      }),
+    }))
+    .filter((group) => group.items.length > 0)
 
   return (
     <nav className="flex-1 space-y-1 overflow-y-auto p-4">
@@ -293,29 +340,38 @@ function AdminNav({ user, isCollapsed }: AdminSidebarProps) {
         </>
       ) : (
         <>
-          {visibleItems.map((item) => {
-            const Icon = item.icon
-            const isActive = pathWithoutLocale === item.href || pathWithoutLocale.startsWith(item.href + "/")
-            const hrefWithLocale = `/${locale}${item.href}`
+          {visibleGroups.map((group) => (
+            <div key={group.id} className={cn(!isCollapsed && "mt-4 pt-4 border-t")}>
+              {!isCollapsed && (
+                <div className="px-3 pb-2 text-xs font-semibold text-muted-foreground">
+                  {isAr ? group.titleAr : group.titleEn}
+                </div>
+              )}
+              {group.items.map((item) => {
+                const Icon = item.icon
+                const isActive = pathWithoutLocale === item.href || pathWithoutLocale.startsWith(item.href + "/")
+                const hrefWithLocale = `/${locale}${item.href}`
 
-            return (
-              <Link
-                key={item.href}
-                href={hrefWithLocale}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  isCollapsed && "justify-center px-2"
-                )}
-                title={isCollapsed ? item.label : undefined}
-              >
-                <Icon className="h-5 w-5" />
-                {!isCollapsed && <span>{item.label}</span>}
-              </Link>
-            )
-          })}
+                return (
+                  <Link
+                    key={item.href}
+                    href={hrefWithLocale}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      isCollapsed && "justify-center px-2",
+                    )}
+                    title={isCollapsed ? item.label : undefined}
+                  >
+                    <Icon className="h-5 w-5" />
+                    {!isCollapsed && <span className="truncate">{item.label}</span>}
+                  </Link>
+                )
+              })}
+            </div>
+          ))}
       
           {!isCollapsed && (
             <div className="mt-4 pt-4 border-t">
@@ -334,8 +390,11 @@ function AdminNav({ user, isCollapsed }: AdminSidebarProps) {
                 <MessageCircle className="h-4 w-4" />
                 <span className="truncate">{isAr ? "استشارات تقنية" : "Tech Consultation"}</span>
               </Link>
+            </div>
+          )}
 
-              <div className="mt-4 pt-4 border-t">
+          {!isCollapsed && (
+            <div className="mt-4 pt-4 border-t">
               <div className="px-3 pb-2 text-xs font-semibold text-muted-foreground">
                 {isAr ? "الدورات المباشرة" : "Live Courses"}
               </div>
@@ -355,13 +414,11 @@ function AdminNav({ user, isCollapsed }: AdminSidebarProps) {
                       "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                       isActive
                         ? "bg-red-50 text-red-700"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
                     <Video className="h-4 w-4 text-red-600" />
-                    <span className="truncate">
-                      {isAr ? c.titleAr : c.titleEn}
-                    </span>
+                    <span className="truncate">{isAr ? c.titleAr : c.titleEn}</span>
                   </Link>
                 )
               })}
@@ -370,7 +427,6 @@ function AdminNav({ user, isCollapsed }: AdminSidebarProps) {
                   {isAr ? "لا يوجد بث مباشر الآن" : "No live courses now"}
                 </div>
               )}
-              </div>
             </div>
           )}
         </>

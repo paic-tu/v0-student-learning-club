@@ -54,7 +54,8 @@ export function CourseManagement({
 
   const filteredEnrollments = enrollments.filter(enrollment => 
     enrollment.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    enrollment.user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    enrollment.user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    String(enrollment.user.phoneNumber || enrollment.user.phone || "").toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const handleDeleteCourse = async () => {
@@ -172,6 +173,7 @@ export function CourseManagement({
                       <TableHead className="w-[80px]">{isAr ? "الصورة" : "Avatar"}</TableHead>
                       <TableHead>{isAr ? "الاسم" : "Name"}</TableHead>
                       <TableHead>{isAr ? "البريد الإلكتروني" : "Email"}</TableHead>
+                      <TableHead>{isAr ? "رقم الجوال" : "Phone"}</TableHead>
                       <TableHead>{isAr ? "تاريخ التسجيل" : "Joined Date"}</TableHead>
                       <TableHead>{isAr ? "التقدم" : "Progress"}</TableHead>
                     </TableRow>
@@ -179,7 +181,7 @@ export function CourseManagement({
                   <TableBody>
                     {filteredEnrollments.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                           {isAr ? "لا يوجد طلاب" : "No students found"}
                         </TableCell>
                       </TableRow>
@@ -194,6 +196,7 @@ export function CourseManagement({
                           </TableCell>
                           <TableCell className="font-medium">{enrollment.user.name}</TableCell>
                           <TableCell>{enrollment.user.email}</TableCell>
+                          <TableCell>{enrollment.user.phoneNumber || enrollment.user.phone || "-"}</TableCell>
                           <TableCell>
                             {new Date(enrollment.createdAt).toLocaleDateString(isAr ? 'ar-EG' : 'en-US')}
                           </TableCell>
