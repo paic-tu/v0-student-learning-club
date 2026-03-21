@@ -9,6 +9,7 @@ import { Loader2, Upload, X, ZoomIn, ZoomOut } from "lucide-react"
 import Image from "next/image"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { uploadFileAction } from "@/lib/actions/upload"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface ImageUploadProps {
   value: string
@@ -33,6 +34,10 @@ export function ImageUpload({
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+  const [originalAspect, setOriginalAspect] = useState<number | null>(null)
+  const [aspectMode, setAspectMode] = useState<
+    "default" | "original" | "1:1" | "16:9" | "16:10" | "4:3" | "3:4"
+  >("1:1")
 
   const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
     setCroppedAreaPixels(croppedAreaPixels)
@@ -42,7 +47,22 @@ export function ImageUpload({
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0]
       const imageDataUrl = await readFile(file)
-      setImageSrc(imageDataUrl as string)
+      const url = imageDataUrl as string
+      setImageSrc(url)
+      setZoom(1)
+      setCrop({ x: 0, y: 0 })
+      setAspectMode("1:1")
+      try {
+        const img = new window.Image()
+        img.onload = () => {
+          if (img.width > 0 && img.height > 0) {
+            setOriginalAspect(img.width / img.height)
+          }
+        }
+        img.src = url
+      } catch {
+        setOriginalAspect(null)
+      }
       setIsOpen(true)
       // Reset input value to allow selecting same file again
       e.target.value = ""
@@ -110,6 +130,21 @@ export function ImageUpload({
     setCrop({ x: 0, y: 0 })
   }
 
+  const effectiveAspect =
+    aspectMode === "original"
+      ? originalAspect || aspect
+      : aspectMode === "1:1"
+        ? 1
+        : aspectMode === "16:9"
+          ? 16 / 9
+          : aspectMode === "16:10"
+            ? 16 / 10
+            : aspectMode === "4:3"
+              ? 4 / 3
+              : aspectMode === "3:4"
+                ? 3 / 4
+                : aspect
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-4">
@@ -162,23 +197,48 @@ export function ImageUpload({
       </div>
 
       <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="w-[95vw] max-w-[1100px]">
           <DialogHeader>
             <DialogTitle>Crop Image</DialogTitle>
           </DialogHeader>
           
-          <div className="relative h-[400px] w-full overflow-hidden rounded-md bg-black">
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="md:col-span-2 flex flex-wrap items-center gap-2">
+              <div className="text-sm font-medium">Aspect</div>
+              <Select value={aspectMode} onValueChange={(v) => setAspectMode(v as any)}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">Default</SelectItem>
+                  <SelectItem value="original" disabled={!originalAspect}>
+                    Original
+                  </SelectItem>
+                  <SelectItem value="1:1">1:1</SelectItem>
+                  <SelectItem value="16:9">16:9</SelectItem>
+                  <SelectItem value="16:10">16:10</SelectItem>
+                  <SelectItem value="4:3">4:3</SelectItem>
+                  <SelectItem value="3:4">3:4</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" type="button" onClick={() => { setZoom(1); setCrop({ x: 0, y: 0 }) }}>
+                Reset
+              </Button>
+            </div>
+          </div>
+
+          <div className="relative h-[70vh] max-h-[720px] w-full overflow-hidden rounded-md bg-black">
             {imageSrc && (
               <Cropper
                 image={imageSrc}
                 crop={crop}
                 zoom={zoom}
-                aspect={aspect}
+                aspect={effectiveAspect}
                 onCropChange={setCrop}
                 onCropComplete={onCropComplete}
                 onZoomChange={setZoom}
                 cropShape={shape === "round" ? "round" : "rect"}
-                showGrid={false}
+                showGrid={true}
               />
             )}
           </div>
@@ -189,8 +249,8 @@ export function ImageUpload({
                type="range"
                value={zoom}
                min={1}
-               max={3}
-               step={0.1}
+               max={10}
+               step={0.05}
                aria-labelledby="Zoom"
                onChange={(e) => setZoom(Number(e.target.value))}
                className="flex-1"

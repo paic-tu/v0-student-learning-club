@@ -177,6 +177,18 @@ function AdminNav({ user, isCollapsed }: AdminSidebarProps) {
       titleEn: "Community",
       items: [
         {
+          href: "/admin/consultations",
+          label: isAr ? "الاستشارات" : "Consultations",
+          icon: MessageCircle,
+          permission: "consultations:read" as const,
+        },
+        {
+          href: "/admin/consultations/bookings",
+          label: isAr ? "حجوزات الاستشارات" : "Consultation Bookings",
+          icon: MessageCircle,
+          permission: "consultations:read" as const,
+        },
+        {
           href: "/admin/reviews",
           label: isAr ? "المراجعات" : "Reviews",
           icon: MessageSquare,
@@ -373,26 +385,6 @@ function AdminNav({ user, isCollapsed }: AdminSidebarProps) {
             </div>
           ))}
       
-          {!isCollapsed && (
-            <div className="mt-4 pt-4 border-t">
-              <div className="px-3 pb-2 text-xs font-semibold text-muted-foreground">
-                {isAr ? "الاستشارات" : "Consultations"}
-              </div>
-              <Link
-                href={`/${locale}/admin/consultations?room=consultation-tech`}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                  pathWithoutLocale.startsWith("/admin/consultations")
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                <MessageCircle className="h-4 w-4" />
-                <span className="truncate">{isAr ? "استشارات تقنية" : "Tech Consultation"}</span>
-              </Link>
-            </div>
-          )}
-
           {!isCollapsed && (
             <div className="mt-4 pt-4 border-t">
               <div className="px-3 pb-2 text-xs font-semibold text-muted-foreground">

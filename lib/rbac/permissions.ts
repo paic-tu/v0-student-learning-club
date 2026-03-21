@@ -40,6 +40,8 @@ export type Permission =
   | "reviews:delete"
   | "docs:read"
   | "docs:write"
+  | "consultations:read"
+  | "consultations:write"
 
 export type Role = "student" | "instructor" | "admin" | "manager" | "support"
 
@@ -83,6 +85,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "reviews:delete",
     "docs:read",
     "docs:write",
+    "consultations:read",
+    "consultations:write",
   ],
   manager: [
     // Content + store management, no system settings
@@ -103,6 +107,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "contests:write",
     "certificates:read",
     "docs:read",
+    "consultations:read",
+    "consultations:write",
   ],
   instructor: [
     // Own courses + lessons + grading only
@@ -131,6 +137,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "certificates:read",
     "settings:read",
     "docs:read",
+    "consultations:read",
   ],
   student: [
     // Normal user - no admin permissions

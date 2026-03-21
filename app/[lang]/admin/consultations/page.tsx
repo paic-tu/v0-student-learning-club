@@ -58,6 +58,34 @@ export default async function AdminConsultationsPage({
             </Button>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{isAr ? "استشارات مجدولة" : "Scheduled Consultations"}</CardTitle>
+            <CardDescription>
+              {isAr ? "إدارة بطاقات المستشارين والمواعيد التي تظهر في الصفحة الرئيسية." : "Manage expert cards and time slots shown on the homepage."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline" className="w-full bg-transparent">
+              <Link href={`/${lang}/admin/consultations/schedule`}>{isAr ? "إدارة الاستشارات" : "Manage Consultations"}</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{isAr ? "حجوزات الاستشارات" : "Consultation Bookings"}</CardTitle>
+            <CardDescription>
+              {isAr ? "عرض الحجوزات المرسلة للمستشارين (حسب المواعيد المجدولة)." : "View bookings created for scheduled consultations."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline" className="w-full bg-transparent">
+              <Link href={`/${lang}/admin/consultations/bookings`}>{isAr ? "عرض الحجوزات" : "View bookings"}</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }

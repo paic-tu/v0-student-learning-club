@@ -58,6 +58,20 @@ export default async function InstructorConsultationsPage({
             </Button>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{isAr ? "حجوزات الاستشارات" : "Consultation Bookings"}</CardTitle>
+            <CardDescription>
+              {isAr ? "عرض الحجوزات الخاصة بك (بعد ربط حسابك بمستشار من لوحة الأدمن)." : "View your bookings (after your account is linked to an expert by admin)."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline" className="w-full bg-transparent">
+              <Link href={`/${lang}/instructor/consultations/bookings`}>{isAr ? "عرض الحجوزات" : "View bookings"}</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }

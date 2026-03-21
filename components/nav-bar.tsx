@@ -2,7 +2,24 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Moon, Sun, Globe, ShoppingCart, Menu, BookOpen, Trophy, ShoppingBag, ShieldCheck, HelpCircle, Info, Phone, LayoutDashboard, User as UserIcon, LogIn } from "lucide-react"
+import {
+  Moon,
+  Sun,
+  Globe,
+  ShoppingCart,
+  Menu,
+  BookOpen,
+  Trophy,
+  ShoppingBag,
+  ShieldCheck,
+  HelpCircle,
+  Info,
+  Phone,
+  LayoutDashboard,
+  User as UserIcon,
+  LogIn,
+  Calendar,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -61,6 +78,7 @@ export function NavBar() {
     { href: `/${language}/courses`, label: t("courses", language) },
     { href: `/${language}/challenges`, label: language === "ar" ? "التحديات" : "Challenges" },
     { href: `/${language}/store`, label: t("store", language) },
+    { href: `/${language}/consultations`, label: language === "ar" ? "الاستشارات" : "Consultations" },
     ...(user && user.role === "student" ? [{ href: `/${language}/student/my-courses`, label: t("myLibrary", language) }] : []),
     { href: `/${language}/verify`, label: t("verify", language) },
   ]
@@ -182,6 +200,12 @@ export function NavBar() {
                     <Button variant={pathname.endsWith("/store") ? "secondary" : "ghost"} className="w-full justify-start">
                       <ShoppingBag className={`${iconGapClass} h-4 w-4`} />
                       {t("store", language)}
+                    </Button>
+                  </Link>
+                  <Link href={`/${language}/consultations`} onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start">
+                      <Calendar className={`${iconGapClass} h-4 w-4`} />
+                      {language === "ar" ? "الاستشارات" : "Consultations"}
                     </Button>
                   </Link>
                   <Link href={`/${language}/verify`} onClick={() => setMobileMenuOpen(false)}>

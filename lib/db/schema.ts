@@ -29,6 +29,8 @@ export const cohortMemberStatusEnum = pgEnum("cohort_member_status", ["active", 
 export const scheduleTypeEnum = pgEnum("schedule_type", ["live", "deadline", "exam", "workshop"])
 export const bookingStatusEnum = pgEnum("booking_status", ["requested", "confirmed", "completed", "cancelled"])
 export const conversationTypeEnum = pgEnum("conversation_type", ["individual", "group", "community"])
+export const consultationSlotStatusEnum = pgEnum("consultation_slot_status", ["available", "booked", "cancelled"])
+export const consultationBookingStatusEnum = pgEnum("consultation_booking_status", ["requested", "confirmed", "completed", "cancelled"])
 
 // Site Settings (single-row key/value)
 export const siteSettings = pgTable("site_settings", {
@@ -568,6 +570,62 @@ export const bookingReviews = pgTable("booking_reviews", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 })
 
+export const consultationExperts = pgTable("consultation_experts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  nameEn: varchar("name_en", { length: 255 }).notNull(),
+  nameAr: varchar("name_ar", { length: 255 }).notNull(),
+  fieldEn: varchar("field_en", { length: 255 }).notNull(),
+  fieldAr: varchar("field_ar", { length: 255 }).notNull(),
+  imageUrl: text("image_url"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+export const consultationSlots = pgTable(
+  "consultation_slots",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    expertId: uuid("expert_id")
+      .notNull()
+      .references(() => consultationExperts.id, { onDelete: "cascade" }),
+    startAt: timestamp("start_at").notNull(),
+    endAt: timestamp("end_at").notNull(),
+    status: consultationSlotStatusEnum("status").notNull().default("available"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => ({
+    expertStartUnique: uniqueIndex("consultation_slots_expert_start_unique").on(t.expertId, t.startAt),
+  }),
+)
+
+export const consultationBookings = pgTable(
+  "consultation_bookings",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    expertId: uuid("expert_id")
+      .notNull()
+      .references(() => consultationExperts.id, { onDelete: "cascade" }),
+    assignedUserId: uuid("assigned_user_id").references(() => users.id, { onDelete: "set null" }),
+    slotId: uuid("slot_id")
+      .notNull()
+      .references(() => consultationSlots.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    requesterName: varchar("requester_name", { length: 255 }).notNull(),
+    requesterEmail: varchar("requester_email", { length: 255 }).notNull(),
+    requesterPhone: varchar("requester_phone", { length: 32 }),
+    status: consultationBookingStatusEnum("status").notNull().default("requested"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => ({
+    slotUnique: uniqueIndex("consultation_bookings_slot_unique").on(t.slotId),
+  }),
+)
+
 // Audit Logs table
 export const auditLogs = pgTable("audit_logs", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -648,6 +706,33 @@ export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
   course: one(courses, {
     fields: [enrollments.courseId],
     references: [courses.id],
+  }),
+}))
+
+export const consultationExpertsRelations = relations(consultationExperts, ({ many }) => ({
+  slots: many(consultationSlots),
+  bookings: many(consultationBookings),
+}))
+
+export const consultationSlotsRelations = relations(consultationSlots, ({ one }) => ({
+  expert: one(consultationExperts, {
+    fields: [consultationSlots.expertId],
+    references: [consultationExperts.id],
+  }),
+}))
+
+export const consultationBookingsRelations = relations(consultationBookings, ({ one }) => ({
+  expert: one(consultationExperts, {
+    fields: [consultationBookings.expertId],
+    references: [consultationExperts.id],
+  }),
+  slot: one(consultationSlots, {
+    fields: [consultationBookings.slotId],
+    references: [consultationSlots.id],
+  }),
+  user: one(users, {
+    fields: [consultationBookings.userId],
+    references: [users.id],
   }),
 }))
 
