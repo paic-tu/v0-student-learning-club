@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import {
   Table,
   TableBody,
@@ -19,7 +19,14 @@ import {
   Plus, 
   Loader2,
   ExternalLink,
-  Download
+  Download,
+  Users,
+  GraduationCap,
+  Briefcase,
+  Search,
+  FileCheck,
+  TrendingUp,
+  BarChart3
 } from "lucide-react"
 import { format } from "date-fns"
 import { ar, enUS } from "date-fns/locale"
@@ -35,6 +42,8 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 
 interface IBMSubmission {
   id: string
@@ -65,6 +74,26 @@ export function IBMSubmissionsClient({ initialSubmissions, lang }: IBMSubmission
   const [selectedSubmission, setSelectedSubmission] = useState<IBMSubmission | null>(null)
   const [newCertUrl, setNewCertUrl] = useState("")
   const [isUpdating, setIsUpdating] = useState(false)
+
+  const stats = useMemo(() => {
+    const total = submissions.length
+    const jobSeekers = submissions.filter(s => s.employmentStatus === "job_seeker").length
+    const students = submissions.filter(s => s.employmentStatus === "student").length
+    const employed = submissions.filter(s => s.employmentStatus === "employed").length
+    const otherStatus = submissions.filter(s => s.employmentStatus === "other" || !s.employmentStatus).length
+    const withResume = submissions.filter(s => s.resumeUrl).length
+    const issuedCerts = submissions.filter(s => s.issuedCertificateUrl).length
+
+    return {
+      total,
+      jobSeekers,
+      students,
+      employed,
+      otherStatus,
+      withResume,
+      issuedCerts
+    }
+  }, [submissions])
 
   const handleOpenDialog = (sub: IBMSubmission) => {
     setSelectedSubmission(sub)
@@ -108,7 +137,72 @@ export function IBMSubmissionsClient({ initialSubmissions, lang }: IBMSubmission
   }
 
   return (
-    <div className="border rounded-lg bg-card">
+    <div className="space-y-6">
+      {/* Analysis Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-blue-50/50 dark:bg-blue-950/10 border-blue-100 dark:border-blue-900/50">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-bold">{isAr ? "إجمالي المتقدمين" : "Total Applicants"}</CardTitle>
+            <Users className="w-4 h-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-black">{stats.total}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {isAr ? "إجمالي المشاركات المستلمة" : "Total submissions received"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-amber-50/50 dark:bg-amber-950/10 border-amber-100 dark:border-amber-900/50">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-bold">{isAr ? "باحثين عن عمل" : "Job Seekers"}</CardTitle>
+            <Search className="w-4 h-4 text-amber-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-black">{stats.jobSeekers}</div>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[10px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded">
+                {stats.total > 0 ? Math.round((stats.jobSeekers / stats.total) * 100) : 0}%
+              </span>
+              <p className="text-xs text-muted-foreground">{isAr ? "من إجمالي المتقدمين" : "of total applicants"}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-indigo-50/50 dark:bg-indigo-950/10 border-indigo-100 dark:border-indigo-900/50">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-bold">{isAr ? "طلاب" : "Students"}</CardTitle>
+            <GraduationCap className="w-4 h-4 text-indigo-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-black">{stats.students}</div>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[10px] font-bold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 rounded">
+                {stats.total > 0 ? Math.round((stats.students / stats.total) * 100) : 0}%
+              </span>
+              <p className="text-xs text-muted-foreground">{isAr ? "من إجمالي المتقدمين" : "of total applicants"}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-emerald-50/50 dark:bg-emerald-950/10 border-emerald-100 dark:border-emerald-900/50">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-bold">{isAr ? "شهادات مكتملة" : "Issued Certs"}</CardTitle>
+            <FileCheck className="w-4 h-4 text-emerald-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-black">{stats.issuedCerts}</div>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded">
+                {stats.total > 0 ? Math.round((stats.issuedCerts / stats.total) * 100) : 0}%
+              </span>
+              <p className="text-xs text-muted-foreground">{isAr ? "نسبة الإنجاز" : "Completion rate"}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="border rounded-xl bg-card overflow-hidden shadow-sm border-slate-200 dark:border-slate-800">
       <Table>
         <TableHeader>
           <TableRow>
@@ -218,6 +312,7 @@ export function IBMSubmissionsClient({ initialSubmissions, lang }: IBMSubmission
           )}
         </TableBody>
       </Table>
+      </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
