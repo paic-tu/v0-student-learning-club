@@ -3,6 +3,8 @@ import { db } from "@/lib/db"
 import { cartItems, carts, enrollments, orderItems, orders } from "@/lib/db/schema"
 import { and, eq, inArray, isNotNull } from "drizzle-orm"
 import { streamRequest, verifyStreamWebhookSignature } from "@/lib/payments/stream"
+import { sendMail } from "@/lib/mail"
+import { getSiteSettings } from "@/lib/db/queries"
 
 async function fulfillOrderCourses(userId: string, orderId: string) {
   const items = await db.query.orderItems.findMany({
@@ -38,6 +40,29 @@ async function fulfillOrderCourses(userId: string, orderId: string) {
   const cartIds = userCarts.map((c) => c.id)
   if (cartIds.length > 0) {
     await db.delete(cartItems).where(inArray(cartItems.cartId, cartIds))
+  }
+
+  // Send Email Notification
+  try {
+    const user = await db.query.users.findFirst({ where: eq(users.id, userId) })
+    if (user?.email) {
+      const settings = await getSiteSettings()
+      await sendMail({
+        to: user.email,
+        subject: `Enrollment Successful - ${settings.siteName}`,
+        html: `
+          <h3>Welcome to the Course!</h3>
+          <p>Hi ${user.name},</p>
+          <p>Your payment for order <strong>#${orderId.slice(0, 8)}</strong> was successful.</p>
+          <p>You now have access to your courses. You can start learning now!</p>
+          <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard">Go to My Dashboard</a></p>
+          <br/>
+          <p>Best regards,<br/>${settings.siteName} Team</p>
+        `
+      })
+    }
+  } catch (error) {
+    console.error("Error sending enrollment email:", error)
   }
 }
 

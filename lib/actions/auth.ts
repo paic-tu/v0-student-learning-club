@@ -7,6 +7,8 @@ import { users } from "@/lib/db/schema"
 import { eq, ilike } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
+import { sendMail } from "@/lib/mail"
+import { getSiteSettings } from "@/lib/db/queries"
 
 export async function loginAction(prevState: any, formData: FormData) {
   try {
@@ -87,6 +89,25 @@ export async function registerAction(formData: FormData) {
       createdAt: new Date(),
       updatedAt: new Date(),
     })
+
+    // Send Welcome Email
+    try {
+      const settings = await getSiteSettings()
+      await sendMail({
+        to: email,
+        subject: `Welcome to ${settings.siteName}!`,
+        html: `
+          <h3>Welcome aboard, ${name}!</h3>
+          <p>Thank you for joining <strong>${settings.siteName}</strong>.</p>
+          <p>Your account has been created successfully. You can now log in and explore our courses.</p>
+          <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/auth/login">Login to your account</a></p>
+          <br/>
+          <p>Best regards,<br/>${settings.siteName} Team</p>
+        `
+      })
+    } catch (error) {
+      console.error("Error sending welcome email:", error)
+    }
 
     return { success: true }
   } catch (error) {

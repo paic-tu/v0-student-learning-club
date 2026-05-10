@@ -40,7 +40,7 @@ export const siteSettings = pgTable("site_settings", {
   maintenanceMode: boolean("maintenance_mode").notNull().default(false),
   allowRegistration: boolean("allow_registration").notNull().default(true),
   currency: varchar("currency", { length: 16 }).notNull().default("SAR"),
-  email: jsonb("email").$type<{ smtpHost?: string; smtpPort?: number; notifications?: boolean }>().default({}),
+  email: jsonb("email").$type<{ smtpHost?: string; smtpPort?: number; smtpUser?: string; smtpPassword?: string; notifications?: boolean }>().default({}),
   features: jsonb("features").$type<{ showStore?: boolean; showMentors?: boolean; enableLive?: boolean }>().default({}),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 })
@@ -1080,5 +1080,25 @@ export const lessonAssignmentSubmissions = pgTable(
 export const lessonAssignmentSubmissionsRelations = relations(lessonAssignmentSubmissions, ({ one }) => ({
   lesson: one(lessons, { fields: [lessonAssignmentSubmissions.lessonId], references: [lessons.id] }),
   user: one(users, { fields: [lessonAssignmentSubmissions.userId], references: [users.id] }),
+}))
+
+// IBM External Course Submissions
+export const ibmSubmissions = pgTable("ibm_submissions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  fullName: varchar("full_name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  phoneNumber: varchar("phone_number", { length: 32 }),
+  completionDate: timestamp("completion_date").notNull(),
+  certificateUrl: text("certificate_url").notNull(),
+  employmentStatus: varchar("employment_status", { length: 255 }), // باحث عن عمل، طالب، موظف...
+  resumeUrl: text("resume_url"),
+  notes: text("notes"),
+  issuedCertificateUrl: text("issued_certificate_url"), // مجال للشهادة المستقبلية
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+
+export const ibmSubmissionsRelations = relations(ibmSubmissions, ({ one }) => ({
+  user: one(users, { fields: [ibmSubmissions.userId], references: [users.id] }),
 }))
 

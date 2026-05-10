@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { z } from "zod"
+import { sendMail } from "@/lib/mail"
 
 const schema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -25,6 +26,20 @@ export async function POST(request: NextRequest) {
     if (parsed.data.company && parsed.data.company.trim().length > 0) {
       return NextResponse.json({ ok: true })
     }
+
+    // Send email notification
+    await sendMail({
+      to: "support@neonedu.org",
+      subject: `New Contact Message from ${parsed.data.name}`,
+      text: `Name: ${parsed.data.name}\nEmail: ${parsed.data.email}\nMessage: ${parsed.data.message}`,
+      html: `
+        <h3>New Contact Message</h3>
+        <p><strong>Name:</strong> ${parsed.data.name}</p>
+        <p><strong>Email:</strong> ${parsed.data.email}</p>
+        <p><strong>Message:</strong></p>
+        <p>${parsed.data.message}</p>
+      `,
+    })
 
     const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL
     if (!webhookUrl) {

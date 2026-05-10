@@ -144,6 +144,12 @@ function AdminNav({ user, isCollapsed }: AdminSidebarProps) {
           icon: Users,
           permission: "enrollments:read" as const,
         },
+        {
+          href: "/admin/ibm-submissions",
+          label: isAr ? "طلبات IBM" : "IBM Submissions",
+          icon: FileText,
+          permission: "courses:read" as const,
+        },
       ],
     },
     {

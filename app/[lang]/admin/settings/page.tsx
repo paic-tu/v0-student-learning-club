@@ -34,6 +34,8 @@ export default async function SettingsPage(props: { params: Promise<{ lang: stri
           email: {
             smtpHost: String(formData.get("smtpHost") || ""),
             smtpPort: Number(formData.get("smtpPort") || 0) || undefined,
+            smtpUser: String(formData.get("smtpUser") || ""),
+            smtpPassword: String(formData.get("smtpPassword") || ""),
             notifications: formData.get("emailNotifications") === "on",
           },
           features: {
@@ -86,6 +88,16 @@ export default async function SettingsPage(props: { params: Promise<{ lang: stri
           <div className="space-y-2">
             <Label htmlFor="smtp_port">SMTP Port</Label>
             <Input name="smtpPort" id="smtp_port" type="number" placeholder="587" defaultValue={settings.email?.smtpPort || ""} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="smtp_user">SMTP User</Label>
+            <Input name="smtpUser" id="smtp_user" placeholder="resend" defaultValue={settings.email?.smtpUser || ""} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="smtp_password">SMTP Password</Label>
+            <Input name="smtpPassword" id="smtp_password" type="password" placeholder="re_..." defaultValue={settings.email?.smtpPassword || ""} />
           </div>
 
           <div className="flex items-center gap-2">

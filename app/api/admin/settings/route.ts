@@ -25,6 +25,8 @@ export async function PUT(req: NextRequest) {
       email: {
         smtpHost: body?.email?.smtpHost ? String(body.email.smtpHost) : undefined,
         smtpPort: body?.email?.smtpPort ? Number(body.email.smtpPort) : undefined,
+        smtpUser: body?.email?.smtpUser ? String(body.email.smtpUser) : undefined,
+        smtpPassword: body?.email?.smtpPassword ? String(body.email.smtpPassword) : undefined,
         notifications: Boolean(body?.email?.notifications),
       },
       features: {

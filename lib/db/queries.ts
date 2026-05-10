@@ -1311,7 +1311,7 @@ export async function updateSiteSettings(values: {
   maintenanceMode: boolean
   allowRegistration: boolean
   currency: string
-  email: { smtpHost?: string; smtpPort?: number; notifications?: boolean }
+  email: { smtpHost?: string; smtpPort?: number; smtpUser?: string; smtpPassword?: string; notifications?: boolean }
   features: { showStore?: boolean; showMentors?: boolean; enableLive?: boolean }
 }) {
   try {
