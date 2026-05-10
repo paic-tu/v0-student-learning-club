@@ -226,22 +226,15 @@ export function IBMSubmissionForm({ lang }: IBMSubmissionFormProps) {
       transition={{ duration: 0.8, ease: "easeOut" }}
     >
       <Card className="max-w-2xl mx-auto shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border-none bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl ring-1 ring-slate-200 dark:ring-slate-800 overflow-hidden rounded-[2.5rem]">
-        <div className="p-5 pb-0">
-          <div className="relative w-full aspect-[21/9] overflow-hidden rounded-[2rem] shadow-2xl ring-1 ring-black/5 group">
-            <Image 
-              src="/ibm-banner.jpeg" 
-              alt="IBM Banner" 
-              fill 
-              className="object-cover transition-transform duration-1000 group-hover:scale-110"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-60" />
-            <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end">
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-1.5 rounded-full">
-                <span className="text-xs font-bold text-white uppercase tracking-wider">IBM Training Camp</span>
-              </div>
-            </div>
-          </div>
+        <div className="relative w-full aspect-video md:aspect-[21/9] overflow-hidden group bg-slate-100 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-800">
+          <Image 
+            src="/ibm-banner.jpeg" 
+            alt="IBM Banner" 
+            fill 
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-40 md:opacity-60" />
         </div>
 
         <CardHeader className="space-y-2 pb-8 pt-8 px-8 text-center">
