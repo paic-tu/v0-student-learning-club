@@ -44,7 +44,8 @@ export async function forgotPasswordAction(formData: FormData) {
 
     // Send Reset Email
     const settings = await getSiteSettings()
-    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${token}`
+    const lang = (formData.get("lang") as string) || "ar"
+    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/${lang}/auth/reset-password?token=${token}`
 
     await sendMail({
       to: email,

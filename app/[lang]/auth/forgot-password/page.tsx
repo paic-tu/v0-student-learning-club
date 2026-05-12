@@ -24,6 +24,7 @@ export default function ForgotPasswordPage() {
     try {
       const formData = new FormData()
       formData.append("email", email)
+      formData.append("lang", language)
       
       const result = await forgotPasswordAction(formData)
       
