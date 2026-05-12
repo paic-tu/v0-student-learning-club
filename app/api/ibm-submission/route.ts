@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       createdAt: new Date(),
     }).returning()
 
-    // Send notification email
+    // Send notification email to support
     await sendMail({
       to: "support@neonedu.org",
       subject: `New IBM Course Submission: ${fullName}`,
@@ -66,11 +66,33 @@ export async function POST(request: NextRequest) {
           <p style="margin: 10px 0;"><strong>تاريخ الإتمام:</strong> ${completionDate}</p>
           <p style="margin: 10px 0;"><strong>الحالة المهنية:</strong> ${employmentStatus}</p>
           <div style="margin-top: 20px; display: flex; gap: 10px;">
-            <a href="${certificateUrl}" style="display: inline-block; padding: 10px 20px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 14px;">عرض الشهادة</a>
-            ${resumeUrl ? `<a href="${resumeUrl}" style="display: inline-block; padding: 10px 20px; background-color: #0f172a; color: white; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 14px; margin-right: 10px;">عرض السيرة الذاتية</a>` : ""}
+            <a href="${certificateUrl}" style="display: inline-block; padding: 10px 20px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 14px;">عرض الشهادة المرفوعة</a>
           </div>
           ${notes ? `<div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;"><p><strong>ملاحظات:</strong></p><p>${notes}</p></div>` : ""}
         </div>
+      `,
+    })
+
+    // Send the generated certificate to the user's email
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    const userCertUrl = `${appUrl}/api/ibm-submission/certificate/${submission[0].id}`
+    
+    await sendMail({
+      to: email,
+      subject: `شهادة إتمام معسكر نيون x IBM - ${fullName}`,
+      html: `
+        <h3 style="color: #0f172a; font-size: 22px; font-weight: 800; margin-bottom: 20px;">تهانينا لك يا ${fullName.split(' ')[0]}!</h3>
+        <p style="font-size: 16px; color: #475569; line-height: 1.8;">نبارك لك إتمامك لمتطلبات معسكر <strong>نيون x IBM SkillsBuild</strong> بنجاح. يسعدنا أن نرفق لك رابط تحميل شهادة إتمام المعسكر الرسمية الخاصة بك.</p>
+        
+        <div style="margin: 40px 0; text-align: center;">
+          <a href="${userCertUrl}" style="display: inline-block; padding: 18px 36px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 16px; font-weight: 700; font-size: 18px; box-shadow: 0 10px 20px -5px rgba(0, 112, 243, 0.3);">تحميل شهادتك الآن</a>
+        </div>
+
+        <div style="background-color: #f1f5f9; padding: 20px; border-radius: 12px; border-right: 4px solid #0070f3;">
+          <p style="margin: 0; font-size: 14px; color: #475569;"><strong>ملاحظة:</strong> يمكنك الاحتفاظ بهذا البريد للرجوع للشهادة في أي وقت، أو مشاركة الرابط في ملفك المهني على LinkedIn.</p>
+        </div>
+        
+        <p style="margin-top: 30px; font-size: 15px; color: #64748b;">نتمنى لك كل التوفيق في مسيرتك المهنية القادمة.</p>
       `,
     })
 
