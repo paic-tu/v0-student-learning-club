@@ -14,7 +14,9 @@ import bidiFactory from 'bidi-js'
 const bidi = bidiFactory()
 
 function processArabicText(text: string) {
-  const reshapedText = arabicReshaper.reshape(text)
+  // Handle default export variations for arabic-reshaper
+  const reshaper = (arabicReshaper as any).default || arabicReshaper
+  const reshapedText = typeof reshaper === 'function' ? reshaper(text) : reshaper.reshape(text)
   const bidiText = bidi.getReorderedText(reshapedText)
   return bidiText
 }
