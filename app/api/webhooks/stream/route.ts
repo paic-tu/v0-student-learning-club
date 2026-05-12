@@ -42,14 +42,14 @@ async function fulfillOrderCourses(userId: string, orderId: string) {
     await db.delete(cartItems).where(inArray(cartItems.cartId, cartIds))
   }
 
-  // Send Email Notification
+  // Send enrollment email
   try {
     const user = await db.query.users.findFirst({ where: eq(users.id, userId) })
     if (user?.email) {
       const settings = await getSiteSettings()
       await sendMail({
         to: user.email,
-        subject: `تم الاشتراك بنجاح - ${siteSettings.siteName}`,
+        subject: `تم الاشتراك بنجاح - ${settings.siteName}`,
         html: `
           <h3 style="color: #0f172a; font-size: 22px; font-weight: 800; margin-bottom: 20px;">مرحباً بك في دورتك الجديدة!</h3>
           <p style="font-size: 16px; color: #475569;">أهلاً ${user.name}،</p>

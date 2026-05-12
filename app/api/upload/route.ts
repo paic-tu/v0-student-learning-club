@@ -148,7 +148,9 @@ export async function POST(request: NextRequest) {
         resolve({ url: `/uploads/${outName}`, name: outName, size, type: outType })
       })
 
-      Readable.fromWeb(body as any).pipe(bb)
+      request.arrayBuffer().then((ab) => {
+        bb.end(Buffer.from(ab) as any)
+      })
     })
 
     return NextResponse.json(result)

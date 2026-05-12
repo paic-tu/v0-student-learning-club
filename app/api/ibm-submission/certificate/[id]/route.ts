@@ -95,9 +95,9 @@ export async function GET(
         // Use Cormorant Garamond for Latin text as requested
         const fontPath = path.resolve(fontsDir, "CormorantGaramond-Regular.ttf")
         if (fs.existsSync(fontPath)) {
-          const fontBytes = fs.readFileSync(fontPath)
-          font = await pdfDoc.embedFont(fontBytes)
-        } else {
+      const fontBytes = fs.readFileSync(fontPath)
+      font = await pdfDoc.embedFont(new Uint8Array(fontBytes))
+    } else {
           font = await pdfDoc.embedFont(StandardFonts.TimesRomanBold)
         }
       }
@@ -123,7 +123,7 @@ export async function GET(
 
     const pdfBytes = await pdfDoc.save()
 
-    return new NextResponse(pdfBytes, {
+    return new NextResponse(pdfBytes as any, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="Neon-Certificate-${submission.id}.pdf"`,
