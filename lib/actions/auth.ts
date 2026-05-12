@@ -3,12 +3,139 @@
 import { signIn } from "@/lib/auth"
 import { AuthError } from "next-auth"
 import { db } from "@/lib/db"
-import { users } from "@/lib/db/schema"
+import { users, passwordResetTokens } from "@/lib/db/schema"
 import { eq, ilike } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
 import { sendMail } from "@/lib/mail"
 import { getSiteSettings } from "@/lib/db/queries"
+import crypto from "crypto"
+
+export async function forgotPasswordAction(formData: FormData) {
+  try {
+    const email = (formData.get("email") as string)?.toLowerCase()
+
+    if (!email) {
+      return { error: "Email is required" }
+    }
+
+    const user = await db.query.users.findFirst({
+      where: eq(users.email, email),
+    })
+
+    if (!user) {
+      // Don't reveal if user exists for security
+      return { success: true }
+    }
+
+    // Generate token
+    const token = crypto.randomBytes(32).toString("hex")
+    const expiresAt = new Date(Date.now() + 3600000) // 1 hour
+
+    // Delete any existing tokens for this email
+    await db.delete(passwordResetTokens).where(eq(passwordResetTokens.email, email))
+
+    // Save token
+    await db.insert(passwordResetTokens).values({
+      email,
+      token,
+      expiresAt,
+    })
+
+    // Send Reset Email
+    const settings = await getSiteSettings()
+    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${token}`
+
+    await sendMail({
+      to: email,
+      subject: `Reset your password - ${settings.siteName}`,
+      html: `
+        <div dir="rtl" style="font-family: sans-serif;">
+          <h3>طلب إعادة تعيين كلمة المرور</h3>
+          <p>أهلاً ${user.name}،</p>
+          <p>لقد تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بك في <strong>${settings.siteName}</strong>.</p>
+          <p>يمكنك إعادة تعيين كلمة المرور من خلال الضغط على الزر أدناه:</p>
+          <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">إعادة تعيين كلمة المرور</a>
+          <p>أو من خلال الرابط التالي:</p>
+          <p><a href="${resetUrl}">${resetUrl}</a></p>
+          <p>هذا الرابط صالح لمدة ساعة واحدة فقط.</p>
+          <p>إذا لم تطلب هذا، يمكنك تجاهل هذا البريد الإلكتروني.</p>
+          <br/>
+          <p>مع تحيات،<br/>فريق ${settings.siteName}</p>
+        </div>
+      `
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error("Forgot password error:", error)
+    return { error: "Failed to send reset email" }
+  }
+}
+
+export async function resetPasswordAction(formData: FormData) {
+  try {
+    const token = formData.get("token") as string
+    const password = formData.get("password") as string
+    const confirmPassword = formData.get("confirmPassword") as string
+
+    if (!token || !password || !confirmPassword) {
+      return { error: "All fields are required" }
+    }
+
+    if (password !== confirmPassword) {
+      return { error: "Passwords do not match" }
+    }
+
+    if (password.length < 6) {
+      return { error: "Password must be at least 6 characters" }
+    }
+
+    // Verify token
+    const resetToken = await db.query.passwordResetTokens.findFirst({
+      where: eq(passwordResetTokens.token, token),
+    })
+
+    if (!resetToken || resetToken.expiresAt < new Date()) {
+      return { error: "Invalid or expired token" }
+    }
+
+    // Update user password
+    const hashedPassword = await bcrypt.hash(password, 10)
+    await db.update(users)
+      .set({ passwordHash: hashedPassword, updatedAt: new Date() })
+      .where(eq(users.email, resetToken.email))
+
+    // Send Confirmation Email
+    try {
+      const settings = await getSiteSettings()
+      await sendMail({
+        to: resetToken.email,
+        subject: `Password changed successfully - ${settings.siteName}`,
+        html: `
+          <div dir="rtl" style="font-family: sans-serif;">
+            <h3>تم تغيير كلمة المرور بنجاح</h3>
+            <p>أهلاً،</p>
+            <p>نود إعلامك بأنه تم تغيير كلمة المرور الخاصة بحسابك في <strong>${settings.siteName}</strong> بنجاح.</p>
+            <p>إذا لم تقم بهذا التغيير، يرجى التواصل مع فريق الدعم فوراً.</p>
+            <br/>
+            <p>مع تحيات،<br/>فريق ${settings.siteName}</p>
+          </div>
+        `
+      })
+    } catch (error) {
+      console.error("Error sending password reset confirmation email:", error)
+    }
+
+    // Delete the token
+    await db.delete(passwordResetTokens).where(eq(passwordResetTokens.token, token))
+
+    return { success: true }
+  } catch (error) {
+    console.error("Reset password error:", error)
+    return { error: "Failed to reset password" }
+  }
+}
 
 export async function loginAction(prevState: any, formData: FormData) {
   try {

@@ -1102,3 +1102,12 @@ export const ibmSubmissionsRelations = relations(ibmSubmissions, ({ one }) => ({
   user: one(users, { fields: [ibmSubmissions.userId], references: [users.id] }),
 }))
 
+// Password Reset Tokens
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  email: varchar("email", { length: 255 }).notNull(),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+

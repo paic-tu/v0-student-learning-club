@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useLanguage } from "@/lib/language-context"
 import Link from "next/link"
 import { NavBar } from "@/components/nav-bar"
+import { forgotPasswordAction } from "@/lib/actions/auth"
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
@@ -20,18 +21,36 @@ export default function ForgotPasswordPage() {
     e.preventDefault()
     setLoading(true)
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    toast({
-      title: language === "ar" ? "تم الإرسال" : "Sent",
-      description: language === "ar" 
-        ? "إذا كان البريد الإلكتروني مسجلاً لدينا، سيتم إرسال رابط إعادة تعيين كلمة المرور."
-        : "If the email is registered, a password reset link has been sent.",
-    })
-    
-    setLoading(false)
-    setEmail("")
+    try {
+      const formData = new FormData()
+      formData.append("email", email)
+      
+      const result = await forgotPasswordAction(formData)
+      
+      if (result.success) {
+        toast({
+          title: language === "ar" ? "تم الإرسال" : "Sent",
+          description: language === "ar" 
+            ? "إذا كان البريد الإلكتروني مسجلاً لدينا، سيتم إرسال رابط إعادة تعيين كلمة المرور."
+            : "If the email is registered, a password reset link has been sent.",
+        })
+        setEmail("")
+      } else {
+        toast({
+          title: language === "ar" ? "خطأ" : "Error",
+          description: result.error || (language === "ar" ? "حدث خطأ ما" : "Something went wrong"),
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      toast({
+        title: language === "ar" ? "خطأ" : "Error",
+        description: language === "ar" ? "حدث خطأ في الاتصال بالخادم" : "Connection error",
+        variant: "destructive"
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
