@@ -84,9 +84,9 @@ export function IBMSubmissionForm({ lang }: IBMSubmissionFormProps) {
         body: formData,
       })
 
-      if (!res.ok) throw new Error("Upload failed")
-
       const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Upload failed")
+
       setUrl(data.url)
       setName(file.name)
       
@@ -94,10 +94,10 @@ export function IBMSubmissionForm({ lang }: IBMSubmissionFormProps) {
         title: isAr ? "تم الرفع بنجاح" : "Uploaded successfully",
         description: file.name,
       })
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: isAr ? "فشل الرفع" : "Upload failed",
-        description: isAr ? "حدث خطأ أثناء رفع الملف." : "An error occurred while uploading the file.",
+        description: error.message || (isAr ? "حدث خطأ أثناء رفع الملف." : "An error occurred while uploading the file."),
         variant: "destructive",
       })
     } finally {

@@ -31,13 +31,16 @@ export async function POST(request: NextRequest) {
     await sendMail({
       to: "support@neonedu.org",
       subject: `New Contact Message from ${parsed.data.name}`,
-      text: `Name: ${parsed.data.name}\nEmail: ${parsed.data.email}\nMessage: ${parsed.data.message}`,
       html: `
-        <h3>New Contact Message</h3>
-        <p><strong>Name:</strong> ${parsed.data.name}</p>
-        <p><strong>Email:</strong> ${parsed.data.email}</p>
-        <p><strong>Message:</strong></p>
-        <p>${parsed.data.message}</p>
+        <h3 style="color: #0f172a; font-size: 20px; font-weight: 800; margin-bottom: 20px;">رسالة تواصل جديدة</h3>
+        <div style="background-color: #f8fafc; padding: 25px; border-radius: 16px; border: 1px solid #e2e8f0;">
+          <p style="margin: 10px 0;"><strong>الاسم:</strong> ${parsed.data.name}</p>
+          <p style="margin: 10px 0;"><strong>البريد الإلكتروني:</strong> ${parsed.data.email}</p>
+          <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+            <p><strong>الرسالة:</strong></p>
+            <p style="white-space: pre-wrap; color: #475569;">${parsed.data.message}</p>
+          </div>
+        </div>
       `,
     })
 

@@ -13,7 +13,9 @@ export const runtime = "nodejs"
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // Allow unauthenticated uploads for public forms (like IBM submission)
+    // We still keep the session info if available for tracking/ownership
+    const userId = session?.user?.id;
 
     const contentType = request.headers.get("content-type") || ""
     if (!contentType.toLowerCase().includes("multipart/form-data")) {

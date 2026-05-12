@@ -58,15 +58,19 @@ export async function POST(request: NextRequest) {
       to: "support@neonedu.org",
       subject: `New IBM Course Submission: ${fullName}`,
       html: `
-        <h3>New IBM Course Submission</h3>
-        <p><strong>Name:</strong> ${fullName}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Phone:</strong> ${phoneNumber}</p>
-        <p><strong>Completion Date:</strong> ${completionDate}</p>
-        <p><strong>Employment Status:</strong> ${employmentStatus}</p>
-        <p><a href="${certificateUrl}">View Certificate</a></p>
-        ${resumeUrl ? `<p><a href="${resumeUrl}">View Resume</a></p>` : ""}
-        ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ""}
+        <h3 style="color: #0f172a; font-size: 20px; font-weight: 800; margin-bottom: 20px;">طلب جديد للمشاركة في كورسات IBM</h3>
+        <div style="background-color: #f8fafc; padding: 25px; border-radius: 16px; border: 1px solid #e2e8f0;">
+          <p style="margin: 10px 0;"><strong>الاسم:</strong> ${fullName}</p>
+          <p style="margin: 10px 0;"><strong>البريد:</strong> ${email}</p>
+          <p style="margin: 10px 0;"><strong>الهاتف:</strong> ${phoneNumber}</p>
+          <p style="margin: 10px 0;"><strong>تاريخ الإتمام:</strong> ${completionDate}</p>
+          <p style="margin: 10px 0;"><strong>الحالة المهنية:</strong> ${employmentStatus}</p>
+          <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <a href="${certificateUrl}" style="display: inline-block; padding: 10px 20px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 14px;">عرض الشهادة</a>
+            ${resumeUrl ? `<a href="${resumeUrl}" style="display: inline-block; padding: 10px 20px; background-color: #0f172a; color: white; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 14px; margin-right: 10px;">عرض السيرة الذاتية</a>` : ""}
+          </div>
+          ${notes ? `<div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;"><p><strong>ملاحظات:</strong></p><p>${notes}</p></div>` : ""}
+        </div>
       `,
     })
 

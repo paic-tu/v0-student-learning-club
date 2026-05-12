@@ -48,21 +48,16 @@ export async function forgotPasswordAction(formData: FormData) {
 
     await sendMail({
       to: email,
-      subject: `Reset your password - ${settings.siteName}`,
+      subject: `إعادة تعيين كلمة المرور - ${settings.siteName}`,
       html: `
-        <div dir="rtl" style="font-family: sans-serif;">
-          <h3>طلب إعادة تعيين كلمة المرور</h3>
-          <p>أهلاً ${user.name}،</p>
-          <p>لقد تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بك في <strong>${settings.siteName}</strong>.</p>
-          <p>يمكنك إعادة تعيين كلمة المرور من خلال الضغط على الزر أدناه:</p>
-          <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">إعادة تعيين كلمة المرور</a>
-          <p>أو من خلال الرابط التالي:</p>
-          <p><a href="${resetUrl}">${resetUrl}</a></p>
-          <p>هذا الرابط صالح لمدة ساعة واحدة فقط.</p>
-          <p>إذا لم تطلب هذا، يمكنك تجاهل هذا البريد الإلكتروني.</p>
-          <br/>
-          <p>مع تحيات،<br/>فريق ${settings.siteName}</p>
+        <h3 style="color: #0f172a; font-size: 22px; font-weight: 800; margin-bottom: 20px;">طلب إعادة تعيين كلمة المرور</h3>
+        <p style="font-size: 16px; color: #475569;">أهلاً ${user.name}،</p>
+        <p style="font-size: 16px; color: #475569;">لقد تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بك في <strong>${settings.siteName}</strong>.</p>
+        <p style="font-size: 16px; color: #475569; margin-bottom: 30px;">يمكنك إعادة تعيين كلمة المرور من خلال الضغط على الزر أدناه:</p>
+        <div style="text-align: center; margin-bottom: 30px;">
+          <a href="${resetUrl}" style="display: inline-block; padding: 16px 32px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 16px; font-weight: 700; font-size: 16px;">إعادة تعيين كلمة المرور</a>
         </div>
+        <p style="font-size: 14px; color: #64748b;">هذا الرابط صالح لمدة ساعة واحدة فقط. إذا لم تطلب هذا، يمكنك تجاهل هذا البريد الإلكتروني.</p>
       `
     })
 
@@ -111,16 +106,12 @@ export async function resetPasswordAction(formData: FormData) {
       const settings = await getSiteSettings()
       await sendMail({
         to: resetToken.email,
-        subject: `Password changed successfully - ${settings.siteName}`,
+        subject: `تم تغيير كلمة المرور بنجاح - ${settings.siteName}`,
         html: `
-          <div dir="rtl" style="font-family: sans-serif;">
-            <h3>تم تغيير كلمة المرور بنجاح</h3>
-            <p>أهلاً،</p>
-            <p>نود إعلامك بأنه تم تغيير كلمة المرور الخاصة بحسابك في <strong>${settings.siteName}</strong> بنجاح.</p>
-            <p>إذا لم تقم بهذا التغيير، يرجى التواصل مع فريق الدعم فوراً.</p>
-            <br/>
-            <p>مع تحيات،<br/>فريق ${settings.siteName}</p>
-          </div>
+          <h3 style="color: #0f172a; font-size: 22px; font-weight: 800; margin-bottom: 20px;">تنبيه أمني: تم تغيير كلمة المرور</h3>
+          <p style="font-size: 16px; color: #475569;">أهلاً،</p>
+          <p style="font-size: 16px; color: #475569;">نود إعلامك بأنه تم تغيير كلمة المرور الخاصة بحسابك في <strong>${settings.siteName}</strong> بنجاح.</p>
+          <p style="font-size: 16px; color: #475569; margin-top: 20px;">إذا لم تقم بهذا التغيير، يرجى التواصل مع فريق الدعم الفني فوراً لحماية حسابك.</p>
         `
       })
     } catch (error) {
@@ -222,14 +213,15 @@ export async function registerAction(formData: FormData) {
       const settings = await getSiteSettings()
       await sendMail({
         to: email,
-        subject: `Welcome to ${settings.siteName}!`,
+        subject: `مرحباً بك في ${settings.siteName}!`,
         html: `
-          <h3>Welcome aboard, ${name}!</h3>
-          <p>Thank you for joining <strong>${settings.siteName}</strong>.</p>
-          <p>Your account has been created successfully. You can now log in and explore our courses.</p>
-          <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/auth/login">Login to your account</a></p>
-          <br/>
-          <p>Best regards,<br/>${settings.siteName} Team</p>
+          <h3 style="color: #0f172a; font-size: 22px; font-weight: 800; margin-bottom: 20px;">أهلاً بك يا ${name}!</h3>
+          <p style="font-size: 16px; color: #475569;">يسعدنا جداً انضمامك إلى منصة <strong>${settings.siteName}</strong>.</p>
+          <p style="font-size: 16px; color: #475569;">لقد تم إنشاء حسابك بنجاح، ويمكنك الآن البدء في استكشاف الدورات التدريبية المتاحة.</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.NEXT_PUBLIC_APP_URL}/auth/login" style="display: inline-block; padding: 16px 32px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 16px; font-weight: 700; font-size: 16px;">تسجيل الدخول إلى حسابك</a>
+          </div>
+          <p style="font-size: 14px; color: #64748b;">نتمنى لك رحلة تعليمية ممتعة ومفيدة!</p>
         `
       })
     } catch (error) {

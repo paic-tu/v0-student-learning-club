@@ -49,15 +49,15 @@ async function fulfillOrderCourses(userId: string, orderId: string) {
       const settings = await getSiteSettings()
       await sendMail({
         to: user.email,
-        subject: `Enrollment Successful - ${settings.siteName}`,
+        subject: `تم الاشتراك بنجاح - ${settings.siteName}`,
         html: `
-          <h3>Welcome to the Course!</h3>
-          <p>Hi ${user.name},</p>
-          <p>Your payment for order <strong>#${orderId.slice(0, 8)}</strong> was successful.</p>
-          <p>You now have access to your courses. You can start learning now!</p>
-          <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard">Go to My Dashboard</a></p>
-          <br/>
-          <p>Best regards,<br/>${settings.siteName} Team</p>
+          <h3 style="color: #0f172a; font-size: 22px; font-weight: 800; margin-bottom: 20px;">مرحباً بك في دورتك الجديدة!</h3>
+          <p style="font-size: 16px; color: #475569;">أهلاً ${user.name}،</p>
+          <p style="font-size: 16px; color: #475569;">لقد تم تأكيد دفع طلبك رقم <strong>#${orderId.slice(0, 8)}</strong> بنجاح.</p>
+          <p style="font-size: 16px; color: #475569; margin-bottom: 30px;">يمكنك الآن البدء في رحلتك التعليمية والوصول إلى محتوى الدورات من خلال لوحة التحكم الخاصة بك.</p>
+          <div style="text-align: center;">
+            <a href="${process.env.NEXT_PUBLIC_APP_URL}/student/dashboard" style="display: inline-block; padding: 16px 32px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 16px; font-weight: 700; font-size: 16px;">الانتقال إلى لوحة التحكم</a>
+          </div>
         `
       })
     }
