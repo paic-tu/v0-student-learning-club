@@ -228,7 +228,7 @@ export function IBMSubmissionForm({ lang }: IBMSubmissionFormProps) {
       <Card className="max-w-2xl mx-auto shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border-none bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl ring-1 ring-slate-200 dark:ring-slate-800 overflow-hidden rounded-[2.5rem]">
         <div className="relative w-full aspect-video md:aspect-[21/9] overflow-hidden group bg-slate-100 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-800">
           <Image 
-            src="/ibm-banner.jpeg" 
+            src="/imgeg.jpeg" 
             alt="IBM Banner" 
             fill 
             className="object-cover"

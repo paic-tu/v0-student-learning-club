@@ -1,5 +1,6 @@
 import { IBMSubmissionForm } from "@/components/ibm/ibm-submission-form"
 import { Metadata } from "next"
+import { NavBar } from "@/components/nav-bar"
 
 export const metadata: Metadata = {
   title: "IBM Course Submission | نموذج المشاركة في كورسات IBM",
@@ -15,11 +16,12 @@ export default async function IBMSubmissionsPage({
   const isAr = lang === "ar"
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4 sm:px-6 lg:px-8" dir={isAr ? "rtl" : "ltr"}>
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950" dir={isAr ? "rtl" : "ltr"}>
+      <NavBar />
+      <div className="max-w-4xl mx-auto space-y-8 py-12 px-4 sm:px-6 lg:px-8">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 sm:text-4xl">
-            {isAr ? "برنامج نيون x IBM SkillsBuild" : "Neon x IBM SkillsBuild Program"}
+            {isAr ? "برنامج نيون Ai Era Comp" : "Neon Ai Era Comp Program"}
           </h1>
           <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
             {isAr 
