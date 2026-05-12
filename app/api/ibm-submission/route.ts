@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       to: "support@neonedu.org",
       subject: `New IBM Course Submission: ${fullName}`,
       html: `
-        <h3 style="color: #0f172a; font-size: 20px; font-weight: 800; margin-bottom: 20px;">طلب جديد للمشاركة في كورسات IBM</h3>
+        <h3 style="color: #0f172a; font-size: 20px; font-weight: 800; margin-bottom: 20px;">طلب جديد للمشاركة في معسكر نيون Ai Era Comp</h3>
         <div style="background-color: #f8fafc; padding: 25px; border-radius: 16px; border: 1px solid #e2e8f0;">
           <p style="margin: 10px 0;"><strong>الاسم:</strong> ${fullName}</p>
           <p style="margin: 10px 0;"><strong>البريد:</strong> ${email}</p>
@@ -79,10 +79,10 @@ export async function POST(request: NextRequest) {
     
     await sendMail({
       to: email,
-      subject: `شهادة إتمام معسكر نيون x IBM - ${fullName}`,
+      subject: `شهادة إتمام معسكر نيون Ai Era Comp - ${fullName}`,
       html: `
         <h3 style="color: #0f172a; font-size: 22px; font-weight: 800; margin-bottom: 20px;">تهانينا لك يا ${fullName.split(' ')[0]}!</h3>
-        <p style="font-size: 16px; color: #475569; line-height: 1.8;">نبارك لك إتمامك لمتطلبات معسكر <strong>نيون x IBM SkillsBuild</strong> بنجاح. يسعدنا أن نرفق لك رابط تحميل شهادة إتمام المعسكر الرسمية الخاصة بك.</p>
+        <p style="font-size: 16px; color: #475569; line-height: 1.8;">نبارك لك إتمامك لمتطلبات معسكر <strong>نيون Ai Era Comp</strong> بنجاح. يسعدنا أن نرفق لك رابط تحميل شهادة إتمام المعسكر الرسمية الخاصة بك.</p>
         
         <div style="margin: 40px 0; text-align: center;">
           <a href="${userCertUrl}" style="display: inline-block; padding: 18px 36px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 16px; font-weight: 700; font-size: 18px; box-shadow: 0 10px 20px -5px rgba(0, 112, 243, 0.3);">تحميل شهادتك الآن</a>

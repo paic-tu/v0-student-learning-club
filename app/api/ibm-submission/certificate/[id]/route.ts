@@ -54,7 +54,13 @@ export async function GET(
     pdfDoc.registerFontkit(fontkit)
 
     // Embed the template image
-    const templateImage = await pdfDoc.embedPng(templateImageBytes)
+    let templateImage
+    try {
+      templateImage = await pdfDoc.embedPng(templateImageBytes)
+    } catch (pngError) {
+      console.log("Not a valid PNG, trying JPEG...")
+      templateImage = await pdfDoc.embedJpg(templateImageBytes)
+    }
     const { width, height } = templateImage.scale(1)
 
     // Add a page with the same dimensions as the template
@@ -142,11 +148,18 @@ export async function GET(
     return new NextResponse(pdfBytes, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="Neon-Certificate-${submission.fullName.replace(/\s+/g, "-")}.pdf"`,
+        "Content-Disposition": `attachment; filename="Neon-Certificate-${submission.id}.pdf"`,
       },
     })
   } catch (error: any) {
-    console.error("Certificate Generation Error:", error)
-    return NextResponse.json({ error: "Failed to generate certificate" }, { status: 500 })
+    console.error("Certificate Generation Error Details:", {
+      message: error.message,
+      stack: error.stack,
+      error
+    })
+    return NextResponse.json({ 
+      error: "Failed to generate certificate",
+      details: error.message
+    }, { status: 500 })
   }
 }
