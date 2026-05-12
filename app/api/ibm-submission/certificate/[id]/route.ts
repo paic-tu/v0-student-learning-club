@@ -58,10 +58,10 @@ export async function GET(
     // Embed the template image
     let templateImage
     try {
-      templateImage = await pdfDoc.embedPng(templateImageBytes)
+      templateImage = await pdfDoc.embedPng(new Uint8Array(templateImageBytes))
     } catch (pngError) {
       console.log("Not a valid PNG, trying JPEG...")
-      templateImage = await pdfDoc.embedJpg(templateImageBytes)
+      templateImage = await pdfDoc.embedJpg(new Uint8Array(templateImageBytes))
     }
     const { width, height } = templateImage.scale(1)
 
@@ -87,7 +87,7 @@ export async function GET(
         const fontPath = path.resolve(fontsDir, "Amiri-Bold.ttf")
         if (fs.existsSync(fontPath)) {
           const fontBytes = fs.readFileSync(fontPath)
-          font = await pdfDoc.embedFont(fontBytes)
+          font = await pdfDoc.embedFont(new Uint8Array(fontBytes))
         } else {
           font = await pdfDoc.embedFont(StandardFonts.TimesRomanBold)
         }
@@ -106,40 +106,16 @@ export async function GET(
       font = await pdfDoc.embedFont(StandardFonts.TimesRomanBold)
     }
 
-    // Coordinates calculation based on A4 Landscape (29.7cm x 21.0cm)
-    // We use the image's actual pixel dimensions to calculate the scale accurately
-    const pointsPerCm = width / 29.7
+    // Position settings (X: 21.0cm, Y: 19.17cm from bottom-left)
+    // A4 is 210mm x 297mm. pdf-lib uses points (1/72 inch). 1mm = 2.83465 points.
+    const x = 21.0 * 28.3465
+    const y = 19.17 * 28.3465
+    const fontSize = 24
     
-    // User provided coordinates in CM:
-    const xCm = 3.08
-    const yCmFromTop = 7.86
-    const boxWidthCm = 25.32
-    const boxHeightCm = 1.8
-    
-    // Convert CM to points/pixels relative to image size
-    const x = xCm * pointsPerCm
-    const yFromTop = yCmFromTop * pointsPerCm
-    const boxWidth = boxWidthCm * pointsPerCm
-    const boxHeight = boxHeightCm * pointsPerCm
-    
-    // PDF Y-axis starts from BOTTOM. 
-    // Calculation: Total Height - Distance from Top - Box Height
-    const y = height - yFromTop - boxHeight
-
-    // Draw the name
-    // fontSize is set to a beautiful proportion of the box height (approx 75%)
-    const fontSize = boxHeight * 0.75
-    const textWidth = font.widthOfTextAtSize(textToPrint, fontSize)
-    
-    // Alignment: Left-aligned at the X coordinate provided (3.08cm)
-    const textX = x
-    
-    // Vertical Centering: Box bottom + (half box height) - (font adjustment)
-    const textY = y + (boxHeight / 2) - (fontSize / 3.5)
-    
+    // Draw text with Arabic support
     page.drawText(textToPrint, {
-      x: textX,
-      y: textY,
+      x: x,
+      y: y,
       size: fontSize,
       font,
       color: rgb(0, 0, 0),

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { cartItems, carts, enrollments, orderItems, orders } from "@/lib/db/schema"
+import { cartItems, carts, enrollments, orderItems, orders, users } from "@/lib/db/schema"
 import { and, eq, inArray, isNotNull } from "drizzle-orm"
 import { streamRequest, verifyStreamWebhookSignature } from "@/lib/payments/stream"
 import { sendMail } from "@/lib/mail"
@@ -49,7 +49,7 @@ async function fulfillOrderCourses(userId: string, orderId: string) {
       const settings = await getSiteSettings()
       await sendMail({
         to: user.email,
-        subject: `تم الاشتراك بنجاح - ${settings.siteName}`,
+        subject: `تم الاشتراك بنجاح - ${siteSettings.siteName}`,
         html: `
           <h3 style="color: #0f172a; font-size: 22px; font-weight: 800; margin-bottom: 20px;">مرحباً بك في دورتك الجديدة!</h3>
           <p style="font-size: 16px; color: #475569;">أهلاً ${user.name}،</p>

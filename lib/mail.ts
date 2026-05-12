@@ -80,7 +80,7 @@ export async function sendMail({
     }
 
     // 2. Fallback to SMTP
-    const smtp = settings.email
+    const smtp = settings.email as any
     const host = smtp?.smtpHost || process.env.SMTP_HOST
     const port = smtp?.smtpPort || Number(process.env.SMTP_PORT) || 465
     const user = smtp?.smtpUser || process.env.SMTP_USER

@@ -64,9 +64,9 @@ export async function POST(request: NextRequest) {
       let fileReceived = false
       let chunks: Buffer[] = []
 
-      bb.on("file", (_name, file, info) => {
+      bb.on("file", (_name: string, file: NodeJS.ReadableStream, info: { filename: string; encoding: string; mimeType: string }) => {
         fileReceived = true
-        const safeBase = String(info.filename || "upload")
+        const safeBase = String(decodeURIComponent(info.filename) || "upload")
           .replace(/[\\\/]/g, "_")
           .replace(/[^\w.\-() ]+/g, "_")
           .slice(0, 120)
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      bb.on("error", (err) => {
+      bb.on("error", (err: Error) => {
         if (!done) {
           done = true
           reject(err)
