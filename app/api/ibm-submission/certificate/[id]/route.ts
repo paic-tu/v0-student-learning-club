@@ -106,16 +106,36 @@ export async function GET(
       font = await pdfDoc.embedFont(StandardFonts.TimesRomanBold)
     }
 
-    // Position settings (X: 21.0cm, Y: 19.17cm from bottom-left)
-    // A4 is 210mm x 297mm. pdf-lib uses points (1/72 inch). 1mm = 2.83465 points.
-    const x = 21.0 * 28.3465
-    const y = 19.17 * 28.3465
-    const fontSize = 24
+    // Coordinates calculation based on A4 Landscape (29.7cm x 21.0cm)
+    const pointsPerCm = width / 29.7
+    
+    // Name Box Coordinates (in CM from top-left of a 29.7x21.0 canvas)
+    const xCm = 3.08
+    const yCmFromTop = 7.86
+    const boxWidthCm = 25.32
+    const boxHeightCm = 1.8
+    
+    // Convert CM to points/pixels relative to image size
+    const x = xCm * pointsPerCm
+    const yFromTop = yCmFromTop * pointsPerCm
+    const boxWidth = boxWidthCm * pointsPerCm
+    const boxHeight = boxHeightCm * pointsPerCm
+    
+    // PDF Y-axis starts from BOTTOM
+    const y = height - yFromTop - boxHeight
+
+    // Font size relative to box height
+    const fontSize = boxHeight * 0.8
+    
+    // Center text within the box
+    const textWidth = font.widthOfTextAtSize(textToPrint, fontSize)
+    const textX = x + (boxWidth - textWidth) / 2
+    const textY = y + (boxHeight / 2) - (fontSize / 3.5)
     
     // Draw text with Arabic support
     page.drawText(textToPrint, {
-      x: x,
-      y: y,
+      x: textX,
+      y: textY,
       size: fontSize,
       font,
       color: rgb(0, 0, 0),
