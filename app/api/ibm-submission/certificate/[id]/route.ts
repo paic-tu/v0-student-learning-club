@@ -127,9 +127,9 @@ export async function GET(
     // Font size relative to box height
     const fontSize = boxHeight * 0.8
     
-    // Center text within the box
-    const textWidth = font.widthOfTextAtSize(textToPrint, fontSize)
-    const textX = x + (boxWidth - textWidth) / 2
+    // Align text: Left-aligned for Latin, but since we are in a box starting at xCm
+    // We will use the start of the box (x) as the textX
+    const textX = x
     const textY = y + (boxHeight / 2) - (fontSize / 3.5)
     
     // Draw text with Arabic support
