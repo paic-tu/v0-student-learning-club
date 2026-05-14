@@ -102,8 +102,9 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error("IBM Submission Error:", error)
+    // Redirect to custom error page or return structured error
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: error.message || "Internal Server Error" },
       { status: 500 }
     )
   }
