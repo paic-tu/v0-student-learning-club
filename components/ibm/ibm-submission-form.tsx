@@ -326,7 +326,7 @@ export function IBMSubmissionForm({ lang }: IBMSubmissionFormProps) {
                   </div>
                   <div className="flex items-center gap-2 px-1 text-amber-600 dark:text-amber-400/80">
                     <ShieldCheck className="h-3 w-3" />
-                    <span className="text-[10px] font-bold uppercase tracking-tight">11 - 20 May 2026 Only</span>
+                    <span className="text-[10px] font-bold uppercase tracking-tight">9 April - 20 May 2026 Only</span>
                   </div>
                 </div>
 
