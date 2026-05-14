@@ -324,9 +324,11 @@ export function IBMSubmissionForm({ lang }: IBMSubmissionFormProps) {
                     />
                     <Calendar className={cn("absolute top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 transition-colors group-focus-within:text-blue-500", isAr ? "right-4" : "left-4")} />
                   </div>
-                  <div className="flex items-center gap-2 px-1 text-amber-600 dark:text-amber-400/80">
-                    <ShieldCheck className="h-3 w-3" />
-                    <span className="text-[10px] font-bold uppercase tracking-tight">9 April - 20 May 2026 Only</span>
+                  <div className="flex items-center gap-2 px-1 text-blue-600 dark:text-blue-400 bg-blue-500/5 dark:bg-blue-500/10 py-1.5 px-3 rounded-xl border border-blue-500/10">
+                    <ShieldCheck className="h-4 w-4" />
+                    <span className="text-[12px] font-bold tracking-tight">
+                      {isAr ? "متاح من 9 أبريل حتى 20 مايو 2026" : "Available from 9 April to 20 May 2026"}
+                    </span>
                   </div>
                 </div>
 
