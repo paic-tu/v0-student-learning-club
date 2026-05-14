@@ -57,11 +57,20 @@ export function IBMSubmissionForm({ lang }: IBMSubmissionFormProps) {
   }, [success, countdown, lang, router])
 
   const canSubmit = useMemo(() => {
+    // Date validation (9 April to 20 May 2026)
+    const isValidDate = () => {
+      if (!completionDate) return false
+      const date = new Date(completionDate)
+      const startDate = new Date("2026-04-09")
+      const endDate = new Date("2026-05-20")
+      return date >= startDate && date <= endDate
+    }
+
     return (
       fullName.trim().length >= 2 &&
       email.trim().includes("@") &&
       phoneNumber.trim().length >= 8 &&
-      completionDate !== "" &&
+      isValidDate() &&
       certificateUrl !== "" &&
       !loading &&
       !isUploadingCert &&
@@ -324,6 +333,25 @@ export function IBMSubmissionForm({ lang }: IBMSubmissionFormProps) {
                     />
                     <Calendar className={cn("absolute top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 transition-colors group-focus-within:text-blue-500", isAr ? "right-4" : "left-4")} />
                   </div>
+                  {completionDate && (
+                    (() => {
+                      const date = new Date(completionDate);
+                      const start = new Date("2026-04-09");
+                      const end = new Date("2026-05-20");
+                      const isValid = date >= start && date <= end;
+                      if (!isValid) {
+                        return (
+                          <div className="flex items-center gap-2 px-1 text-red-600 dark:text-red-400 bg-red-500/5 py-1.5 px-3 rounded-xl border border-red-500/10">
+                            <AlertCircle className="h-4 w-4" />
+                            <span className="text-[12px] font-bold">
+                              {isAr ? "عذراً، التاريخ خارج النطاق المسموح به" : "Sorry, date is out of range"}
+                            </span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()
+                  )}
                   <div className="flex items-center gap-2 px-1 text-blue-600 dark:text-blue-400 bg-blue-500/5 dark:bg-blue-500/10 py-1.5 px-3 rounded-xl border border-blue-500/10">
                     <ShieldCheck className="h-4 w-4" />
                     <span className="text-[12px] font-bold tracking-tight">
