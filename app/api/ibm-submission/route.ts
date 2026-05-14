@@ -28,14 +28,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Date validation (11 May to 20 May 2026)
+    // Date validation (9 April to 20 May 2026)
     const date = new Date(completionDate)
-    const startDate = new Date("2026-05-11")
+    const startDate = new Date("2026-04-09")
     const endDate = new Date("2026-05-20")
 
     if (date < startDate || date > endDate) {
       return NextResponse.json(
-        { error: "الشهادة يجب أن تكون صادرة خلال فترة إقامة المعسكر من 11 مايو حتى 20 مايو فقط." },
+        { error: "الشهادة يجب أن تكون صادرة خلال الفترة من 9 أبريل حتى 20 مايو فقط." },
         { status: 400 }
       )
     }
