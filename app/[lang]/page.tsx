@@ -19,6 +19,8 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { Reveal } from "@/components/reveal"
 import { RotatingWords } from "@/components/rotating-words"
+import { HeroSplineScene } from "@/components/hero-spline-scene"
+import { StatsCard3D } from "@/components/stats-card-3d"
 import Script from "next/script"
 
 export default function HomePage() {
@@ -89,93 +91,19 @@ export default function HomePage() {
         {JSON.stringify(organizationLd)}
       </Script>
 
-      <main>
-        <section className="relative overflow-hidden py-24 md:py-40">
-          <div className="pointer-events-none absolute inset-x-0 top-36 md:top-44 h-80 md:h-96 z-0">
-            <div className="absolute top-0 right-4 md:right-14 floating-drift-right" style={{ animationDuration: "18s", animationDelay: "-3s" }}>
-              <div className="floating-float" style={{ animationDuration: "4.8s", animationDelay: "-1.2s" }}>
-                <Badge className="backdrop-blur-sm bg-background/70 border-primary/20 opacity-85" variant="secondary">
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  {isRTL ? "تعلّم تفاعلي" : "Interactive Learning"}
-                </Badge>
-              </div>
-            </div>
-
-            <div className="absolute top-16 right-7 md:right-24 floating-drift-right" style={{ animationDuration: "22s", animationDelay: "-9s" }}>
-              <div className="floating-float" style={{ animationDuration: "5.6s", animationDelay: "-2.4s" }}>
-                <Badge className="backdrop-blur-sm bg-background/70 border-primary/20 opacity-85" variant="secondary">
-                  <Award className="h-3 w-3 mr-1" />
-                  {isRTL ? "دورات معتمدة" : "Certified Courses"}
-                </Badge>
-              </div>
-            </div>
-
-            <div className="absolute top-32 right-4 md:right-16 floating-drift-right" style={{ animationDuration: "20s", animationDelay: "-14s" }}>
-              <div className="floating-float" style={{ animationDuration: "4.2s", animationDelay: "-3.0s" }}>
-                <Badge className="backdrop-blur-sm bg-background/70 border-primary/20 opacity-85" variant="secondary">
-                  <Users className="h-3 w-3 mr-1" />
-                  {isRTL ? "مدربون خبراء" : "Expert Instructors"}
-                </Badge>
-              </div>
-            </div>
-
-            <div className="absolute top-0 left-4 md:left-14 floating-drift-left" style={{ animationDuration: "19s", animationDelay: "-6s" }}>
-              <div className="floating-float" style={{ animationDuration: "5.0s", animationDelay: "-0.8s" }}>
-                <Badge className="backdrop-blur-sm bg-background/70 border-primary/20 opacity-85" variant="secondary">
-                  <Zap className="h-3 w-3 mr-1" />
-                  {isRTL ? "جلسات مباشرة" : "Live Sessions"}
-                </Badge>
-              </div>
-            </div>
-
-            <div className="absolute top-16 left-7 md:left-24 floating-drift-left" style={{ animationDuration: "23s", animationDelay: "-11s" }}>
-              <div className="floating-float" style={{ animationDuration: "5.4s", animationDelay: "-2.0s" }}>
-                <Badge className="backdrop-blur-sm bg-background/70 border-primary/20 opacity-85" variant="secondary">
-                  <Target className="h-3 w-3 mr-1" />
-                  {isRTL ? "تحديات" : "Challenges"}
-                </Badge>
-              </div>
-            </div>
-
-            <div className="absolute top-32 left-4 md:left-16 floating-drift-left" style={{ animationDuration: "21s", animationDelay: "-16s" }}>
-              <div className="floating-float" style={{ animationDuration: "4.4s", animationDelay: "-3.4s" }}>
-                <Badge className="backdrop-blur-sm bg-background/70 border-primary/20 opacity-85" variant="secondary">
-                  <Star className="h-3 w-3 mr-1" />
-                  {isRTL ? "شهادات" : "Certificates"}
-                </Badge>
-              </div>
-            </div>
-
-            <div className="absolute top-48 left-7 md:left-28 floating-drift-left hidden sm:block" style={{ animationDuration: "25s", animationDelay: "-7s" }}>
-              <div className="floating-float" style={{ animationDuration: "6.0s", animationDelay: "-1.6s" }}>
-                <Badge className="backdrop-blur-sm bg-background/70 border-primary/20 opacity-85" variant="secondary">
-                  <Clock className="h-3 w-3 mr-1" />
-                  {isRTL ? "تعلّم مرن" : "Flexible Learning"}
-                </Badge>
-              </div>
-            </div>
-          </div>
-
-          <div className="container mx-auto px-4 relative z-10">
+      <main className="overflow-hidden">
+        <section className="relative overflow-hidden py-20 sm:py-28 lg:py-36">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <Reveal>
-            <div className="max-w-4xl mx-auto text-center space-y-8">
-              <div className="w-fit mx-auto floating-float" style={{ animationDuration: "5.2s", animationDelay: "-1.6s" }}>
-                <Badge
-                  className="mx-auto backdrop-blur-sm bg-background/80 border-primary/20 hover-lift"
-                  variant="secondary"
-                >
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  {isRTL ? "منصة التعلم الإلكتروني" : "E-Learning Platform"}
-                </Badge>
-              </div>
-
-              <h1 className="text-5xl md:text-7xl font-bold text-balance leading-tight">
-                <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
-                  {isRTL ? "نيون" : "Neon"}
-                </span>
+            <div className="max-w-5xl mx-auto text-center space-y-7 sm:space-y-8">
+              <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold text-balance leading-[1.05] tracking-normal">
+                <HeroSplineScene
+                  fallbackLabel={isRTL ? "نيون" : "Neon"}
+                  className="relative mx-auto -mt-8 h-[180px] w-full max-w-[340px] sm:-mt-12 sm:h-[260px] sm:max-w-[500px] lg:-mt-16 lg:h-[340px] lg:max-w-[680px]"
+                />
                 <br />
-                <span className="text-foreground text-4xl md:text-5xl mt-2 block">
-                  <span className="inline-flex items-baseline justify-center gap-0 whitespace-nowrap">
+                <span className="text-foreground text-2xl sm:text-4xl md:text-5xl -mt-10 sm:-mt-14 lg:-mt-20 block leading-tight">
+                  <span className="inline-flex flex-wrap items-baseline justify-center gap-x-2 gap-y-1">
                     <span>
                       {isRTL ? "منصتك ل\u200D" : "Your platform for "}
                     </span>
@@ -201,17 +129,17 @@ export default function HomePage() {
                 </span>
               </h1>
 
-              <p className="text-xl md:text-2xl text-muted-foreground text-balance max-w-2xl mx-auto leading-relaxed">
+              <p className="text-base sm:text-xl md:text-2xl text-muted-foreground text-balance max-w-3xl mx-auto -mt-6 sm:-mt-8 leading-8 md:leading-9">
                 {isRTL
                   ? "اكتشف دورات تعليمية متميزة واحصل على شهادات معتمدة مع أفضل المدربين "
                   : "Discover premium educational courses and earn certified certificates from the best instructors "}
               </p>
 
-              <div className="flex gap-4 justify-center flex-wrap pt-4">
+              <div className="flex w-full flex-col gap-3 pt-3 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4 sm:pt-5">
                 {isAuthenticated ? (
                   <Button 
                     size="lg" 
-                    className="font-semibold hover-lift hover-glow text-lg px-8"
+                    className="min-h-12 w-full rounded-lg px-7 text-base font-semibold shadow-lg shadow-primary/15 hover-lift hover-glow sm:w-auto sm:text-lg"
                     onClick={() => {
                       const dashboardLink = user?.role === "admin" 
                         ? `/${language}/admin`
@@ -225,18 +153,18 @@ export default function HomePage() {
                     {isRTL ? "الذهاب إلى لوحة التحكم" : "Go to Dashboard"}
                   </Button>
                 ) : (
-                  <Link href={`/${language}/courses`}>
-                    <Button size="lg" className="font-semibold hover-lift hover-glow text-lg px-8">
+                  <Link href={`/${language}/courses`} className="w-full sm:w-auto">
+                    <Button size="lg" className="min-h-12 w-full rounded-lg px-7 text-base font-semibold shadow-lg shadow-primary/15 hover-lift hover-glow sm:w-auto sm:text-lg">
                       <Target className="h-5 w-5 mr-2" />
                       {t("startLearning", language)}
                     </Button>
                   </Link>
                 )}
-                <Link href={`/${language}/courses`}>
+                <Link href={`/${language}/courses`} className="w-full sm:w-auto">
                   <Button
                     size="lg"
                     variant="outline"
-                    className="font-semibold hover-lift text-lg px-8 backdrop-blur-sm bg-background/80"
+                    className="min-h-12 w-full rounded-lg border-primary/20 bg-background/85 px-7 text-base font-semibold backdrop-blur-sm hover-lift sm:w-auto sm:text-lg"
                   >
                     <BookOpen className="h-5 w-5 mr-2" />
                     {isRTL ? "استكشف الدورات" : "Explore Courses"}
@@ -313,8 +241,8 @@ export default function HomePage() {
             }
 
             .reviews-card {
-              width: 280px;
-              min-width: 280px;
+              width: 260px;
+              min-width: 260px;
             }
 
             @media (min-width: 768px) {
@@ -369,20 +297,20 @@ export default function HomePage() {
           `}</style>
         </section>
 
-        <section className="py-20 border-b bg-gradient-to-b from-background to-muted/20">
-          <div className="container mx-auto px-4">
+        <section className="py-16 sm:py-20 lg:py-24 border-b bg-gradient-to-b from-background to-muted/20">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <Reveal>
-            <div className="max-w-5xl mx-auto">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-10 sm:mb-12">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent text-balance">
                   {isRTL ? "إنجازاتنا بالأرقام" : "Our Achievements in Numbers"}
                 </h2>
-                <p className="text-muted-foreground">
+                <p className="text-sm sm:text-base text-muted-foreground">
                   {isRTL ? "انضم لآلاف المتعلمين حول العالم" : "Join thousands of learners worldwide"}
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
                 {[
                   {
                     icon: BookOpen,
@@ -413,19 +341,21 @@ export default function HomePage() {
                     color: "text-amber-500",
                   },
                 ].map((stat, i) => (
-                  <Card key={i} className="text-center card-hover border-muted">
-                    <CardContent className="pt-8 pb-6 space-y-3">
-                      <stat.icon className={`h-10 w-10 mx-auto ${stat.color}`} strokeWidth={1.5} />
+                  <StatsCard3D
+                    key={i}
+                    icon={stat.icon}
+                    iconClassName={stat.color}
+                    label={stat.label}
+                    value={
                       <AnimatedCounter
                         key={stat.value}
                         value={stat.value}
                         suffix={stat.suffix}
                         duration={2500}
-                        className="text-4xl md:text-5xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent"
+                        className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent"
                       />
-                      <div className="text-sm md:text-base text-muted-foreground font-medium">{stat.label}</div>
-                    </CardContent>
-                  </Card>
+                    }
+                  />
                 ))}
               </div>
             </div>
@@ -433,20 +363,20 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="py-24">
-          <div className="container mx-auto px-4">
-            <div className="max-w-3xl mx-auto text-center mb-16">
-              <h2 className="text-3xl md:text-5xl font-bold mb-4 text-balance">
+        <section className="py-16 sm:py-20 lg:py-24">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-3xl mx-auto text-center mb-10 sm:mb-14 lg:mb-16">
+              <h2 className="text-3xl md:text-5xl font-bold mb-4 text-balance leading-tight">
                 {isRTL ? "لماذا نيون؟" : "Why Neon?"}
               </h2>
-              <p className="text-muted-foreground text-lg md:text-xl">
+              <p className="text-muted-foreground text-base sm:text-lg md:text-xl leading-8">
                 {isRTL
                   ? "نوفر لك كل ما تحتاجه لتطوير مهاراتك وتحقيق أهدافك المهنية"
                   : "We provide everything you need to develop your skills and achieve your professional goals"}
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <div className="grid gap-5 sm:gap-6 md:grid-cols-3 lg:gap-8 max-w-6xl mx-auto">
               {[
                 {
                   title: isRTL ? "محتوى عالي الجودة" : "High-Quality Content",
@@ -478,12 +408,12 @@ export default function HomePage() {
               ].map((feature, i) => (
                 <Card
                   key={i}
-                  className={`text-center card-hover bg-gradient-to-br ${feature.gradient} border-muted/50 backdrop-blur-sm`}
+                  className={`h-full text-center card-hover bg-gradient-to-br ${feature.gradient} border-primary/10 shadow-sm backdrop-blur-sm`}
                 >
-                  <CardContent className="pt-10 pb-8 space-y-4">
-                    <feature.Icon className={`h-12 w-12 mx-auto ${feature.color}`} strokeWidth={1.6} />
-                    <h3 className="text-xl md:text-2xl font-bold">{feature.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
+                  <CardContent className="flex h-full flex-col p-6 sm:p-7 lg:p-8 space-y-4">
+                    <feature.Icon className={`h-10 w-10 sm:h-12 sm:w-12 mx-auto ${feature.color}`} strokeWidth={1.6} />
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold leading-tight">{feature.title}</h3>
+                    <p className="text-sm sm:text-base text-muted-foreground leading-7">{feature.description}</p>
                   </CardContent>
                 </Card>
               ))}
@@ -491,33 +421,33 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="py-20 border-t border-b">
-          <div className="container mx-auto px-4" dir={isRTL ? "rtl" : "ltr"}>
+        <section className="py-16 sm:py-20 lg:py-24 border-t border-b">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8" dir={isRTL ? "rtl" : "ltr"}>
             <Reveal>
-            <div className="max-w-6xl mx-auto grid gap-10 lg:grid-cols-2 items-start">
-              <div className="space-y-4">
+            <div className="max-w-6xl mx-auto grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-12 items-start">
+              <div className="space-y-4 lg:pt-4">
                 <div className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                   <HelpCircle className="h-4 w-4 text-primary" />
                   {isRTL ? "الأسئلة الشائعة" : "FAQ"}
                 </div>
-                <h2 className="text-3xl md:text-4xl font-bold">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight text-balance">
                   {isRTL ? "إجابات سريعة قبل أن تبدأ" : "Quick Answers Before You Start"}
                 </h2>
-                <p className="text-muted-foreground text-lg leading-relaxed">
+                <p className="text-muted-foreground text-base sm:text-lg leading-8">
                   {isRTL
                     ? "جمعنا لك أكثر الأسئلة شيوعًا حول NEON: التسجيل، الدورات، الشهادات، والدعم."
                     : "A short list of the most common questions about NEON: signup, courses, certificates, and support."}
                 </p>
                 <div className="pt-2">
                   <Link href={`/${language}/faq`}>
-                    <Button variant="outline" className="font-semibold">
+                    <Button variant="outline" className="rounded-lg border-primary/20 bg-background/70 font-semibold">
                       {isRTL ? "عرض كل الأسئلة" : "View All FAQs"}
                     </Button>
                   </Link>
                 </div>
               </div>
 
-              <div className="rounded-2xl border bg-background/50 backdrop-blur-sm">
+              <div className="rounded-2xl border border-primary/10 bg-background/65 shadow-sm backdrop-blur-sm">
                 <Accordion type="single" collapsible>
                   {getFaqItems(isRTL ? "ar" : "en")
                     .slice(0, 5)
@@ -536,28 +466,42 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="py-24 relative overflow-hidden">
+        <section className="relative overflow-hidden py-20 sm:py-24 lg:py-28">
           <GlowBlob className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0" color="primary" size="800px" />
+          <HeroSplineScene
+            sceneUrl="https://my.spline.design/claritystream-feervDoArrbizMRRrEHWbt59/"
+            title="Background 3D stream scene"
+            fallbackLabel=""
+            forceRender
+            className="pointer-events-none absolute inset-x-0 top-1/2 z-0 h-[360px] w-full -translate-y-1/2 opacity-70 sm:h-[430px] lg:h-[520px]"
+            iframeClassName="absolute left-1/2 top-1/2 h-[150%] w-[150%] -translate-x-1/2 -translate-y-1/2 scale-100 border-0 bg-transparent"
+          />
+          <div
+            className="absolute inset-0 z-[1] bg-[linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--background)/0.58)_25%,hsl(var(--background)/0.34)_50%,hsl(var(--background)/0.6)_75%,hsl(var(--background))_100%)]"
+            aria-hidden="true"
+          />
 
-          <div className="container mx-auto px-4 relative z-10">
-            <div className="max-w-3xl mx-auto text-center space-y-8 backdrop-blur-sm bg-background/30 p-12 rounded-2xl border border-primary/10">
-              <h2 className="text-3xl md:text-5xl font-bold text-balance">
-                {isRTL ? "جاهز لبدء رحلتك التعليمية؟" : "Ready to Start Your Learning Journey?"}
-              </h2>
-              <p className="text-lg md:text-xl text-muted-foreground text-balance">
-                {isRTL
-                  ? "انضم لآلاف الطلاب واكتشف دورات تساعدك على تحقيق أهدافك"
-                  : "Join thousands of students and discover courses that help you achieve your goals"}
-              </p>
-              <Link href={`/${language}/courses`}>
-                <Button size="lg" className="font-semibold text-lg px-10 hover-lift hover-glow">
-                  <Sparkles className="h-5 w-5 mr-2" />
-                  {isRTL ? "تصفح الدورات الآن" : "Browse Courses Now"}
-                </Button>
-              </Link>
+          <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-5xl text-center">
+              <div className="mx-auto max-w-3xl space-y-6 rounded-2xl bg-background/78 px-4 py-6 shadow-2xl shadow-background/35 backdrop-blur-xl sm:space-y-7 sm:px-8 sm:py-8 lg:px-10">
+                <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold text-balance leading-tight text-foreground drop-shadow-sm">
+                  {isRTL ? "جاهز لبدء رحلتك التعليمية؟" : "Ready to Start Your Learning Journey?"}
+                </h2>
+                <p className="text-base sm:text-lg md:text-xl text-foreground/75 text-balance leading-8 max-w-2xl mx-auto">
+                  {isRTL
+                    ? "انضم لآلاف الطلاب واكتشف دورات تساعدك على تحقيق أهدافك"
+                    : "Join thousands of students and discover courses that help you achieve your goals"}
+                </p>
+                <Link href={`/${language}/courses`} className="block sm:inline-block">
+                  <Button size="lg" className="min-h-12 w-full rounded-lg px-8 text-base font-semibold shadow-lg shadow-primary/15 hover-lift hover-glow sm:w-auto sm:text-lg">
+                    <Sparkles className="h-5 w-5 mr-2" />
+                    {isRTL ? "تصفح الدورات الآن" : "Browse Courses Now"}
+                  </Button>
+                </Link>
+              </div>
 
               {reviews.length > 0 && (
-                <div className="pt-8 border-t border-primary/10 text-start" dir={isRTL ? "rtl" : "ltr"}>
+                <div className="mt-10 rounded-2xl bg-background/70 p-4 text-start shadow-xl shadow-background/25 backdrop-blur-xl sm:mt-12 sm:p-5" dir={isRTL ? "rtl" : "ltr"}>
                   <div className="flex items-center justify-between gap-4 mb-4">
                     <div className="font-semibold text-base">{isRTL ? "آراء الطلاب" : "Student Reviews"}</div>
                     <div className="text-xs text-muted-foreground">
@@ -570,7 +514,7 @@ export default function HomePage() {
                       {[...reviews, ...reviews].map((r, idx) => (
                         <Card
                           key={`${r.id}-${idx}`}
-                          className="reviews-card border-primary/10 bg-background/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:bg-background/80"
+                          className="reviews-card border-primary/10 bg-background/70 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:bg-background/85"
                         >
                           <CardContent className="p-4 space-y-3" dir={isRTL ? "rtl" : "ltr"}>
                             <div className="flex items-center justify-between gap-2">
@@ -613,9 +557,9 @@ export default function HomePage() {
         </section>
       </main>
 
-      <footer className="border-t py-12 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="grid gap-10 md:grid-cols-3">
+      <footer className="border-t py-10 sm:py-12 bg-muted/30">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-8 sm:gap-10 md:grid-cols-3">
             <div className="space-y-3">
               <div className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 {isRTL ? "نيون" : "Neon"}

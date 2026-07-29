@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
+import { FloatingNavbar } from "@/components/ui/floating-navbar"
 import { useLanguage } from "@/lib/language-context"
 import { useTheme } from "@/lib/theme-context"
 import { useAuth } from "@/lib/auth-context"
@@ -85,20 +86,27 @@ export function NavBar() {
   const iconGapClass = language === "ar" ? "ml-2" : "mr-2"
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4 relative">
-        <div className="flex items-center gap-6">
-          <Link href={`/${language}`} className="flex items-center gap-2">
+    <FloatingNavbar dir={language === "ar" ? "rtl" : "ltr"}>
+      <div className="flex min-h-14 items-center justify-between gap-3 px-3 sm:px-4">
+        <div className="flex min-w-0 items-center gap-4 lg:gap-6">
+          <Link href={`/${language}`} className="flex shrink-0 items-center gap-2">
             {/* <Image src="/logo.svg" alt="Neon Logo" width={60} height={34} className="h-10 w-auto" /> */}
-            <div className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent hidden sm:block">
+            <div className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent sm:text-2xl">
               {language === "ar" ? "نيون" : "Neon"}
             </div>
           </Link>
 
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden items-center gap-1 lg:flex">
             {navItems.map((item) => (
               <Link key={item.href} href={item.href}>
-                <Button variant={pathname === item.href ? "secondary" : "ghost"} size="sm">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={[
+                    "rounded-full px-3 font-semibold text-foreground/75 hover:bg-primary/10 hover:text-primary",
+                    pathname === item.href ? "bg-primary/10 text-primary" : "",
+                  ].join(" ")}
+                >
                   {item.label}
                 </Button>
               </Link>
@@ -106,9 +114,9 @@ export function NavBar() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 pr-12 md:pr-0">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <Link href={`/${language}/cart`}>
-            <Button variant="ghost" size="icon" className="relative">
+            <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-primary/10 hover:text-primary">
               <ShoppingCart className="h-5 w-5" />
               {cartCount > 0 && (
                 <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
@@ -118,13 +126,13 @@ export function NavBar() {
             </Button>
           </Link>
 
-          <Button variant="ghost" size="icon" onClick={toggleTheme}>
+          <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10 hover:text-primary" onClick={toggleTheme}>
             {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
           </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10 hover:text-primary">
                 <Globe className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
@@ -137,7 +145,7 @@ export function NavBar() {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="hidden rounded-full border-primary/20 bg-background/70 font-semibold shadow-sm sm:inline-flex">
                   {user.name}
                 </Button>
               </DropdownMenuTrigger>
@@ -158,24 +166,25 @@ export function NavBar() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Link href={`/${language}/auth/login`}>
-              <Button size="sm">{t("login", language)}</Button>
+            <Link href={`/${language}/auth/login`} className="hidden sm:block">
+              <Button size="sm" className="rounded-full px-4 font-semibold shadow-lg shadow-primary/15">
+                {t("login", language)}
+              </Button>
             </Link>
           )}
-        </div>
 
-        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-          <SheetTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden absolute right-4 top-1/2 -translate-y-1/2"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-1/2 sm:max-w-none p-0">
-            <div dir={language === "ar" ? "rtl" : "ltr"} className="h-full flex flex-col">
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full hover:bg-primary/10 hover:text-primary lg:hidden"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side={language === "ar" ? "right" : "left"} className="w-4/5 max-w-sm p-0 sm:max-w-sm">
+              <div dir={language === "ar" ? "rtl" : "ltr"} className="h-full flex flex-col">
               <div className="p-4 border-b bg-gradient-to-r from-primary/10 via-accent/10 to-background">
                 <SheetHeader className="pb-0">
                   <SheetTitle className="text-base">{language === "ar" ? "القائمة" : "Menu"}</SheetTitle>
@@ -292,9 +301,10 @@ export function NavBar() {
                 </div>
               </div>
             </div>
-          </SheetContent>
-        </Sheet>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
-    </nav>
+    </FloatingNavbar>
   )
 }
