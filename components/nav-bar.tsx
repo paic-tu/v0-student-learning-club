@@ -130,17 +130,15 @@ export function NavBar() {
             {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
           </Button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10 hover:text-primary">
-                <Globe className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setLanguage("ar")}>العربية {language === "ar" && "✓"}</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("en")}>English {language === "en" && "✓"}</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full hover:bg-primary/10 hover:text-primary"
+            onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
+            aria-label={language === "ar" ? "Switch to English" : "التبديل إلى العربية"}
+          >
+            <Globe className="h-5 w-5" />
+          </Button>
 
           {user ? (
             <DropdownMenu>
@@ -286,17 +284,13 @@ export function NavBar() {
                           ? "الوضع الفاتح"
                           : "Light Mode"}
                     </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="flex-1">
-                          {language === "ar" ? "اللغة" : "Language"}
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setLanguage("ar")}>العربية {language === "ar" && "✓"}</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setLanguage("en")}>English {language === "en" && "✓"}</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
+                    >
+                      {language === "ar" ? "English" : "العربية"}
+                    </Button>
                   </div>
                 </div>
               </div>

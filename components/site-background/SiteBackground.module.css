@@ -1,0 +1,102 @@
+.wrapper {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Portaled into the [data-neon-glow-anchor] node that lives inside the Hero's own
+   (position: relative) container, so this stays position: absolute (never fixed) and
+   scrolls away with the page like any other element in that container.
+   left/top are set inline (px) to the logo element's own center, computed at runtime -
+   the 50%/50% here is only the pre-measurement fallback. */
+.centerGlow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  pointer-events: none;
+  width: min(80vw, 80vh, 1100px);
+  height: min(80vw, 80vh, 1100px);
+  transform: translate(-50%, -50%) scale(1);
+  border-radius: 50%;
+  filter: blur(46px);
+  animation: centerGlowPulse 5s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* 8-stop falloff, decelerating toward 0 so there is no perceptible ring at any radius. */
+.centerGlowDark {
+  background: radial-gradient(
+    circle,
+    rgba(110, 61, 243, 0.3) 0%,
+    rgba(96, 73, 240, 0.24) 10%,
+    rgba(74, 94, 238, 0.18) 22%,
+    rgba(45, 145, 217, 0.12) 36%,
+    rgba(12, 216, 193, 0.07) 50%,
+    rgba(12, 216, 193, 0.035) 66%,
+    rgba(12, 216, 193, 0.012) 82%,
+    rgba(12, 216, 193, 0) 100%
+  );
+}
+
+.centerGlowLight {
+  background: radial-gradient(
+    circle,
+    rgba(110, 61, 243, 0.2) 0%,
+    rgba(96, 73, 240, 0.16) 10%,
+    rgba(74, 94, 238, 0.12) 22%,
+    rgba(45, 145, 217, 0.08) 36%,
+    rgba(12, 216, 193, 0.05) 50%,
+    rgba(12, 216, 193, 0.026) 66%,
+    rgba(12, 216, 193, 0.009) 82%,
+    rgba(12, 216, 193, 0) 100%
+  );
+}
+
+/* Tight, neutral contact-shadow sitting closer behind the logo than the ambient
+   centerGlow, shifted slightly downward (translateY -20% instead of -50%) so it
+   reads as a shadow the object casts rather than another aura - this is what gives
+   the 3D logo a sense of depth/grounding against the page. */
+.logoShadow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  pointer-events: none;
+  width: min(46vw, 46vh, 480px);
+  height: min(20vw, 20vh, 190px);
+  transform: translate(-50%, -20%);
+  border-radius: 50%;
+  filter: blur(16px);
+}
+
+.logoShadowDark {
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.18) 45%, rgba(0, 0, 0, 0) 100%);
+}
+
+.logoShadowLight {
+  background: radial-gradient(
+    ellipse,
+    rgba(35, 25, 70, 0.28) 0%,
+    rgba(35, 25, 70, 0.14) 45%,
+    rgba(35, 25, 70, 0) 100%
+  );
+}
+
+@keyframes centerGlowPulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+}

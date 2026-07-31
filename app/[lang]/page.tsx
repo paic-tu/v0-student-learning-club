@@ -93,6 +93,7 @@ export default function HomePage() {
 
       <main className="overflow-hidden">
         <section className="relative overflow-hidden py-20 sm:py-28 lg:py-36">
+          <div data-neon-glow-anchor="" className="pointer-events-none absolute inset-0" />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <Reveal>
             <div className="max-w-5xl mx-auto text-center space-y-7 sm:space-y-8">
@@ -136,38 +137,24 @@ export default function HomePage() {
               </p>
 
               <div className="flex w-full flex-col gap-3 pt-3 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4 sm:pt-5">
-                {isAuthenticated ? (
-                  <Button 
-                    size="lg" 
-                    className="min-h-12 w-full rounded-lg px-7 text-base font-semibold shadow-lg shadow-primary/15 hover-lift hover-glow sm:w-auto sm:text-lg"
-                    onClick={() => {
-                      const dashboardLink = user?.role === "admin" 
+                <Link
+                  href={
+                    isAuthenticated
+                      ? user?.role === "admin"
                         ? `/${language}/admin`
-                        : user?.role === "instructor" 
+                        : user?.role === "instructor"
                           ? `/${language}/instructor/dashboard`
                           : `/${language}/student/dashboard`
-                      window.location.href = dashboardLink
-                    }}
-                  >
-                    <Target className="h-5 w-5 mr-2" />
-                    {isRTL ? "الذهاب إلى لوحة التحكم" : "Go to Dashboard"}
-                  </Button>
-                ) : (
-                  <Link href={`/${language}/courses`} className="w-full sm:w-auto">
-                    <Button size="lg" className="min-h-12 w-full rounded-lg px-7 text-base font-semibold shadow-lg shadow-primary/15 hover-lift hover-glow sm:w-auto sm:text-lg">
-                      <Target className="h-5 w-5 mr-2" />
-                      {t("startLearning", language)}
-                    </Button>
-                  </Link>
-                )}
-                <Link href={`/${language}/courses`} className="w-full sm:w-auto">
+                      : `/${language}/courses`
+                  }
+                  className="w-full sm:w-auto"
+                >
                   <Button
                     size="lg"
-                    variant="outline"
-                    className="min-h-12 w-full rounded-lg border-primary/20 bg-background/85 px-7 text-base font-semibold backdrop-blur-sm hover-lift sm:w-auto sm:text-lg"
+                    className="min-h-12 w-full rounded-lg px-8 text-base font-semibold shadow-lg shadow-primary/15 hover-lift hover-glow sm:w-auto sm:text-lg"
                   >
-                    <BookOpen className="h-5 w-5 mr-2" />
-                    {isRTL ? "استكشف الدورات" : "Explore Courses"}
+                    <Target className="h-5 w-5 mr-2" />
+                    {isRTL ? "ابدأ رحلتك التعليمية" : "Start Your Learning Journey"}
                   </Button>
                 </Link>
               </div>
