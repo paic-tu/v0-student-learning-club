@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import type { Language } from "./i18n"
 
 interface LanguageContextType {
@@ -21,7 +21,6 @@ export function LanguageProvider({
 }) {
   const [language, setLanguageState] = useState<Language>(defaultLang)
   const pathname = usePathname()
-  const router = useRouter()
 
   useEffect(() => {
     const maybeLocale = pathname?.split("/")[1]
@@ -34,7 +33,7 @@ export function LanguageProvider({
 
   const setLanguage = (lang: Language) => {
     if (lang === language) return
-    
+
     // Replace locale in path
     // Path is like /ar/some/path or /ar
     const segments = (pathname || "").split('/')
@@ -43,10 +42,10 @@ export function LanguageProvider({
     if (segments.length > 1) {
       segments[1] = lang
       const newPath = segments.join('/')
-      router.push(newPath)
+      window.location.href = newPath
     } else {
       // Should not happen in [lang] route but fallback
-      router.push(`/${lang}`)
+      window.location.href = `/${lang}`
     }
   }
 

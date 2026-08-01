@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 import { createPortal } from "react-dom"
 import { useTheme } from "@/lib/theme-context"
@@ -15,7 +15,11 @@ export function HeroGlowPortal() {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const [position, setPosition] = useState({ left: "50%", top: "50%" })
 
-  useEffect(() => {
+  // useLayoutEffect (not useEffect) so the anchor is found and the glow/shadow
+  // paint in the same frame as first hydration, instead of one render tick
+  // later - they should already be visible before the 3D logo (which mounts
+  // its iframe in a later effect) ever appears.
+  useLayoutEffect(() => {
     setAnchor(document.querySelector<HTMLElement>(ANCHOR_SELECTOR))
   }, [pathname])
 
@@ -39,12 +43,22 @@ export function HeroGlowPortal() {
 
     measure()
     window.addEventListener("resize", measure)
-    const observer = new ResizeObserver(measure)
-    observer.observe(scope)
+    const resizeObserver = new ResizeObserver(measure)
+    resizeObserver.observe(scope)
+
+    // The 3D logo's iframe mounts a moment after first paint (HeroSplineScene
+    // waits on a client-only effect before inserting it), and that insertion
+    // doesn't change `scope`'s own box size - so ResizeObserver alone never
+    // notices it appearing, and the glow would stay stuck at the 50%/50%
+    // fallback forever. Watch the DOM directly so it re-centers onto the logo
+    // the moment it exists.
+    const mutationObserver = new MutationObserver(measure)
+    mutationObserver.observe(scope, { childList: true, subtree: true })
 
     return () => {
       window.removeEventListener("resize", measure)
-      observer.disconnect()
+      resizeObserver.disconnect()
+      mutationObserver.disconnect()
     }
   }, [anchor, pathname])
 
