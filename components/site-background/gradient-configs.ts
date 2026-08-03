@@ -1,7 +1,7 @@
 export const lightGradientConfig = {
   preset: "custom" as const,
   color1: "#FFFFFF",
-  color2: "#4463eb",
+  color2: "#212a6b",
   color3: "#FFFFFF",
   rotation: -50,
   proportion: 1,
@@ -19,7 +19,7 @@ export const lightGradientConfig = {
 export const darkGradientConfig = {
   preset: "custom" as const,
   color1: "#050505",
-  color2: "#4463eb",
+  color2: "#212a6b",
   color3: "#FFFFFF",
   rotation: -50,
   proportion: 1,

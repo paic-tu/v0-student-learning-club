@@ -7,7 +7,13 @@ import { useTheme } from "@/lib/theme-context"
 import styles from "./SiteBackground.module.css"
 
 const ANCHOR_SELECTOR = "[data-neon-glow-anchor]"
-const LOGO_SELECTOR = 'iframe[src*="spline.design"], iframe'
+// The logo slot wrapper (see hero-spline-scene.tsx) renders unconditionally
+// from first paint - it holds the "Neon"/"نيون" fallback text before the 3D
+// scene loads, then the iframe itself once it mounts, both centered the same
+// way inside it. Targeting the wrapper (not the iframe) means the glow is
+// correctly positioned immediately, with no separate "logo missing yet"
+// state to fall back from.
+const LOGO_SELECTOR = "[data-neon-logo-slot]"
 
 export function HeroGlowPortal() {
   const pathname = usePathname()
@@ -46,12 +52,10 @@ export function HeroGlowPortal() {
     const resizeObserver = new ResizeObserver(measure)
     resizeObserver.observe(scope)
 
-    // The 3D logo's iframe mounts a moment after first paint (HeroSplineScene
-    // waits on a client-only effect before inserting it), and that insertion
-    // doesn't change `scope`'s own box size - so ResizeObserver alone never
-    // notices it appearing, and the glow would stay stuck at the 50%/50%
-    // fallback forever. Watch the DOM directly so it re-centers onto the logo
-    // the moment it exists.
+    // The slot wrapper itself doesn't resize when its fallback text is
+    // swapped for the iframe (or vice versa), so ResizeObserver alone
+    // wouldn't catch that content change. Watch the DOM directly too, as a
+    // defensive re-measure on any layout-affecting mutation inside scope.
     const mutationObserver = new MutationObserver(measure)
     mutationObserver.observe(scope, { childList: true, subtree: true })
 

@@ -49,12 +49,23 @@ export interface BackgroundTheme {
   vignette: boolean
   vignetteColor: string
   meteor: MeteorConfig
+  dustDensityDivisor: number
+  dustColor: [number, number, number]
+  dustAlphaMin: number
+  dustAlphaMax: number
+  dustSizeMin: number
+  dustSizeMax: number
+  milkyWayColor: [number, number, number]
+  milkyWayAlpha: number
+  milkyWayAngleDeg: number
 }
 
+// Derived from the site's #212A6B identity color so the nebula/bokeh tint
+// reads as an extension of that palette rather than a separate accent.
 const IDENTITY_COLORS: [number, number, number][] = [
-  [110, 61, 243],
-  [12, 216, 193],
-  [74, 94, 238],
+  [33, 42, 107],
+  [63, 78, 168],
+  [86, 64, 150],
 ]
 
 export const DARK_THEME: BackgroundTheme = {
@@ -69,10 +80,12 @@ export const DARK_THEME: BackgroundTheme = {
     { share: 0.25, sizeMin: 1.8, sizeMax: 2.6, opacityMin: 0.45, opacityMax: 0.65, depthMin: 32, depthMax: 50 },
   ],
   starColors: [
-    { r: 255, g: 255, b: 255, weight: 0.55 },
-    { r: 198, g: 213, b: 255, weight: 0.23 },
-    { r: 255, g: 244, b: 214, weight: 0.14 },
-    { r: 255, g: 209, b: 160, weight: 0.06 },
+    { r: 255, g: 255, b: 255, weight: 0.48 },
+    { r: 198, g: 213, b: 255, weight: 0.19 },
+    { r: 150, g: 230, b: 255, weight: 0.08 },
+    { r: 190, g: 170, b: 255, weight: 0.08 },
+    { r: 255, g: 244, b: 214, weight: 0.11 },
+    { r: 255, g: 209, b: 160, weight: 0.04 },
     { r: 255, g: 180, b: 138, weight: 0.02 },
   ],
   starShadowBlurMultiplier: 2,
@@ -99,6 +112,15 @@ export const DARK_THEME: BackgroundTheme = {
     coreLineWidth: 0.7,
     headGlowColor: (a) => `rgba(255,255,255,${a})`,
   },
+  dustDensityDivisor: 3500,
+  dustColor: [200, 210, 255],
+  dustAlphaMin: 0.02,
+  dustAlphaMax: 0.05,
+  dustSizeMin: 0.3,
+  dustSizeMax: 0.7,
+  milkyWayColor: [190, 205, 255],
+  milkyWayAlpha: 0.05,
+  milkyWayAngleDeg: -50,
 }
 
 export const LIGHT_THEME: BackgroundTheme = {
@@ -155,4 +177,13 @@ export const LIGHT_THEME: BackgroundTheme = {
     coreLineWidth: 0.8,
     headGlowColor: (a) => `rgba(120,100,255,${a})`,
   },
+  dustDensityDivisor: 6000,
+  dustColor: [80, 70, 150],
+  dustAlphaMin: 0.015,
+  dustAlphaMax: 0.03,
+  dustSizeMin: 0.4,
+  dustSizeMax: 0.8,
+  milkyWayColor: [110, 90, 200],
+  milkyWayAlpha: 0.03,
+  milkyWayAngleDeg: -50,
 }

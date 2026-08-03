@@ -31,6 +31,16 @@ interface Meteor {
   tailLen: number
 }
 
+interface Dust {
+  x: number
+  y: number
+  size: number
+  opacity: number
+  depth: number
+  driftPhase: number
+  driftSpeed: number
+}
+
 const rand = (min: number, max: number) => min + Math.random() * (max - min)
 
 function pickWeightedColor(colors: WeightedColor[]): WeightedColor {
@@ -43,7 +53,11 @@ function pickWeightedColor(colors: WeightedColor[]): WeightedColor {
   return colors[colors.length - 1]
 }
 
-export function startBackgroundAnimation(canvas: HTMLCanvasElement, theme: BackgroundTheme): () => void {
+export function startBackgroundAnimation(
+  canvas: HTMLCanvasElement,
+  theme: BackgroundTheme,
+  scrollProgressRef?: { current: number },
+): () => void {
   const ctx = canvas.getContext("2d")
   if (!ctx) return () => {}
 
@@ -52,7 +66,9 @@ export function startBackgroundAnimation(canvas: HTMLCanvasElement, theme: Backg
   let stars: Star[] = []
   let nebulaBlobs: Blob[] = []
   let bokehBlobs: Blob[] = []
+  let dustParticles: Dust[] = []
   let meteor: Meteor | null = null
+  let nextMeteorAt = rand(4, 9)
 
   let mouseX = 0.5
   let mouseY = 0.5
@@ -104,6 +120,19 @@ export function startBackgroundAnimation(canvas: HTMLCanvasElement, theme: Backg
     }))
   }
 
+  const createDust = () => {
+    const total = Math.round((width * height) / theme.dustDensityDivisor)
+    dustParticles = Array.from({ length: total }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      size: rand(theme.dustSizeMin, theme.dustSizeMax),
+      opacity: rand(theme.dustAlphaMin, theme.dustAlphaMax),
+      depth: rand(2, 6),
+      driftPhase: rand(0, Math.PI * 2),
+      driftSpeed: rand(0.02, 0.05),
+    }))
+  }
+
   const resize = () => {
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
     width = window.innerWidth
@@ -116,6 +145,7 @@ export function startBackgroundAnimation(canvas: HTMLCanvasElement, theme: Backg
     createStars()
     createNebula()
     createBokeh()
+    createDust()
   }
 
   const handlePointerMove = (e: PointerEvent) => {
@@ -123,9 +153,9 @@ export function startBackgroundAnimation(canvas: HTMLCanvasElement, theme: Backg
     targetMouseY = e.clientY / window.innerHeight
   }
 
-  const maybeSpawnMeteor = () => {
+  const maybeSpawnMeteor = (tSec: number) => {
     if (meteor) return
-    if (Math.random() > 0.0025) return
+    if (tSec < nextMeteorAt) return
     const angleDeg = rand(128, 148)
     meteor = {
       x: width * rand(0.45, 0.55),
@@ -136,6 +166,7 @@ export function startBackgroundAnimation(canvas: HTMLCanvasElement, theme: Backg
       maxTailLen: rand(65, 95),
       tailLen: 0,
     }
+    nextMeteorAt = tSec + rand(10, 20)
   }
 
   const updateMeteor = () => {
@@ -193,7 +224,7 @@ export function startBackgroundAnimation(canvas: HTMLCanvasElement, theme: Backg
     ctx.restore()
   }
 
-  const drawNebula = () => {
+  const drawNebula = (scrollBoost: number) => {
     nebulaBlobs.forEach((blob) => {
       const offsetX = (mouseX - 0.5) * blob.depth
       const offsetY = (mouseY - 0.5) * blob.depth
@@ -203,7 +234,7 @@ export function startBackgroundAnimation(canvas: HTMLCanvasElement, theme: Backg
       ctx.filter = `blur(${blob.blur}px)`
       const gradient = ctx.createRadialGradient(x, y, 0, x, y, blob.radius)
       const [r, g, b] = blob.color
-      gradient.addColorStop(0, `rgba(${r},${g},${b},${blob.alpha})`)
+      gradient.addColorStop(0, `rgba(${r},${g},${b},${blob.alpha * scrollBoost})`)
       gradient.addColorStop(1, `rgba(${r},${g},${b},0)`)
       ctx.fillStyle = gradient
       ctx.beginPath()
@@ -211,6 +242,37 @@ export function startBackgroundAnimation(canvas: HTMLCanvasElement, theme: Backg
       ctx.fill()
       ctx.restore()
     })
+  }
+
+  const drawDust = (tSec: number, scrollBoost: number) => {
+    const [r, g, b] = theme.dustColor
+    dustParticles.forEach((d) => {
+      const offsetX = (mouseX - 0.5) * d.depth + Math.sin(tSec * d.driftSpeed + d.driftPhase) * 6
+      const offsetY = (mouseY - 0.5) * d.depth + Math.cos(tSec * d.driftSpeed * 0.8 + d.driftPhase) * 4
+      const x = d.x + offsetX
+      const y = d.y + offsetY
+      ctx.fillStyle = `rgba(${r},${g},${b},${d.opacity * scrollBoost})`
+      ctx.beginPath()
+      ctx.arc(x, y, d.size * 0.5, 0, Math.PI * 2)
+      ctx.fill()
+    })
+  }
+
+  const drawMilkyWay = (tSec: number, scrollBoost: number) => {
+    const [r, g, b] = theme.milkyWayColor
+    const driftX = Math.sin(tSec * 0.01) * width * 0.02
+    ctx.save()
+    ctx.translate(width / 2 + driftX, height / 2)
+    ctx.rotate((theme.milkyWayAngleDeg * Math.PI) / 180)
+    const bandLength = Math.max(width, height) * 1.6
+    const bandWidth = Math.min(width, height) * 0.55
+    const gradient = ctx.createLinearGradient(0, -bandWidth / 2, 0, bandWidth / 2)
+    gradient.addColorStop(0, `rgba(${r},${g},${b},0)`)
+    gradient.addColorStop(0.5, `rgba(${r},${g},${b},${theme.milkyWayAlpha * scrollBoost})`)
+    gradient.addColorStop(1, `rgba(${r},${g},${b},0)`)
+    ctx.fillStyle = gradient
+    ctx.fillRect(-bandLength / 2, -bandWidth / 2, bandLength, bandWidth)
+    ctx.restore()
   }
 
   const drawBokeh = () => {
@@ -234,20 +296,34 @@ export function startBackgroundAnimation(canvas: HTMLCanvasElement, theme: Backg
   }
 
   const drawStars = (tSec: number) => {
+    const mousePxX = mouseX * width
+    const mousePxY = mouseY * height
+    const proximityRadius = 140
+
     stars.forEach((star) => {
       const offsetX = (mouseX - 0.5) * star.depth
       const offsetY = (mouseY - 0.5) * star.depth
       const x = star.x + offsetX
       const y = star.y + offsetY
       const twinkle = Math.sin(tSec * star.speed + star.phase)
-      const alpha = star.opacity * (0.65 + 0.35 * twinkle)
+      let alpha = star.opacity * (0.65 + 0.35 * twinkle)
+
+      const dist = Math.hypot(x - mousePxX, y - mousePxY)
+      let scale = 1
+      if (dist < proximityRadius) {
+        const proximity = 1 - dist / proximityRadius
+        alpha += proximity * 0.3
+        scale = 1 + proximity * 0.35
+      }
+
       const { r, g, b } = star.color
+      const a = Math.max(alpha, 0)
       ctx.save()
       ctx.shadowBlur = star.size * theme.starShadowBlurMultiplier
-      ctx.shadowColor = `rgba(${r},${g},${b},${Math.max(alpha, 0)})`
-      ctx.fillStyle = `rgba(${r},${g},${b},${Math.max(alpha, 0)})`
+      ctx.shadowColor = `rgba(${r},${g},${b},${a})`
+      ctx.fillStyle = `rgba(${r},${g},${b},${a})`
       ctx.beginPath()
-      ctx.arc(x, y, star.size * 0.5, 0, Math.PI * 2)
+      ctx.arc(x, y, star.size * 0.5 * scale, 0, Math.PI * 2)
       ctx.fill()
       ctx.restore()
     })
@@ -267,16 +343,20 @@ export function startBackgroundAnimation(canvas: HTMLCanvasElement, theme: Backg
   let rafId = 0
 
   const animate = (t: number) => {
+    const tSec = t / 1000
     mouseX += (targetMouseX - mouseX) * 0.07
     mouseY += (targetMouseY - mouseY) * 0.07
+    const scrollBoost = 1 + (scrollProgressRef?.current ?? 0) * 0.6
 
     ctx.clearRect(0, 0, width, height)
     theme.paintBase(ctx, width, height)
-    drawNebula()
+    drawMilkyWay(tSec, scrollBoost)
+    drawNebula(scrollBoost)
+    drawDust(tSec, scrollBoost)
     drawBokeh()
-    drawStars(t / 1000)
+    drawStars(tSec)
 
-    maybeSpawnMeteor()
+    maybeSpawnMeteor(tSec)
     updateMeteor()
     drawMeteor()
 

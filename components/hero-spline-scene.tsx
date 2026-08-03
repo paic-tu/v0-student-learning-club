@@ -44,6 +44,7 @@ export function HeroSplineScene({
 
   return (
     <span
+      data-neon-logo-slot=""
       className={[
         "block overflow-hidden bg-transparent",
         className,
