@@ -4,7 +4,6 @@ import { useEffect, useRef } from "react"
 import { useTheme } from "@/lib/theme-context"
 import AnimatedGradient from "./AnimatedGradient"
 import { lightGradientConfig, darkGradientConfig } from "./gradient-configs"
-import { HeroGlowPortal } from "./HeroGlowPortal"
 import { startBackgroundAnimation } from "./engine"
 import { DARK_THEME, LIGHT_THEME } from "./themes"
 import styles from "./SiteBackground.module.css"
@@ -46,7 +45,6 @@ export function AnimatedGradientBackground() {
         />
       </div>
       <div aria-hidden="true" className={`${styles.wrapper} ${styles.atmosphereLayer}`} />
-      <HeroGlowPortal />
     </>
   )
 }
