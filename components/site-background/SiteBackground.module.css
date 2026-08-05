@@ -14,6 +14,29 @@
   height: 100%;
 }
 
+.galaxyLayer {
+  opacity: 0.72;
+}
+
+.atmosphereLayer {
+  background:
+    radial-gradient(circle at 50% 16%, rgba(79, 124, 255, 0.12), transparent 34%),
+    radial-gradient(circle at 16% 28%, rgba(16, 185, 129, 0.06), transparent 28%),
+    radial-gradient(circle at 84% 20%, rgba(139, 92, 246, 0.08), transparent 30%),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.02) 34%, rgba(255, 255, 255, 0.1));
+  mix-blend-mode: screen;
+  opacity: 0.48;
+}
+
+:global(.dark) .atmosphereLayer {
+  background:
+    radial-gradient(circle at 50% 16%, rgba(79, 124, 255, 0.16), transparent 34%),
+    radial-gradient(circle at 16% 28%, rgba(16, 185, 129, 0.06), transparent 28%),
+    radial-gradient(circle at 84% 20%, rgba(139, 92, 246, 0.1), transparent 30%),
+    linear-gradient(to bottom, rgba(5, 8, 24, 0.06), rgba(5, 8, 24, 0.28) 70%, rgba(5, 8, 24, 0.42));
+  opacity: 0.5;
+}
+
 /* Portaled into the [data-neon-glow-anchor] node that lives inside the Hero's own
    (position: relative) container, so this stays position: absolute (never fixed) and
    scrolls away with the page like any other element in that container.
@@ -24,12 +47,12 @@
   top: 50%;
   left: 50%;
   pointer-events: none;
-  width: min(80vw, 80vh, 1100px);
-  height: min(80vw, 80vh, 1100px);
+  width: min(72vw, 72vh, 920px);
+  height: min(72vw, 72vh, 920px);
   transform: translate(-50%, -50%) scale(1);
   border-radius: 50%;
-  filter: blur(46px);
-  animation: centerGlowPulse 5s ease-in-out infinite;
+  filter: blur(42px);
+  animation: centerGlowPulse 6.5s ease-in-out infinite;
   will-change: transform;
 }
 
@@ -71,8 +94,8 @@
   top: 50%;
   left: 50%;
   pointer-events: none;
-  width: min(46vw, 46vh, 480px);
-  height: min(20vw, 20vh, 190px);
+  width: min(42vw, 42vh, 430px);
+  height: min(18vw, 18vh, 170px);
   transform: translate(-50%, -20%);
   border-radius: 50%;
   filter: blur(16px);

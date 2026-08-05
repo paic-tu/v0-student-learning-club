@@ -2,10 +2,8 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { NavBar } from "@/components/nav-bar"
 import { AnimatedCounter } from "@/components/animated-counter"
-import { StarfieldBackground } from "@/components/starfield-background"
 import { GlowBlob } from "@/components/glow-blob"
 import Link from "next/link"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
@@ -21,6 +19,7 @@ import { Reveal } from "@/components/reveal"
 import { RotatingWords } from "@/components/rotating-words"
 import { HeroSplineScene } from "@/components/hero-spline-scene"
 import { StatsCard3D } from "@/components/stats-card-3d"
+import { FeatureCard3D } from "@/components/feature-card-3d"
 import Script from "next/script"
 
 export default function HomePage() {
@@ -79,13 +78,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen relative">
-      {/* Unified animated background for the whole page */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-background opacity-80" />
-        <StarfieldBackground className="opacity-80 dark:opacity-50" />
-        <GlowBlob className="top-1/5 left-1/4 -translate-x-1/2 -translate-y-1/2 opacity-45 dark:opacity-30" color="primary" size="720px" />
-        <GlowBlob className="bottom-1/6 right-1/4 translate-x-1/2 translate-y-1/2 opacity-40 dark:opacity-25" color="accent" size="640px" />
-      </div>
       <NavBar />
       <Script id="ld-org" type="application/ld+json" strategy="afterInteractive">
         {JSON.stringify(organizationLd)}
@@ -393,16 +385,14 @@ export default function HomePage() {
                   color: "text-amber-600",
                 },
               ].map((feature, i) => (
-                <Card
+                <FeatureCard3D
                   key={i}
-                  className={`h-full text-center card-hover bg-gradient-to-br ${feature.gradient} border-primary/10 shadow-sm backdrop-blur-sm`}
-                >
-                  <CardContent className="flex h-full flex-col p-6 sm:p-7 lg:p-8 space-y-4">
-                    <feature.Icon className={`h-10 w-10 sm:h-12 sm:w-12 mx-auto ${feature.color}`} strokeWidth={1.6} />
-                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold leading-tight">{feature.title}</h3>
-                    <p className="text-sm sm:text-base text-muted-foreground leading-7">{feature.description}</p>
-                  </CardContent>
-                </Card>
+                  icon={feature.Icon}
+                  iconClassName={feature.color}
+                  gradientClassName={feature.gradient}
+                  title={feature.title}
+                  description={feature.description}
+                />
               ))}
             </div>
           </div>

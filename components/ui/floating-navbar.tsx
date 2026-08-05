@@ -19,15 +19,29 @@ export function FloatingNavbar({
   className,
   ...props
 }: FloatingNavbarProps) {
-  const { scrollYProgress } = useScroll()
+  const { scrollY } = useScroll()
   const [visible, setVisible] = React.useState(true)
+  const [activationOffset, setActivationOffset] = React.useState(720)
 
-  useMotionValueEvent(scrollYProgress, "change", (current) => {
+  React.useEffect(() => {
+    const syncActivationOffset = () => {
+      setActivationOffset(window.innerHeight * 0.88)
+    }
+
+    syncActivationOffset()
+    window.addEventListener("resize", syncActivationOffset)
+
+    return () => {
+      window.removeEventListener("resize", syncActivationOffset)
+    }
+  }, [])
+
+  useMotionValueEvent(scrollY, "change", (current) => {
     if (typeof current !== "number") return
 
-    const previous = scrollYProgress.getPrevious()
+    const previous = scrollY.getPrevious()
 
-    if (current < 0.03) {
+    if (current < activationOffset) {
       setVisible(true)
       return
     }

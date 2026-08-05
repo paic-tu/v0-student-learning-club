@@ -68,6 +68,16 @@ const IDENTITY_COLORS: [number, number, number][] = [
   [86, 64, 150],
 ]
 
+// The light theme instead pulls straight from the live brand tokens
+// (--primary / --accent, rgb(122,112,255) and rgb(0,191,183)) rather than the
+// dark #212A6B family above - those read as muddy smudges on a near-white
+// page instead of the logo's bright indigo-to-teal gradient.
+const BRAND_LIGHT_COLORS: [number, number, number][] = [
+  [122, 112, 255],
+  [0, 191, 183],
+  [86, 84, 220],
+]
+
 export const DARK_THEME: BackgroundTheme = {
   mode: "dark",
   paintBase: (ctx, w, h) => {
@@ -143,47 +153,47 @@ export const LIGHT_THEME: BackgroundTheme = {
   },
   starDensityDivisor: 4300,
   starLayers: [
-    { share: 0.7, sizeMin: 1, sizeMax: 1.8, opacityMin: 0.12, opacityMax: 0.22, depthMin: 4, depthMax: 12 },
-    { share: 0.3, sizeMin: 1.8, sizeMax: 2.6, opacityMin: 0.18, opacityMax: 0.3, depthMin: 18, depthMax: 32 },
+    { share: 0.7, sizeMin: 1, sizeMax: 1.8, opacityMin: 0.35, opacityMax: 0.55, depthMin: 4, depthMax: 12 },
+    { share: 0.3, sizeMin: 1.8, sizeMax: 2.6, opacityMin: 0.5, opacityMax: 0.75, depthMin: 18, depthMax: 32 },
   ],
   starColors: [
-    { r: 110, g: 61, b: 243, weight: 1 / 3 },
-    { r: 74, g: 94, b: 238, weight: 1 / 3 },
-    { r: 12, g: 216, b: 193, weight: 1 / 3 },
+    { r: 122, g: 112, b: 255, weight: 0.42 },
+    { r: 0, g: 191, b: 183, weight: 0.33 },
+    { r: 86, g: 84, b: 220, weight: 0.25 },
   ],
-  starShadowBlurMultiplier: 3,
-  nebulaColors: IDENTITY_COLORS,
-  nebulaAlphaMin: 0.045,
-  nebulaAlphaMax: 0.065,
+  starShadowBlurMultiplier: 3.5,
+  nebulaColors: BRAND_LIGHT_COLORS,
+  nebulaAlphaMin: 0.1,
+  nebulaAlphaMax: 0.16,
   nebulaBlurMin: 75,
   nebulaBlurMax: 105,
   nebulaDepthMin: 8,
   nebulaDepthMax: 34,
   bokehRadiusMin: 60,
   bokehRadiusMax: 130,
-  bokehAlphaMin: 0.06,
-  bokehAlphaMax: 0.09,
+  bokehAlphaMin: 0.14,
+  bokehAlphaMax: 0.2,
   bokehBlur: 22,
   bokehDepth: 65,
   vignette: true,
-  vignetteColor: "rgba(35,30,70,0.1)",
+  vignetteColor: "rgba(50,40,120,0.12)",
   meteor: {
     gradientStops: [
-      { offset: 0, color: "rgba(90,70,235,0.85)" },
-      { offset: 0.3, color: "rgba(110,61,243,0.5)" },
-      { offset: 0.65, color: "rgba(12,180,193,0.22)" },
-      { offset: 1, color: "rgba(12,180,193,0)" },
+      { offset: 0, color: "rgba(122,112,255,0.9)" },
+      { offset: 0.3, color: "rgba(122,112,255,0.55)" },
+      { offset: 0.65, color: "rgba(0,191,183,0.25)" },
+      { offset: 1, color: "rgba(0,191,183,0)" },
     ],
     coreLineWidth: 0.8,
-    headGlowColor: (a) => `rgba(120,100,255,${a})`,
+    headGlowColor: (a) => `rgba(122,112,255,${a})`,
   },
   dustDensityDivisor: 6000,
-  dustColor: [80, 70, 150],
-  dustAlphaMin: 0.015,
-  dustAlphaMax: 0.03,
+  dustColor: [100, 90, 220],
+  dustAlphaMin: 0.05,
+  dustAlphaMax: 0.09,
   dustSizeMin: 0.4,
   dustSizeMax: 0.8,
-  milkyWayColor: [110, 90, 200],
-  milkyWayAlpha: 0.03,
+  milkyWayColor: [100, 110, 230],
+  milkyWayAlpha: 0.08,
   milkyWayAngleDeg: -50,
 }

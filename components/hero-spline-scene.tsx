@@ -20,6 +20,7 @@ export function HeroSplineScene({
   forceRender?: boolean
 }) {
   const [shouldRender, setShouldRender] = useState(false)
+  const [iframeLoaded, setIframeLoaded] = useState(false)
 
   useEffect(() => {
     if (forceRender) {
@@ -53,17 +54,26 @@ export function HeroSplineScene({
         .join(" ")}
       aria-hidden="true"
     >
-      {shouldRender ? (
+      <span
+        className={[
+          "absolute inset-0 flex items-center justify-center bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent transition-opacity duration-500",
+          shouldRender && iframeLoaded ? "opacity-0" : "opacity-100",
+        ].join(" ")}
+      >
+        {fallbackLabel}
+      </span>
+      {shouldRender && (
         <iframe
           src={sceneUrl}
-          className={iframeClassName}
+          className={[
+            iframeClassName,
+            "transition-opacity duration-500",
+            iframeLoaded ? "opacity-100" : "opacity-0",
+          ].join(" ")}
           loading="lazy"
           title={title}
+          onLoad={() => setIframeLoaded(true)}
         />
-      ) : (
-        <span className="flex h-full w-full items-center justify-center bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-          {fallbackLabel}
-        </span>
       )}
     </span>
   )

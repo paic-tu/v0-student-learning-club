@@ -56,7 +56,6 @@ function pickWeightedColor(colors: WeightedColor[]): WeightedColor {
 export function startBackgroundAnimation(
   canvas: HTMLCanvasElement,
   theme: BackgroundTheme,
-  scrollProgressRef?: { current: number },
 ): () => void {
   const ctx = canvas.getContext("2d")
   if (!ctx) return () => {}
@@ -224,7 +223,7 @@ export function startBackgroundAnimation(
     ctx.restore()
   }
 
-  const drawNebula = (scrollBoost: number) => {
+  const drawNebula = () => {
     nebulaBlobs.forEach((blob) => {
       const offsetX = (mouseX - 0.5) * blob.depth
       const offsetY = (mouseY - 0.5) * blob.depth
@@ -234,7 +233,7 @@ export function startBackgroundAnimation(
       ctx.filter = `blur(${blob.blur}px)`
       const gradient = ctx.createRadialGradient(x, y, 0, x, y, blob.radius)
       const [r, g, b] = blob.color
-      gradient.addColorStop(0, `rgba(${r},${g},${b},${blob.alpha * scrollBoost})`)
+      gradient.addColorStop(0, `rgba(${r},${g},${b},${blob.alpha})`)
       gradient.addColorStop(1, `rgba(${r},${g},${b},0)`)
       ctx.fillStyle = gradient
       ctx.beginPath()
@@ -244,21 +243,21 @@ export function startBackgroundAnimation(
     })
   }
 
-  const drawDust = (tSec: number, scrollBoost: number) => {
+  const drawDust = (tSec: number) => {
     const [r, g, b] = theme.dustColor
     dustParticles.forEach((d) => {
       const offsetX = (mouseX - 0.5) * d.depth + Math.sin(tSec * d.driftSpeed + d.driftPhase) * 6
       const offsetY = (mouseY - 0.5) * d.depth + Math.cos(tSec * d.driftSpeed * 0.8 + d.driftPhase) * 4
       const x = d.x + offsetX
       const y = d.y + offsetY
-      ctx.fillStyle = `rgba(${r},${g},${b},${d.opacity * scrollBoost})`
+      ctx.fillStyle = `rgba(${r},${g},${b},${d.opacity})`
       ctx.beginPath()
       ctx.arc(x, y, d.size * 0.5, 0, Math.PI * 2)
       ctx.fill()
     })
   }
 
-  const drawMilkyWay = (tSec: number, scrollBoost: number) => {
+  const drawMilkyWay = (tSec: number) => {
     const [r, g, b] = theme.milkyWayColor
     const driftX = Math.sin(tSec * 0.01) * width * 0.02
     ctx.save()
@@ -268,7 +267,7 @@ export function startBackgroundAnimation(
     const bandWidth = Math.min(width, height) * 0.55
     const gradient = ctx.createLinearGradient(0, -bandWidth / 2, 0, bandWidth / 2)
     gradient.addColorStop(0, `rgba(${r},${g},${b},0)`)
-    gradient.addColorStop(0.5, `rgba(${r},${g},${b},${theme.milkyWayAlpha * scrollBoost})`)
+    gradient.addColorStop(0.5, `rgba(${r},${g},${b},${theme.milkyWayAlpha})`)
     gradient.addColorStop(1, `rgba(${r},${g},${b},0)`)
     ctx.fillStyle = gradient
     ctx.fillRect(-bandLength / 2, -bandWidth / 2, bandLength, bandWidth)
@@ -341,18 +340,19 @@ export function startBackgroundAnimation(
   }
 
   let rafId = 0
+  let isRunning = true
 
   const animate = (t: number) => {
+    if (!isRunning) return
     const tSec = t / 1000
     mouseX += (targetMouseX - mouseX) * 0.07
     mouseY += (targetMouseY - mouseY) * 0.07
-    const scrollBoost = 1 + (scrollProgressRef?.current ?? 0) * 0.6
 
     ctx.clearRect(0, 0, width, height)
     theme.paintBase(ctx, width, height)
-    drawMilkyWay(tSec, scrollBoost)
-    drawNebula(scrollBoost)
-    drawDust(tSec, scrollBoost)
+    drawMilkyWay(tSec)
+    drawNebula()
+    drawDust(tSec)
     drawBokeh()
     drawStars(tSec)
 
@@ -365,14 +365,24 @@ export function startBackgroundAnimation(
     rafId = requestAnimationFrame(animate)
   }
 
+  const handleVisibilityChange = () => {
+    isRunning = document.visibilityState === "visible"
+    if (isRunning) {
+      cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(animate)
+    }
+  }
+
   resize()
   window.addEventListener("resize", resize)
   window.addEventListener("pointermove", handlePointerMove)
+  document.addEventListener("visibilitychange", handleVisibilityChange)
   rafId = requestAnimationFrame(animate)
 
   return () => {
     cancelAnimationFrame(rafId)
     window.removeEventListener("resize", resize)
     window.removeEventListener("pointermove", handlePointerMove)
+    document.removeEventListener("visibilitychange", handleVisibilityChange)
   }
 }
