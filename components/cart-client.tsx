@@ -9,9 +9,9 @@ import { useLanguage } from "@/lib/language-context"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Trash2, ShoppingCart, CreditCard, ShieldCheck, Truck, Plus, Minus } from "lucide-react"
+import { Trash2, ShoppingCart, CreditCard, ShieldCheck, Truck } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { removeFromCartAction, updateCartItemQuantityAction, validateCouponAction, checkoutAction } from "@/lib/actions"
+import { removeFromCartAction, validateCouponAction, checkoutAction } from "@/lib/actions"
 import Link from "next/link"
 
 interface CartItem {
@@ -100,21 +100,6 @@ export function CartClient({ initialCart }: CartClientProps) {
     })
   }
 
-  const handleQty = (cartItemId: string, nextQty: number) => {
-    startTransition(async () => {
-      const result = await updateCartItemQuantityAction(cartItemId, nextQty)
-      if (result.success) {
-        router.refresh()
-        return
-      }
-      toast({
-        variant: "destructive",
-        title: isAr ? "خطأ" : "Error",
-        description: result.error || (isAr ? "فشل تحديث الكمية" : "Failed to update quantity"),
-      })
-    })
-  }
-
   const handleCheckout = () => {
     startTransition(async () => {
       const couponIds = appliedCoupon?.id ? [appliedCoupon.id] : null
@@ -172,8 +157,8 @@ export function CartClient({ initialCart }: CartClientProps) {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-background" dir={isAr ? "rtl" : "ltr"}>
-        <div className="container mx-auto px-4 py-10">
+      <div className="relative z-10 min-h-screen bg-background" dir={isAr ? "rtl" : "ltr"}>
+        <div className="container mx-auto px-4 pt-28 pb-10 sm:pt-32">
           <Card className="max-w-2xl mx-auto">
             <CardHeader>
               <CardTitle>{isAr ? "سلة المشتريات" : "Shopping Cart"}</CardTitle>
@@ -200,8 +185,8 @@ export function CartClient({ initialCart }: CartClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background" dir={isAr ? "rtl" : "ltr"}>
-      <div className="container mx-auto px-4 py-8 pb-24 lg:pb-8">
+    <div className="relative z-10 min-h-screen bg-background" dir={isAr ? "rtl" : "ltr"}>
+      <div className="container mx-auto px-4 pt-28 pb-24 sm:pt-32 lg:pb-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-6">
           <div className="space-y-1">
             <h1 className="text-3xl font-bold">{isAr ? "سلة المشتريات" : "Shopping Cart"}</h1>
@@ -237,77 +222,48 @@ export function CartClient({ initialCart }: CartClientProps) {
               : item.product?.price || "0"
               
             const image = item.course?.thumbnailUrl || item.product?.imageUrl
-            const qty = Number(item.quantity) || 1
             const unit = Number.parseFloat(price) || 0
-            const lineTotal = unit * qty
             const typeLabel = item.course ? (isAr ? "دورة" : "Course") : (isAr ? "منتج" : "Product")
             const href = item.course ? `/${language}/courses/${item.course.id}` : `/${language}/store`
 
             return (
-              <Card key={item.id}>
-                <CardContent className="p-4">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-                    <div className="relative h-28 w-full sm:h-24 sm:w-28 bg-muted rounded-md overflow-hidden shrink-0">
+              <Card key={item.id} className="overflow-hidden">
+                <CardContent className="p-4 sm:p-5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <div className="relative h-32 w-full sm:h-24 sm:w-32 bg-muted rounded-lg overflow-hidden shrink-0">
                       {image ? (
                         <Image src={image} alt={title} fill className="object-cover" unoptimized />
                       ) : (
-                        <div className="flex items-center justify-center h-full text-muted-foreground">{isAr ? "بدون صورة" : "No image"}</div>
+                        <div className="flex items-center justify-center h-full text-xs text-muted-foreground">{isAr ? "بدون صورة" : "No image"}</div>
                       )}
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <Link className="font-semibold text-base sm:text-lg line-clamp-2 hover:underline" href={href}>
+                        <div className="min-w-0 space-y-1.5">
+                          <Badge variant="secondary" className="text-xs font-normal">{typeLabel}</Badge>
+                          <Link
+                            className="block font-semibold text-base leading-snug text-foreground line-clamp-2 hover:text-primary hover:underline sm:text-lg"
+                            href={href}
+                          >
                             {title}
                           </Link>
-                          <div className="mt-1 flex flex-wrap items-center gap-2">
-                            <Badge variant="secondary">{typeLabel}</Badge>
-                            <div className="text-xs text-muted-foreground">
-                              {isAr ? "سعر الوحدة:" : "Unit:"} {formatMoney(unit)}
-                            </div>
-                          </div>
                         </div>
-                        <div className="text-right whitespace-nowrap">
-                          <div className="font-semibold">{formatMoney(lineTotal)}</div>
-                          <div className="text-xs text-muted-foreground">{isAr ? "الإجمالي" : "Subtotal"}</div>
+                        <div className="shrink-0 text-end">
+                          <div className="text-lg font-bold text-foreground">{formatMoney(unit)}</div>
                         </div>
                       </div>
 
-                      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-9 w-9"
-                            onClick={() => handleQty(item.id, Math.max(1, qty - 1))}
-                            disabled={isPending || qty <= 1}
-                            aria-label={isAr ? "تقليل الكمية" : "Decrease quantity"}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          <Input value={String(qty)} readOnly className="h-9 w-16 text-center" dir="ltr" />
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-9 w-9"
-                            onClick={() => handleQty(item.id, Math.min(99, qty + 1))}
-                            disabled={isPending || qty >= 99}
-                            aria-label={isAr ? "زيادة الكمية" : "Increase quantity"}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-
+                      <div className="mt-3 flex items-center justify-end border-t border-border pt-3">
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 justify-start sm:justify-center"
+                          className="gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
                           onClick={() => handleRemove(item.id)}
                           disabled={isPending}
                         >
                           <Trash2 className="h-4 w-4" />
-                          {isAr ? "إزالة" : "Remove"}
+                          {isAr ? "إزالة من السلة" : "Remove from cart"}
                         </Button>
                       </div>
                     </div>

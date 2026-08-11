@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { Reveal } from "@/components/reveal"
 import { RotatingWords } from "@/components/rotating-words"
-import { HeroSplineScene } from "@/components/hero-spline-scene"
+import { HeroSplineGalaxy } from "@/components/hero-spline-galaxy"
 import { NeonLogoSpline } from "@/components/neon-logo-spline"
 import { StatsCard3D } from "@/components/stats-card-3d"
 import { WhyNeonFlexCards } from "@/components/why-neon-flex-cards"
@@ -46,7 +46,8 @@ export default function HomePage() {
     courses: 0,
     students: 0,
     certificates: 0,
-    satisfaction: 0
+    satisfaction: 0,
+    totalReviews: 0
   })
   const [reviews, setReviews] = useState<
     Array<{
@@ -95,8 +96,8 @@ export default function HomePage() {
                   className="relative mx-auto -mt-4 mb-4 aspect-square w-[clamp(320px,85vw,380px)] sm:mt-0 sm:mb-0 sm:w-[400px]"
                 />
                 <br />
-                <span className="text-foreground text-3xl sm:text-4xl md:text-5xl -mt-14 sm:-mt-14 lg:-mt-28 block leading-tight">
-                  <span className="inline-flex flex-wrap items-baseline justify-center gap-x-2 gap-y-1">
+                <span className={`text-foreground ${isRTL ? "text-3xl" : "text-2xl"} sm:text-4xl md:text-5xl -mt-14 sm:-mt-14 lg:-mt-28 block leading-tight`}>
+                  <span className="inline-flex flex-nowrap items-baseline justify-center gap-x-2 gap-y-1">
                     <span>
                       {isRTL ? "منصتك ل\u200D" : "Your platform for "}
                     </span>
@@ -124,7 +125,7 @@ export default function HomePage() {
 
               <p className="text-base sm:text-lg md:text-2xl text-muted-foreground text-balance max-w-3xl mx-auto -mt-2 sm:-mt-8 leading-7 sm:leading-8 md:leading-9">
                 {isRTL
-                  ? "اكتشف دورات تعليمية متميزة واحصل على شهادات معتمدة مع أفضل المدربين "
+                  ? "اكتشف دورات تعليمية متميزة واحصل على شهادة إتمام معتمدة من المنصة مع أفضل المدربين"
                   : "Discover premium educational courses and earn certified certificates from the best instructors "}
               </p>
 
@@ -219,6 +220,7 @@ export default function HomePage() {
 
             .reviews-track {
               display: flex;
+              align-items: flex-start;
               gap: 12px;
               width: max-content;
               animation: marquee-ltr 32s linear infinite;
@@ -432,18 +434,7 @@ export default function HomePage() {
 
         <section className="relative overflow-hidden py-20 sm:py-24 lg:py-28">
           <GlowBlob className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0" color="primary" size="800px" />
-          <HeroSplineScene
-            sceneUrl="https://my.spline.design/claritystream-feervDoArrbizMRRrEHWbt59/"
-            title="Background 3D stream scene"
-            fallbackLabel=""
-            forceRender
-            className="pointer-events-none absolute inset-x-0 top-1/2 z-0 h-[360px] w-full -translate-y-1/2 opacity-70 sm:h-[430px] lg:h-[520px]"
-            iframeClassName="absolute left-1/2 top-1/2 h-[150%] w-[150%] -translate-x-1/2 -translate-y-1/2 scale-100 border-0 bg-transparent"
-          />
-          <div
-            className="absolute inset-0 z-[1] bg-[linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--background)/0.58)_25%,hsl(var(--background)/0.34)_50%,hsl(var(--background)/0.6)_75%,hsl(var(--background))_100%)]"
-            aria-hidden="true"
-          />
+          <HeroSplineGalaxy className="pointer-events-none absolute inset-x-0 top-1/2 z-0 h-[360px] w-full -translate-y-1/2 opacity-70 sm:h-[430px] lg:h-[520px]" />
 
           <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-5xl text-center">
@@ -467,7 +458,9 @@ export default function HomePage() {
               {reviews.length > 0 && (
                 <div className="mt-10 rounded-2xl bg-background/70 p-4 text-start shadow-xl shadow-background/25 backdrop-blur-xl sm:mt-12 sm:p-5" dir={isRTL ? "rtl" : "ltr"}>
                   <div className="flex items-center justify-between gap-4 mb-4">
-                    <div className="font-semibold text-base">{isRTL ? "آراء الطلاب" : "Student Reviews"}</div>
+                    <div className="font-semibold text-base">
+                      {isRTL ? "آراء الطلاب" : "Student Reviews"} ({stats.totalReviews})
+                    </div>
                     <div className="text-xs text-muted-foreground">
                       {isRTL ? "أحدث التقييمات" : "Latest ratings"}
                     </div>
@@ -504,7 +497,7 @@ export default function HomePage() {
                               {(isRTL ? r.courseTitleAr : r.courseTitleEn) || (isRTL ? "دورة" : "Course")}
                             </div>
 
-                            <div className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
+                            <div className="text-sm text-muted-foreground leading-relaxed">
                               {r.comment}
                             </div>
                           </CardContent>
