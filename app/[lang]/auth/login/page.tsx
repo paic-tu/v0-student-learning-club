@@ -50,7 +50,7 @@ export default function LoginPage() {
       const formData = new FormData()
       formData.append("email", email)
       formData.append("password", password)
-      const callbackUrl = searchParams.get("callbackUrl") || `/${language}/dashboard`
+      const callbackUrl = searchParams.get("callbackUrl") || `/${language}`
       formData.append("redirectTo", callbackUrl)
       
       const result = await loginAction(undefined, formData)
@@ -71,7 +71,7 @@ export default function LoginPage() {
     } catch (error: any) {
       if (error.message === "NEXT_REDIRECT" || error.digest?.startsWith("NEXT_REDIRECT")) {
         // Force hard navigation if redirect is thrown
-        const callbackUrl = searchParams.get("callbackUrl") || `/${language}/dashboard`
+        const callbackUrl = searchParams.get("callbackUrl") || `/${language}`
         window.location.href = callbackUrl
         return
       }
@@ -84,18 +84,18 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+    <div className="relative z-10 min-h-screen overflow-hidden text-slate-900 dark:text-slate-100">
       <NavBar />
-      <div className="container mx-auto px-4 py-16 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="space-y-2 text-center">
-            <CardTitle className="text-3xl font-bold">{t("login", language)}</CardTitle>
-            <CardDescription>
+      <div className="flex min-h-[calc(100vh-5rem)] items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
+        <Card className="w-full max-w-md overflow-hidden rounded-2xl border border-primary/20 bg-white/95 text-slate-900 shadow-[0_0_0_1px_rgba(255,255,255,0.35),0_20px_45px_rgba(109,40,217,0.16)] dark:border-primary/30 dark:bg-slate-900/95 dark:text-slate-100">
+          <CardHeader className="space-y-2 px-6 pb-4 pt-8 text-center sm:px-8">
+            <CardTitle className="text-3xl font-bold text-slate-900 dark:text-slate-100">{t("login", language)}</CardTitle>
+            <CardDescription className="text-slate-700 dark:text-slate-300">
               {language === "ar" ? "أدخل بريدك الإلكتروني وكلمة المرور" : "Enter your email and password"}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
+          <CardContent className="px-6 pb-8 sm:px-8">
+            <form onSubmit={handleLogin} className="space-y-5">
               {error && (
                 <div className="flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-3">
                   <AlertCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
@@ -103,8 +103,8 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="email">{t("email", language)}</Label>
+              <div className="space-y-2.5">
+                <Label htmlFor="email" className="text-sm font-medium text-slate-900 dark:text-slate-100">{t("email", language)}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -112,12 +112,13 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  className="text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-950"
                 />
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">{t("password", language)}</Label>
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="password" className="text-sm font-medium text-slate-900 dark:text-slate-100">{t("password", language)}</Label>
                   <Link
                     href={`/${language}/auth/forgot-password`}
                     className="text-sm text-primary hover:underline"
@@ -132,14 +133,15 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  className="text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-950"
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full rounded-xl py-2.5 font-semibold" disabled={loading}>
                 {loading ? "..." : t("login", language)}
               </Button>
 
-              <p className="text-center text-sm text-muted-foreground">
+              <p className="text-center text-sm text-slate-700 dark:text-slate-300">
                 {language === "ar" ? "ليس لديك حساب؟ " : "Don't have an account? "}
                 <Link href={`/${language}/auth/register`} className="text-primary hover:underline">
                   {t("register", language)}

@@ -27,7 +27,7 @@ export default async function StudentLayout({
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-muted/20">
+    <div className="relative z-10 flex h-screen overflow-hidden bg-muted">
       <StudentSidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <PortalHeader user={user} mobileNav={<StudentMobileNav />} />

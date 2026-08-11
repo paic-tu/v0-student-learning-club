@@ -204,22 +204,22 @@ export function ConsultationsCards() {
         const isPortrait = e.imageUrl ? portraitByUrl[e.imageUrl] === true : false
 
         return (
-          <Card key={e.id} className="border-muted/50 backdrop-blur-sm bg-background/50 overflow-hidden">
-            <div className="relative w-full aspect-square bg-muted">
+          <Card key={e.id} className="border border-slate-200/80 bg-white/95 text-slate-900 shadow-sm overflow-hidden dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-100">
+            <div className="relative w-full aspect-square bg-slate-100 dark:bg-slate-800">
               {e.imageUrl ? (
                 <Image src={e.imageUrl} alt={displayName} fill className="object-cover" unoptimized />
               ) : (
-                <div className="h-full w-full flex items-center justify-center text-5xl font-bold text-muted-foreground">
+                <div className="h-full w-full flex items-center justify-center text-5xl font-bold text-slate-700 dark:text-slate-300">
                   {displayName.slice(0, 1)}
                 </div>
               )}
             </div>
             <CardHeader className="space-y-1 text-center">
-              <CardTitle className="text-xl">{displayName}</CardTitle>
-              <div className="text-sm text-muted-foreground">{displayField}</div>
+              <CardTitle className="text-xl text-slate-900 dark:text-slate-100">{displayName}</CardTitle>
+              <div className="text-sm text-slate-700 dark:text-slate-300">{displayField}</div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground justify-between">
+              <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 justify-between">
                 <Calendar className="h-4 w-4" />
                 <span className="flex-1">{isAr ? "مواعيد متاحة" : "Available slots"}</span>
                 <span className="tabular-nums">{e.slots?.length || 0}</span>
@@ -310,7 +310,7 @@ export function ConsultationsCards() {
                                   }}
                                 >
                                   <TableCell className="font-medium cursor-pointer">{label}</TableCell>
-                                  <TableCell className="text-end text-muted-foreground cursor-pointer tabular-nums">{g.slots.length}</TableCell>
+                                  <TableCell className="text-end text-slate-700 dark:text-slate-300 cursor-pointer tabular-nums">{g.slots.length}</TableCell>
                                 </TableRow>
                               )
                             })}
@@ -336,7 +336,7 @@ export function ConsultationsCards() {
                                 key={s.id}
                                 type="button"
                                 variant={active ? "default" : "outline"}
-                                className={active ? "" : "bg-transparent"}
+                                className={active ? "font-semibold" : "bg-transparent text-slate-700 dark:text-slate-200"}
                                 onClick={() => setSelectedSlotId((st) => ({ ...st, [e.id]: s.id }))}
                               >
                                 <span dir="ltr" className="tabular-nums">
@@ -350,7 +350,7 @@ export function ConsultationsCards() {
                     ) : null}
 
                     {chosen ? (
-                      <div className="rounded-lg border p-3 text-sm text-muted-foreground flex items-start gap-2">
+                      <div className="rounded-lg border p-3 text-sm text-slate-700 dark:text-slate-300 flex items-start gap-2">
                         <Clock className="h-4 w-4 mt-0.5" />
                         <div>
                           <div className="font-medium text-foreground">{displayName}</div>
@@ -363,11 +363,11 @@ export function ConsultationsCards() {
                     ) : null}
 
                     <div>
-                      <Label>{isAr ? "ملاحظة (اختياري)" : "Note (optional)"}</Label>
-                      <Textarea value={notes[e.id] || ""} onChange={(ev) => setNotes((n) => ({ ...n, [e.id]: ev.target.value }))} />
+                      <Label className="text-slate-900 dark:text-slate-100">{isAr ? "ملاحظة (اختياري)" : "Note (optional)"}</Label>
+                      <Textarea className="text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-950" value={notes[e.id] || ""} onChange={(ev) => setNotes((n) => ({ ...n, [e.id]: ev.target.value }))} />
                     </div>
 
-                    <Button className="w-full" onClick={() => book(e.id, slotValue)} disabled={submitting || !slotValue}>
+                    <Button className="w-full font-semibold" onClick={() => book(e.id, slotValue)} disabled={submitting || !slotValue}>
                       {submitting ? (isAr ? "جارٍ الإرسال..." : "Submitting...") : isAr ? "تأكيد الحجز" : "Confirm booking"}
                     </Button>
                   </div>

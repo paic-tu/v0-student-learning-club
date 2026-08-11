@@ -17,15 +17,15 @@ export default async function ContactPage({ params }: { params: Promise<{ lang: 
   return (
     <div className="min-h-screen flex flex-col">
       <NavBar />
-      <main className="flex-1">
-        <section className="border-b bg-gradient-to-b from-background to-muted/20">
-          <div className="container mx-auto px-4 py-12 md:py-16" dir={isAr ? "rtl" : "ltr"}>
+      <main className="relative z-10 flex-1">
+        <section className="border-b bg-card">
+          <div className="container mx-auto px-4 pt-28 pb-12 sm:pt-32 md:pb-16" dir={isAr ? "rtl" : "ltr"}>
             <div className="max-w-3xl mx-auto space-y-4">
               <Badge variant="secondary" className="w-fit">
                 <MessageCircle className="h-3 w-3 mr-1" />
                 {isAr ? "الدعم" : "Support"}
               </Badge>
-              <h1 className="text-3xl md:text-5xl font-bold">{isAr ? "تواصل معنا" : "Contact Us"}</h1>
+              <h1 className="text-3xl md:text-5xl font-bold text-foreground">{isAr ? "تواصل معنا" : "Contact Us"}</h1>
               <p className="text-lg text-muted-foreground">
                 {isAr ? "تواصل مع فريق الدعم لدينا." : "Get in touch with our support team."}
               </p>
@@ -33,7 +33,7 @@ export default async function ContactPage({ params }: { params: Promise<{ lang: 
           </div>
         </section>
 
-        <section className="py-10 md:py-12">
+        <section className="py-10 md:py-12 bg-muted">
           <div className="container mx-auto px-4" dir={isAr ? "rtl" : "ltr"}>
             <div className="max-w-3xl mx-auto grid gap-4 md:grid-cols-2">
               <Card className="border-primary/10">

@@ -62,9 +62,9 @@ export default function StorePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="relative z-10 min-h-screen text-foreground">
         <NavBar />
-        <main className="container mx-auto px-4 py-8">
+        <main className="container mx-auto px-4 pt-24 pb-8 sm:pt-28">
           <div className="text-center py-16">
             <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full mx-auto" />
           </div>
@@ -74,12 +74,12 @@ export default function StorePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative z-10 min-h-screen text-foreground">
       <NavBar />
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 pt-24 pb-8 sm:pt-28">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{t("store", language)}</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold mb-2 text-foreground">{t("store", language)}</h1>
+          <p className="text-foreground/75">
             {language === "ar" ? "احصل على منتجات نيون التعليمية" : "Get Neon educational products"}
           </p>
         </div>
@@ -92,7 +92,7 @@ export default function StorePage() {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {items.map((item) => (
-              <Card key={item.id} className="flex flex-col transition-all hover:shadow-lg">
+              <Card key={item.id} className="flex flex-col border-border/70 bg-card/95 text-card-foreground shadow-xl shadow-background/15 backdrop-blur-sm transition-shadow hover:shadow-2xl">
                 <CardHeader>
                   <div className="relative h-48 w-full bg-muted rounded-lg overflow-hidden mb-4">
                     <Image
@@ -110,10 +110,10 @@ export default function StorePage() {
                       {item.price} {language === "ar" ? "ر.س" : "SAR"}
                     </div>
                   </div>
-                  <CardTitle className="text-xl">{language === "ar" ? item.nameAr : item.nameEn}</CardTitle>
+                  <CardTitle className="text-xl text-foreground">{language === "ar" ? item.nameAr : item.nameEn}</CardTitle>
                 </CardHeader>
                 <CardContent className="flex-1">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-foreground/75">
                     {language === "ar" ? item.descriptionAr : item.descriptionEn}
                   </p>
                   {item.points_cost && (
@@ -121,7 +121,7 @@ export default function StorePage() {
                       {language === "ar" ? "أو" : "Or"} {item.points_cost} {t("points", language)}
                     </p>
                   )}
-                  <p className="mt-2 text-sm text-muted-foreground">
+                  <p className="mt-2 text-sm text-foreground/70">
                     {language === "ar" ? "المخزون:" : "Stock:"} {item.stockQuantity}
                   </p>
                 </CardContent>

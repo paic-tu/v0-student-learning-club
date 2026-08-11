@@ -11,8 +11,8 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
   return (
     <div className="min-h-screen flex flex-col">
       <NavBar />
-      <main className="flex-1">
-        <section className="border-b bg-gradient-to-b from-background to-muted/20">
+      <main className="relative z-10 flex-1">
+        <section className="border-b bg-card">
           <div className="container mx-auto px-4 py-12 md:py-16" dir={isAr ? "rtl" : "ltr"}>
             <div className="max-w-4xl mx-auto space-y-6">
               <Badge variant="secondary" className="w-fit">
@@ -21,7 +21,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
               </Badge>
 
               <div className="space-y-3">
-                <h1 className="text-3xl md:text-5xl font-bold text-balance">{isAr ? "من نحــن؟" : "Who Are We?"}</h1>
+                <h1 className="text-3xl md:text-5xl font-bold text-balance text-foreground">{isAr ? "من نحــن؟" : "Who Are We?"}</h1>
                 <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
                   {isAr
                     ? "ﻣﻨﺼﺔ ﺗﻌﻠﻴﻤﻴﺔ ﺗﻘﻨﻴﺔ ﺗﻬﺪف إﻟﻰ ﺗﻤﻜﻴﻦ اﻟﻄﻼب واﻟﻤﻬﺘﻤﻴﻦ ﺑﺎﻟﺘﻘﻨﻴﺔ ﻣﻦ ﺗﻌﻠﻢ وﺗﻌﻠﻴﻢ اﻟﻤﻬﺎرات اﻟﺘﻘﻨﻴﺔ اﻟﻤﻄﻠﻮﺑﺔ ﻓﻲ ﺳﻮق اﻟﻌﻤﻞ."
@@ -37,7 +37,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
           </div>
         </section>
 
-        <section className="py-12 md:py-16">
+        <section className="py-12 md:py-16 bg-muted">
           <div className="container mx-auto px-4" dir={isAr ? "rtl" : "ltr"}>
             <div className="max-w-6xl mx-auto space-y-10">
               <div className="grid gap-4 md:grid-cols-3">

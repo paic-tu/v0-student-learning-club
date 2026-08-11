@@ -6,9 +6,11 @@ export default function ContentPolicyPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <NavBar />
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl" dir="rtl">
-        <h1 className="text-3xl font-bold mb-6">سياسة حماية المحتوى والتعهد بعدم نشر الدورات</h1>
-        
+      <main className="relative z-10 flex-1 bg-background">
+        <div className="container mx-auto px-4 pt-24 pb-8 sm:pt-28 max-w-4xl" dir="rtl">
+        <div className="rounded-xl border border-border bg-muted p-6 shadow-sm sm:p-8 md:p-10">
+        <h1 className="text-3xl font-bold mb-6 text-foreground">سياسة حماية المحتوى والتعهد بعدم نشر الدورات</h1>
+
         <div className="prose dark:prose-invert max-w-none space-y-6">
           <p>
             تحرص منصة NEON على حماية المحتوى التعليمي الذي يتم إنتاجه من قبل المدربين والخبراء، ولذلك يلتزم المستخدم بالشروط التالية عند التسجيل في أي دورة.
@@ -52,6 +54,8 @@ export default function ContentPolicyPage() {
               <li>اتخاذ الإجراءات القانونية اللازمة لحماية حقوق الملكية الفكرية.</li>
             </ul>
           </section>
+        </div>
+        </div>
         </div>
       </main>
       <SiteFooter />

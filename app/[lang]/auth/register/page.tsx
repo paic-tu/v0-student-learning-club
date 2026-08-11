@@ -68,7 +68,7 @@ export default function RegisterPage() {
         const loginFormData = new FormData()
         loginFormData.append("email", email)
         loginFormData.append("password", password)
-        loginFormData.append("redirectTo", `/${language}/dashboard`)
+        loginFormData.append("redirectTo", `/${language}`)
         
         const loginResult = await loginAction(undefined, loginFormData)
 
@@ -84,7 +84,7 @@ export default function RegisterPage() {
             description: language === "ar" ? "مرحباً بك في نيون" : "Welcome to Neon",
           })
           // Force hard navigation to ensure session is picked up
-          window.location.href = `/${language}/dashboard`
+          window.location.href = `/${language}`
         }
       } else {
         let errorMessage = result.error
@@ -124,18 +124,18 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+    <div className="relative z-10 min-h-screen overflow-hidden text-slate-900 dark:text-slate-100">
       <NavBar />
-      <div className="container mx-auto px-4 py-16 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="space-y-2 text-center">
-            <CardTitle className="text-3xl font-bold">{t("register", language)}</CardTitle>
-            <CardDescription>{language === "ar" ? "أنشئ حسابك الجديد" : "Create your new account"}</CardDescription>
+      <div className="flex min-h-[calc(100vh-5rem)] items-start justify-center px-3 pt-64 pb-7 sm:px-6 sm:pt-24 sm:pb-8 lg:px-8 lg:pt-28">
+        <Card className="w-full max-w-sm overflow-hidden rounded-2xl border border-primary/20 bg-white/95 text-slate-900 shadow-[0_0_0_1px_rgba(255,255,255,0.35),0_20px_45px_rgba(109,40,217,0.16)] dark:border-primary/30 dark:bg-slate-900/95 dark:text-slate-100 sm:max-w-md lg:max-w-xl">
+          <CardHeader className="space-y-2 px-5 pb-4 pt-7 text-center sm:px-8 sm:pt-8">
+            <CardTitle className="text-3xl font-bold text-slate-900 dark:text-slate-100">{t("register", language)}</CardTitle>
+            <CardDescription className="text-slate-700 dark:text-slate-300">{language === "ar" ? "أنشئ حسابك الجديد" : "Create your new account"}</CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleRegister} className="space-y-4">
+          <CardContent className="px-5 pb-7 sm:px-8 sm:pb-8">
+            <form onSubmit={handleRegister} className="space-y-4 sm:space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="name">{t("name", language)}</Label>
+                <Label htmlFor="name" className="text-slate-900 dark:text-slate-100">{t("name", language)}</Label>
                 <Input
                   id="name"
                   type="text"
@@ -143,11 +143,12 @@ export default function RegisterPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
+                  className="text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-950"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">{t("email", language)}</Label>
+                <Label htmlFor="email" className="text-slate-900 dark:text-slate-100">{t("email", language)}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -155,11 +156,12 @@ export default function RegisterPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  className="text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-950"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phoneNumber">{language === "ar" ? "رقم الهاتف" : "Phone Number"}</Label>
+                <Label htmlFor="phoneNumber" className="text-foreground">{language === "ar" ? "رقم الهاتف" : "Phone Number"}</Label>
                 <div dir="ltr">
                   <PhoneInput
                     id="phoneNumber"
@@ -174,7 +176,7 @@ export default function RegisterPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">{t("password", language)}</Label>
+                <Label htmlFor="password" className="text-slate-900 dark:text-slate-100">{t("password", language)}</Label>
                 <Input
                   id="password"
                   type="password"
@@ -183,14 +185,15 @@ export default function RegisterPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
+                  className="text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-950"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-foreground/70">
                   {language === "ar" ? "6 أحرف على الأقل" : "At least 6 characters"}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">{language === "ar" ? "تأكيد كلمة المرور" : "Confirm Password"}</Label>
+                <Label htmlFor="confirmPassword" className="text-slate-900 dark:text-slate-100">{language === "ar" ? "تأكيد كلمة المرور" : "Confirm Password"}</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
@@ -199,6 +202,7 @@ export default function RegisterPage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   minLength={6}
+                  className="text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-950"
                 />
               </div>
 
@@ -246,11 +250,11 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full font-semibold" disabled={loading}>
                 {loading ? "..." : t("register", language)}
               </Button>
 
-              <p className="text-center text-sm text-muted-foreground">
+              <p className="text-center text-sm text-slate-700 dark:text-slate-300">
                 {language === "ar" ? "لديك حساب بالفعل؟ " : "Already have an account? "}
                 <Link href={`/${language}/auth/login`} className="text-primary hover:underline">
                   {t("login", language)}

@@ -7,7 +7,7 @@ export function SiteFooter() {
   const isAr = language === "ar"
 
   return (
-    <footer className="border-t py-12 bg-muted/30 mt-auto">
+    <footer className="relative z-10 border-t py-12 bg-muted mt-auto">
       <div className="container mx-auto px-4">
         <div className="text-center space-y-4">
           <div className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">

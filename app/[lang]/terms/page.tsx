@@ -6,10 +6,12 @@ export default function TermsPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <NavBar />
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl" dir="rtl">
-        <h1 className="text-3xl font-bold mb-6">شروط الاستخدام</h1>
+      <main className="relative z-10 flex-1 bg-background">
+        <div className="container mx-auto px-4 pt-24 pb-8 sm:pt-28 max-w-4xl" dir="rtl">
+        <div className="rounded-xl border border-border bg-muted p-6 shadow-sm sm:p-8 md:p-10">
+        <h1 className="text-3xl font-bold mb-6 text-foreground">شروط الاستخدام</h1>
         <h2 className="text-xl font-semibold mb-4 text-muted-foreground">Terms of Use</h2>
-        
+
         <div className="prose dark:prose-invert max-w-none space-y-6">
           <p>
             باستخدام منصة NEON أو التسجيل في أي من خدماتها، يوافق المستخدم على الالتزام بالشروط والأحكام التالية.
@@ -67,6 +69,8 @@ export default function TermsPage() {
               يحق لمنصة NEON تعليق أو إيقاف حساب المستخدم في حال مخالفة شروط الاستخدام أو إساءة استخدام المنصة.
             </p>
           </section>
+        </div>
+        </div>
         </div>
       </main>
       <SiteFooter />

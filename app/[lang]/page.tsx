@@ -6,8 +6,8 @@ import { NavBar } from "@/components/nav-bar"
 import { AnimatedCounter } from "@/components/animated-counter"
 import { GlowBlob } from "@/components/glow-blob"
 import Link from "next/link"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { BookOpen, Award, Users, Sparkles, Target, Zap, Clock, Star, HelpCircle } from "lucide-react"
+import { HomeFaqAccordion } from "@/components/home-faq-accordion"
+import { BookOpen, Award, Users, Sparkles, Rocket, Zap, Clock, Star, HelpCircle } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
 import { t } from "@/lib/i18n"
 import { getLandingPageReviews, getLandingPageStats } from "@/lib/actions/stats"
@@ -18,8 +18,9 @@ import { useAuth } from "@/lib/auth-context"
 import { Reveal } from "@/components/reveal"
 import { RotatingWords } from "@/components/rotating-words"
 import { HeroSplineScene } from "@/components/hero-spline-scene"
+import { NeonLogoSpline } from "@/components/neon-logo-spline"
 import { StatsCard3D } from "@/components/stats-card-3d"
-import { FeatureCard3D } from "@/components/feature-card-3d"
+import { WhyNeonFlexCards } from "@/components/why-neon-flex-cards"
 import Script from "next/script"
 
 export default function HomePage() {
@@ -84,18 +85,17 @@ export default function HomePage() {
       </Script>
 
       <main className="overflow-hidden">
-        <section className="relative overflow-hidden py-20 sm:py-28 lg:py-36">
+        <section className="relative overflow-hidden pt-20 pb-20 sm:pt-24 sm:pb-28 lg:pt-20 lg:pb-36">
           <div data-neon-glow-anchor="" className="pointer-events-none absolute inset-0" />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <Reveal>
             <div className="max-w-5xl mx-auto text-center space-y-7 sm:space-y-8">
               <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold text-balance leading-[1.05] tracking-normal">
-                <HeroSplineScene
-                  fallbackLabel={isRTL ? "نيون" : "Neon"}
-                  className="relative mx-auto -mt-8 h-[180px] w-full max-w-[340px] sm:-mt-12 sm:h-[260px] sm:max-w-[500px] lg:-mt-16 lg:h-[340px] lg:max-w-[680px]"
+                <NeonLogoSpline
+                  className="relative mx-auto -mt-4 mb-4 aspect-square w-[clamp(320px,85vw,380px)] sm:mt-0 sm:mb-0 sm:w-[400px]"
                 />
                 <br />
-                <span className="text-foreground text-2xl sm:text-4xl md:text-5xl -mt-10 sm:-mt-14 lg:-mt-20 block leading-tight">
+                <span className="text-foreground text-3xl sm:text-4xl md:text-5xl -mt-14 sm:-mt-14 lg:-mt-28 block leading-tight">
                   <span className="inline-flex flex-wrap items-baseline justify-center gap-x-2 gap-y-1">
                     <span>
                       {isRTL ? "منصتك ل\u200D" : "Your platform for "}
@@ -122,13 +122,13 @@ export default function HomePage() {
                 </span>
               </h1>
 
-              <p className="text-base sm:text-xl md:text-2xl text-muted-foreground text-balance max-w-3xl mx-auto -mt-6 sm:-mt-8 leading-8 md:leading-9">
+              <p className="text-base sm:text-lg md:text-2xl text-muted-foreground text-balance max-w-3xl mx-auto -mt-2 sm:-mt-8 leading-7 sm:leading-8 md:leading-9">
                 {isRTL
                   ? "اكتشف دورات تعليمية متميزة واحصل على شهادات معتمدة مع أفضل المدربين "
                   : "Discover premium educational courses and earn certified certificates from the best instructors "}
               </p>
 
-              <div className="flex w-full flex-col gap-3 pt-3 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4 sm:pt-5">
+              <div className="flex w-full flex-row flex-wrap items-center justify-center gap-3 pt-3 sm:gap-4 sm:pt-5">
                 <Link
                   href={
                     isAuthenticated
@@ -139,14 +139,24 @@ export default function HomePage() {
                           : `/${language}/student/dashboard`
                       : `/${language}/courses`
                   }
-                  className="w-full sm:w-auto"
+                  className="w-full min-[420px]:w-auto"
                 >
                   <Button
                     size="lg"
-                    className="min-h-12 w-full rounded-lg px-8 text-base font-semibold shadow-lg shadow-primary/15 hover-lift hover-glow sm:w-auto sm:text-lg"
+                    className="group min-h-12 w-full min-w-[240px] rounded-lg px-8 text-base font-semibold shadow-lg shadow-primary/15 hover-lift hover-glow min-[420px]:w-auto sm:text-lg"
                   >
-                    <Target className="h-5 w-5 mr-2" />
+                    <Rocket className="h-5 w-5 mr-2 transition-transform duration-300 ease-out group-hover:-translate-y-0.5 group-hover:rotate-[-8deg]" />
                     {isRTL ? "ابدأ رحلتك التعليمية" : "Start Your Learning Journey"}
+                  </Button>
+                </Link>
+                <Link href={`/${language}/coming-soon`} className="w-full min-[420px]:w-auto">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="group min-h-12 w-full min-w-[240px] rounded-lg border-accent/40 bg-accent/10 px-8 text-base font-semibold text-accent shadow-lg shadow-accent/15 transition-all hover:-translate-y-0.5 hover:border-accent/60 hover:bg-accent/15 hover:shadow-accent/25 min-[420px]:w-auto sm:text-lg"
+                  >
+                    <Sparkles className="h-5 w-5 mr-2 transition-transform duration-300 ease-out group-hover:scale-110 group-hover:rotate-12" />
+                    {isRTL ? "اكتشف القادم" : "Discover What's Coming"}
                   </Button>
                 </Link>
               </div>
@@ -355,16 +365,15 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="grid gap-5 sm:gap-6 md:grid-cols-3 lg:gap-8 max-w-6xl mx-auto">
-              {[
+            <WhyNeonFlexCards
+              features={[
                 {
                   title: isRTL ? "محتوى عالي الجودة" : "High-Quality Content",
                   description: isRTL
                     ? "دورات تعليمية من خبراء في مجالاتهم مع محتوى محدث باستمرار"
                     : "Educational courses from field experts with continuously updated content",
                   Icon: BookOpen,
-                  gradient: "from-blue-500/10 to-cyan-500/10",
-                  color: "text-blue-600",
+                  color: "text-blue-500",
                 },
                 {
                   title: isRTL ? "شهادات معتمدة" : "Certified Certificates",
@@ -372,8 +381,7 @@ export default function HomePage() {
                     ? "احصل على شهادات معتمدة عند إتمام الدورات لتعزيز سيرتك الذاتية"
                     : "Earn certified certificates upon course completion to enhance your resume",
                   Icon: Award,
-                  gradient: "from-purple-500/10 to-pink-500/10",
-                  color: "text-purple-600",
+                  color: "text-purple-500",
                 },
                 {
                   title: isRTL ? "تعلم بمرونة" : "Flexible Learning",
@@ -381,20 +389,10 @@ export default function HomePage() {
                     ? "ادرس في أي وقت ومن أي مكان بما يناسب جدولك اليومي"
                     : "Study anytime, anywhere to fit your daily schedule",
                   Icon: Clock,
-                  gradient: "from-amber-500/10 to-orange-500/10",
-                  color: "text-amber-600",
+                  color: "text-amber-500",
                 },
-              ].map((feature, i) => (
-                <FeatureCard3D
-                  key={i}
-                  icon={feature.Icon}
-                  iconClassName={feature.color}
-                  gradientClassName={feature.gradient}
-                  title={feature.title}
-                  description={feature.description}
-                />
-              ))}
-            </div>
+              ]}
+            />
           </div>
         </section>
 
@@ -425,18 +423,7 @@ export default function HomePage() {
               </div>
 
               <div className="rounded-2xl border border-primary/10 bg-background/65 shadow-sm backdrop-blur-sm">
-                <Accordion type="single" collapsible>
-                  {getFaqItems(isRTL ? "ar" : "en")
-                    .slice(0, 5)
-                    .map((item, idx) => (
-                      <AccordionItem key={idx} value={`home-faq-${idx}`}>
-                        <AccordionTrigger className="px-5">{item.q}</AccordionTrigger>
-                        <AccordionContent className="px-5 text-muted-foreground leading-relaxed">
-                          {item.a}
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                </Accordion>
+                <HomeFaqAccordion items={getFaqItems(isRTL ? "ar" : "en").slice(0, 5)} />
               </div>
             </div>
             </Reveal>

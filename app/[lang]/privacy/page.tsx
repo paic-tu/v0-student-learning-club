@@ -6,10 +6,12 @@ export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <NavBar />
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl" dir="rtl">
-        <h1 className="text-3xl font-bold mb-6">سياسة الخصوصية</h1>
-        <h2 className="text-xl font-semibold mb-4">منصة NEON للتعلم التقني</h2>
-        
+      <main className="relative z-10 flex-1 bg-background">
+        <div className="container mx-auto px-4 pt-24 pb-8 sm:pt-28 max-w-4xl" dir="rtl">
+        <div className="rounded-xl border border-border bg-muted p-6 shadow-sm sm:p-8 md:p-10">
+        <h1 className="text-3xl font-bold mb-6 text-foreground">سياسة الخصوصية</h1>
+        <h2 className="text-xl font-semibold mb-4 text-foreground">منصة NEON للتعلم التقني</h2>
+
         <div className="prose dark:prose-invert max-w-none space-y-6">
           <p>
             تلتزم منصة NEON بحماية خصوصية المستخدمين والحفاظ على سرية المعلومات الشخصية التي يتم جمعها أثناء استخدام المنصة. تهدف هذه السياسة إلى توضيح كيفية جمع البيانات واستخدامها وحمايتها.
@@ -81,6 +83,8 @@ export default function PrivacyPolicyPage() {
               باستخدام منصة NEON والتسجيل فيها، يوافق المستخدم على جمع واستخدام المعلومات وفقًا لما هو موضح في سياسة الخصوصية هذه.
             </p>
           </section>
+        </div>
+        </div>
         </div>
       </main>
       <SiteFooter />

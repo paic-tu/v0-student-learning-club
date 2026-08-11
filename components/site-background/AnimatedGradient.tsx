@@ -325,9 +325,14 @@ export default function AnimatedGradient({
         y: (e.clientY / window.innerHeight) * 2 - 1,
       };
     };
-    // Skip entirely under reduced motion: the loop stops after one
+    // Only devices with a real hover-capable pointer (desktop mice) get a
+    // cursor-reactive tilt; touch devices have no cursor, and listening to
+    // "mousemove" there serves no purpose (it doesn't fire from scrolling,
+    // but there's nothing to gain from keeping the listener attached).
+    // Also skipped entirely under reduced motion: the loop stops after one
     // frame, so there's nothing for mouse tracking to drive.
-    if (!prefersReducedMotion) {
+    const hasFinePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    if (!prefersReducedMotion && hasFinePointer) {
       window.addEventListener("mousemove", handleMouseMove);
     }
 

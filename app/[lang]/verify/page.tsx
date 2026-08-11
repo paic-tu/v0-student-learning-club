@@ -25,18 +25,18 @@ export default async function VerifyPage({
   // If no certificate number provided, show search form
   if (!cert) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="relative z-10 min-h-screen flex flex-col text-foreground">
         <NavBar />
-        <main className="flex-1 container mx-auto px-4 py-20 flex flex-col items-center justify-center min-h-[60vh] text-center">
-          <div className="bg-muted/30 p-8 rounded-full mb-6">
+        <main className="flex-1 container mx-auto px-4 pt-24 pb-12 sm:pt-28 flex flex-col items-center justify-center min-h-[60vh] text-center">
+          <div className="bg-background/70 backdrop-blur-sm border border-border/60 p-8 rounded-full mb-6 shadow-lg shadow-background/10">
             <ShieldCheck className="w-16 h-16 text-primary" />
           </div>
           
-          <h1 className="text-3xl font-bold mb-4">
+          <h1 className="text-3xl font-bold mb-4 text-foreground">
             {isAr ? "التحقق من الشهادة" : "Certificate Verification"}
           </h1>
           
-          <p className="text-muted-foreground max-w-md mb-8">
+          <p className="text-foreground/75 max-w-md mb-8">
             {isAr 
               ? "أدخل رقم الشهادة للتحقق من صحتها وتفاصيلها" 
               : "Enter the certificate number to verify its validity and details"}
@@ -65,13 +65,13 @@ export default async function VerifyPage({
           </form>
         </main>
         
-        <footer className="border-t py-12 bg-muted/30">
+        <footer className="border-t py-12 bg-background/40 backdrop-blur-sm">
           <div className="container mx-auto px-4">
             <div className="text-center space-y-4">
               <div className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 {isAr ? "نيون" : "Neon"}
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-foreground/70">
                 {isAr
                   ? "© 2025 Neon | نيون التعليمية. جميع الحقوق محفوظة."
                   : "© 2025 Neon Educational Platform. All rights reserved."}
@@ -108,15 +108,15 @@ export default async function VerifyPage({
   } : null
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="relative z-10 min-h-screen flex flex-col text-foreground">
       <NavBar />
       
-      <main className="flex-1 container mx-auto px-4 py-10 space-y-8">
+      <main className="flex-1 container mx-auto px-4 pt-24 pb-10 sm:pt-28 space-y-8">
         <div className="flex flex-col items-center text-center space-y-4">
-          <h1 className="text-3xl font-bold">
+          <h1 className="text-3xl font-bold text-foreground">
             {isAr ? "نتيجة التحقق" : "Verification Result"}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-foreground/75">
             {isAr ? `رقم الشهادة: ${cert}` : `Certificate Number: ${cert}`}
           </p>
         </div>
@@ -190,16 +190,16 @@ export default async function VerifyPage({
             </div>
 
             {/* CTA Section */}
-            <div className="bg-muted/30 rounded-2xl p-8 md:p-12 text-center max-w-4xl mx-auto border border-primary/10">
+            <div className="bg-background/70 backdrop-blur-sm rounded-2xl p-8 md:p-12 text-center max-w-4xl mx-auto border border-border/60 shadow-xl shadow-background/10">
               <div className="flex justify-center mb-6">
-                <div className="bg-primary/10 p-4 rounded-full">
+                <div className="bg-primary/10 p-4 rounded-full border border-primary/10">
                   <BookOpen className="w-8 h-8 text-primary" />
                 </div>
               </div>
               <h2 className="text-2xl md:text-3xl font-bold mb-4">
                 {isAr ? "ابدأ رحلتك التعليمية اليوم" : "Start Your Learning Journey Today"}
               </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto mb-8 text-lg">
+              <p className="text-foreground/75 max-w-2xl mx-auto mb-8 text-lg">
                 {isAr 
                   ? "انضم إلينا واستكشف مجموعة واسعة من الدورات التدريبية لتطوير مهاراتك والحصول على شهادات معتمدة."
                   : "Join us and explore a wide range of courses to develop your skills and earn certified certificates."}
@@ -214,7 +214,7 @@ export default async function VerifyPage({
           </div>
         ) : (
           <div className="max-w-md mx-auto text-center space-y-8">
-            <Card className="border-red-200 dark:border-red-900">
+            <Card className="border-red-200 bg-card/95 text-card-foreground shadow-xl shadow-background/10 backdrop-blur-sm dark:border-red-900">
               <CardContent className="pt-6 pb-6">
                 <div className="mx-auto bg-red-100 dark:bg-red-900/20 p-4 rounded-full mb-4 w-fit">
                   <XCircle className="w-12 h-12 text-red-600 dark:text-red-500" />
@@ -222,7 +222,7 @@ export default async function VerifyPage({
                 <h2 className="text-xl font-bold text-red-600 dark:text-red-500 mb-2">
                   {isAr ? "شهادة غير موجودة" : "Certificate Not Found"}
                 </h2>
-                <p className="text-muted-foreground mb-6">
+                <p className="text-foreground/75 mb-6">
                   {isAr 
                     ? `لم يتم العثور على شهادة برقم "${cert}". يرجى التأكد من الرقم والمحاولة مرة أخرى.` 
                     : `No certificate found with number "${cert}". Please check the number and try again.`}
@@ -236,11 +236,11 @@ export default async function VerifyPage({
               </CardContent>
             </Card>
 
-            <div className="bg-muted/30 rounded-xl p-6 border border-dashed">
+            <div className="bg-background/70 backdrop-blur-sm rounded-xl p-6 border border-dashed border-border/60 shadow-lg shadow-background/10">
               <h3 className="font-semibold mb-2">
                 {isAr ? "هل تبحث عن دورات؟" : "Looking for courses?"}
               </h3>
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-sm text-foreground/70 mb-4">
                 {isAr 
                   ? "تصفح كتالوج الدورات لدينا وابدأ التعلم اليوم."
                   : "Browse our course catalog and start learning today."}
@@ -255,13 +255,13 @@ export default async function VerifyPage({
         )}
       </main>
 
-      <footer className="border-t py-12 bg-muted/30">
+      <footer className="border-t py-12 bg-background/40 backdrop-blur-sm">
         <div className="container mx-auto px-4">
           <div className="text-center space-y-4">
             <div className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               {isAr ? "نيون" : "Neon"}
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-foreground/70">
               {isAr
                 ? "© 2025 Neon | نيون التعليمية. جميع الحقوق محفوظة."
                 : "© 2025 Neon Educational Platform. All rights reserved."}

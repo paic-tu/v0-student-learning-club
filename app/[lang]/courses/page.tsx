@@ -58,9 +58,9 @@ export default function CoursesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="relative z-10 min-h-screen text-foreground">
         <NavBar />
-        <main className="container mx-auto px-4 py-8">
+        <main className="container mx-auto px-4 pt-24 pb-8 sm:pt-28">
           <div className="text-center py-16">
             <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full mx-auto" />
           </div>
@@ -70,12 +70,12 @@ export default function CoursesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative z-10 min-h-screen text-foreground">
       <NavBar />
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 pt-24 pb-8 sm:pt-28">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{t("courses", language)}</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold mb-2 text-foreground">{t("courses", language)}</h1>
+          <p className="text-foreground/75">
             {language === "ar" ? "استكشف دوراتنا التعليمية المتميزة" : "Explore our premium courses"}
           </p>
         </div>
@@ -115,7 +115,7 @@ export default function CoursesPage() {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCourses.map((course) => (
-              <Card key={course.id} className="flex flex-col hover:shadow-lg transition-shadow">
+              <Card key={course.id} className="flex flex-col border-border/70 bg-card/95 text-card-foreground shadow-xl shadow-background/15 backdrop-blur-sm transition-shadow hover:shadow-2xl">
                 <CardHeader className="p-0">
                   <div className="relative h-48 w-full bg-muted rounded-t-lg overflow-hidden">
                     <Image
@@ -134,11 +134,11 @@ export default function CoursesPage() {
                     </Badge>
                     <Badge variant="outline">{t(course.difficulty, language)}</Badge>
                   </div>
-                  <h3 className="font-semibold text-lg mb-2 line-clamp-2">
+                  <h3 className="font-semibold text-lg mb-2 line-clamp-2 text-foreground">
                     {(language === "ar" ? course.title_ar || course.titleAr : course.title_en || course.titleEn) || (language === "ar" ? "عنوان الدورة" : "Course Title")}
                   </h3>
-                  <p className="text-sm text-muted-foreground mb-3">{course.instructor_name}</p>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <p className="text-sm text-foreground/75 mb-3">{course.instructor_name}</p>
+                  <div className="flex items-center gap-4 text-sm text-foreground/70">
                     <div className="flex items-center gap-1">
                       <Clock className="h-4 w-4" />
                       <span>
