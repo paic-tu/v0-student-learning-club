@@ -24,7 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="flex min-h-screen bg-muted/20">
+    <div className="relative z-10 flex min-h-screen bg-muted">
       <AdminSidebar user={user} />
       <div className="flex flex-1 flex-col">
         <AdminHeader user={user} mobileNav={<AdminMobileNav user={user} />} />

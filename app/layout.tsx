@@ -7,6 +7,7 @@ import "@/app/globals.css"
 import { LanguageProvider } from "@/lib/language-context"
 import { ThemeProvider } from "@/lib/theme-context"
 import { AuthProvider } from "@/lib/auth-context"
+import { auth } from "@/lib/auth"
 import { Toaster } from "@/components/ui/toaster"
 import { SWUnregister } from "@/components/sw-unregister"
 import { RotateDevicePrompt } from "@/components/rotate-device-prompt"
@@ -40,10 +41,11 @@ export default async function RootLayout({
 }>) {
   const headerList = await headers()
   const pathname = headerList.get("x-pathname") || ""
-  
+
   // Determine language from pathname
   const lang = pathname.startsWith("/en") ? "en" : "ar"
   const dir = lang === "en" ? "ltr" : "rtl"
+  const session = await auth()
 
   return (
     <html lang={lang} dir={dir} suppressHydrationWarning>
@@ -61,7 +63,7 @@ export default async function RootLayout({
         <ThemeProvider>
           <AnimatedGradientBackground />
           <LanguageProvider defaultLang={lang as "ar" | "en"}>
-            <AuthProvider>
+            <AuthProvider session={session}>
               <SWUnregister />
               <RotateDevicePrompt />
               {children}

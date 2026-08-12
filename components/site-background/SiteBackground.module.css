@@ -1,9 +1,37 @@
 .wrapper {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* iOS Safari shows/hides its URL bar while scrolling, which repeatedly
+     changes the visual viewport height. A plain `inset: 0` fixed element
+     gets recomputed against that changing viewport on every step of the
+     toolbar's own animation, which is what reads as the background rapidly
+     disappearing/reappearing in sync with the scroll gesture. `100dvh` is
+     the unit browsers added specifically to track the actual visible
+     viewport smoothly instead of jumping between the toolbar-shown and
+     toolbar-hidden extremes; height falls back to 100vh where dvh isn't
+     supported. */
+  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   pointer-events: none;
   z-index: 0;
+  /* Promote to its own GPU compositing layer so iOS Safari paints it once
+     and just re-uses that layer while the page scrolls, instead of
+     redrawing/repositioning it on every scroll frame (which reads as the
+     background "reacting" to touch/scroll). Purely a compositing hint -
+     translateZ(0) has no visual effect on a fixed, fullscreen element.
+     Deliberately NOT using will-change here: on a full-viewport layer this
+     large, it makes Safari keep a persistent GPU-backed layer allocated,
+     which under memory pressure on real phones gets reclaimed/re-rasterized
+     mid-scroll - showing up as exactly the stutter/disappear this is meant
+     to fix. translateZ(0) alone is enough to force layer promotion without
+     that standing memory cost. */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .canvas {

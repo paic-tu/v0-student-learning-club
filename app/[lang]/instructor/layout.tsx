@@ -34,7 +34,7 @@ export default async function InstructorLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-muted/20">
+    <div className="relative z-10 flex min-h-screen bg-muted">
       <InstructorSidebar />
       <div className="flex flex-1 flex-col">
         <PortalHeader user={user} mobileNav={<InstructorMobileNav />} />
