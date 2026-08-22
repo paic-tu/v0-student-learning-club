@@ -25,19 +25,14 @@ export async function getConversations() {
 
     // --- EXPANDED ACCESS FOR ADMIN & INSTRUCTOR ---
     if (session.user.role === "admin") {
-      // Admins see all Community Chats and all Course Chats
-      const publicChats = await db
+      // Admins see all Course Chats
+      const courseChats = await db
         .select({ id: conversations.id })
         .from(conversations)
-        .where(
-          or(
-            eq(conversations.type, "community"),
-            isNotNull(conversations.courseId)
-          )
-        )
-      
-      const publicChatIds = publicChats.map(c => c.id)
-      conversationIds = [...new Set([...conversationIds, ...publicChatIds])]
+        .where(isNotNull(conversations.courseId))
+
+      const courseChatIds = courseChats.map(c => c.id)
+      conversationIds = [...new Set([...conversationIds, ...courseChatIds])]
     } else if (session.user.role === "instructor") {
       // Instructors see chats for their courses
       const myCourseChats = await db
@@ -149,8 +144,6 @@ export async function getConversations() {
           const otherUser = otherParticipants[0]?.user
           name = otherUser?.name || "Unknown User"
           image = otherUser?.avatarUrl
-        } else if (conv.type === "community") {
-          name = "Community Chat"
         } else if (conv.courseId) {
           image = conv.courseThumbnail
         }
@@ -221,15 +214,11 @@ export async function markConversationAsRead(conversationId: string) {
       eq(conversationParticipants.userId, session.user.id)
     ))
   
-  revalidatePath("/student/chat")
+  revalidatePath("/student/course/[courseId]/chat", "page")
   revalidatePath("/instructor/chat")
   revalidatePath("/admin/chat")
 }
 
-
-// Non-admins can only see Community Chat messages from the last 30 days.
-// Older messages stay in the database (admins keep full history) — they're just hidden from regular users.
-const COMMUNITY_CHAT_VISIBILITY_DAYS = 30
 
 export async function getMessages(conversationId: string) {
   const session = await auth()
@@ -243,30 +232,30 @@ export async function getMessages(conversationId: string) {
     ),
   })
 
-  // Conversation type is needed for both access checks (below) and visibility filtering (below)
-  const conv = await db.query.conversations.findFirst({
-    where: eq(conversations.id, conversationId),
-    columns: { type: true, courseId: true },
-    with: {
-      course: {
-        columns: { instructorId: true }
-      }
-    }
-  })
-
   // If not a direct participant, check for Admin/Instructor access
   if (!participant) {
     if (session.user.role === "admin") {
-      // Admin allows access to group/community chats (but maybe not private ones unless specified)
-      // The user requirement said "Admin can look at all general chat and even course chats"
-      // If conversation is NOT found or is individual (private DM), deny access unless user explicitly asked for private DMs
-      // "all general chat and even course chats" -> likely excludes DMs
-      if (!conv || (conv.type === "individual")) {
+      // Admins can access any course chat, but not private DMs they aren't part of
+      const conv = await db.query.conversations.findFirst({
+        where: eq(conversations.id, conversationId),
+        columns: { type: true, courseId: true },
+      })
+
+      if (!conv || conv.type === "individual") {
         return []
       }
       // Allow access
     } else if (session.user.role === "instructor") {
       // Check if this is a chat for their course
+      const conv = await db.query.conversations.findFirst({
+        where: eq(conversations.id, conversationId),
+        with: {
+          course: {
+            columns: { instructorId: true }
+          }
+        }
+      })
+
       if (!conv || !conv.course || conv.course.instructorId !== session.user.id) {
         return []
       }
@@ -276,17 +265,9 @@ export async function getMessages(conversationId: string) {
     }
   }
 
-  const conditions = [eq(messages.conversationId, conversationId)]
-
-  // Community Chat retention: hide messages older than 30 days from everyone except admins
-  if (conv?.type === "community" && session.user.role !== "admin") {
-    const cutoff = new Date(Date.now() - COMMUNITY_CHAT_VISIBILITY_DAYS * 24 * 60 * 60 * 1000)
-    conditions.push(gt(messages.createdAt, cutoff))
-  }
-
   // Fetch messages
   const chatMessages = await db.query.messages.findMany({
-    where: and(...conditions),
+    where: eq(messages.conversationId, conversationId),
     orderBy: [asc(messages.createdAt)],
     with: {
       sender: {
@@ -331,7 +312,7 @@ export async function sendMessage(conversationId: string, content: string, type:
     .set({ updatedAt: new Date() })
     .where(eq(conversations.id, conversationId))
 
-  revalidatePath("/student/chat", "page")
+  revalidatePath("/student/course/[courseId]/chat", "page")
   revalidatePath("/instructor/chat", "page")
   revalidatePath("/admin/chat", "page")
   return { success: true }
@@ -376,40 +357,63 @@ export async function getTypingUsers(conversationId: string) {
   return participants.map((p) => p.user.name)
 }
 
-export async function joinCommunityChat() {
+// Finds (or lazily creates) the group chat for a course, and ensures the current
+// user is a participant. Covers students who enrolled via a path that doesn't already
+// auto-join them (e.g. paid checkout), plus instructors/admins previewing the course.
+export async function getOrCreateCourseChat(courseId: string) {
   const session = await auth()
   if (!session?.user?.id) return { error: "Unauthorized" }
 
-  // Find existing community chat
-  let communityChat = await db.query.conversations.findFirst({
-    where: eq(conversations.type, "community"),
+  const course = await db.query.courses.findFirst({
+    where: eq(courses.id, courseId),
+    columns: { titleEn: true, instructorId: true },
   })
+  if (!course) return { error: "Course not found" }
 
-  // Create if not exists
-  if (!communityChat) {
-    const [newChat] = await db.insert(conversations).values({
-      type: "community",
-      name: "Community Chat",
-    }).returning()
-    communityChat = newChat
+  const isInstructorOrAdmin = session.user.role === "instructor" || session.user.role === "admin"
+  if (!isInstructorOrAdmin) {
+    const enrollment = await db.query.enrollments.findFirst({
+      where: and(eq(enrollments.userId, session.user.id), eq(enrollments.courseId, courseId)),
+      columns: { id: true },
+    })
+    if (!enrollment) return { error: "Not enrolled in this course" }
   }
 
-  // Check if user is already a participant
+  let courseChat = await db.query.conversations.findFirst({
+    where: eq(conversations.courseId, courseId),
+  })
+
+  if (!courseChat) {
+    const [newChat] = await db.insert(conversations).values({
+      type: "group",
+      name: course.titleEn,
+      courseId,
+    }).returning()
+    courseChat = newChat
+
+    if (course.instructorId) {
+      await db.insert(conversationParticipants).values({
+        conversationId: newChat.id,
+        userId: course.instructorId,
+      })
+    }
+  }
+
   const participant = await db.query.conversationParticipants.findFirst({
     where: and(
-      eq(conversationParticipants.conversationId, communityChat.id),
+      eq(conversationParticipants.conversationId, courseChat.id),
       eq(conversationParticipants.userId, session.user.id)
     ),
   })
 
   if (!participant) {
     await db.insert(conversationParticipants).values({
-      conversationId: communityChat.id,
+      conversationId: courseChat.id,
       userId: session.user.id,
     })
   }
 
-  return { conversationId: communityChat.id }
+  return { conversationId: courseChat.id }
 }
 
 // Helper to check if chat is allowed
@@ -511,7 +515,7 @@ export async function createPrivateChat(otherUserId: string) {
     { conversationId: newConv.id, userId: otherUserId },
   ])
 
-  revalidatePath("/student/chat", "page")
+  revalidatePath("/student/course/[courseId]/chat", "page")
   revalidatePath("/instructor/chat", "page")
   revalidatePath("/admin/chat", "page")
   return { conversationId: newConv.id }

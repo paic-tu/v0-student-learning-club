@@ -4,8 +4,7 @@ import { useState, useEffect } from "react"
 import { ChatSidebar } from "./chat-sidebar"
 import { ChatWindow } from "./chat-window"
 import { NewChatDialog } from "./new-chat-dialog"
-import { getConversations, joinCommunityChat } from "@/lib/actions/chat"
-import { toast } from "sonner"
+import { getConversations } from "@/lib/actions/chat"
 import { Loader2 } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
 import { cn } from "@/lib/utils"
@@ -63,20 +62,6 @@ export function ChatLayout({ userId, initialConversations = [] }: ChatLayoutProp
     setSelectedId(id)
   }
 
-  const handleJoinCommunity = async () => {
-    try {
-      const result = await joinCommunityChat()
-      if (result.error) {
-        toast.error(result.error)
-      } else {
-        await fetchConversations()
-        setSelectedId(result.conversationId)
-      }
-    } catch (error) {
-      toast.error("Failed to join community chat")
-    }
-  }
-
   const handleNewChat = async (id: string) => {
     await fetchConversations()
     setSelectedId(id)
@@ -107,7 +92,6 @@ export function ChatLayout({ userId, initialConversations = [] }: ChatLayoutProp
             conversations={conversations}
             selectedId={selectedId}
             onSelect={handleSelectConversation}
-            onCommunityChat={handleJoinCommunity}
             action={<NewChatDialog onChatCreated={handleNewChat} />}
             />
          </div>
@@ -123,7 +107,6 @@ export function ChatLayout({ userId, initialConversations = [] }: ChatLayoutProp
           conversations={conversations}
           selectedId={selectedId}
           onSelect={handleSelectConversation}
-          onCommunityChat={handleJoinCommunity}
           action={<NewChatDialog onChatCreated={handleNewChat} />}
         />
       </div>

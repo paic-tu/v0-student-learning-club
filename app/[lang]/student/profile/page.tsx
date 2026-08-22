@@ -62,38 +62,41 @@ export default async function ProfilePage({ params }: { params: Promise<{ lang: 
   return (
     <div className="container py-8 space-y-8">
       {/* Header Section */}
-      <div className="relative mb-12">
-        <div className="relative h-48 w-full rounded-t-xl overflow-hidden bg-gradient-to-r from-primary/20 to-primary/5">
+      <div className="mb-6 md:relative md:mb-12">
+        <div className="relative h-32 sm:h-48 w-full rounded-t-xl overflow-hidden bg-gradient-to-r from-primary/20 to-primary/5">
           {(user as any).coverUrl && (
-            <Image 
-              src={(user as any).coverUrl} 
-              alt="Cover" 
-              fill 
+            <Image
+              src={(user as any).coverUrl}
+              alt="Cover"
+              fill
               className="object-cover"
               priority
             />
           )}
         </div>
-        <div className="absolute -bottom-10 left-8 flex items-end gap-6">
-          <Avatar className="w-24 h-24 border-4 border-background shadow-lg">
-            <AvatarImage src={(user as any).avatarUrl || user.image || "/default-avatar.svg"} alt={user.name} />
-            <AvatarFallback className="text-2xl">{getInitials(user.name)}</AvatarFallback>
-          </Avatar>
-          <div className="mb-2">
-            <h1 className="text-2xl font-bold">{user.name}</h1>
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Badge variant="secondary" className="capitalize">
-                {user.role}
-              </Badge>
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                {isAr ? "انضم في" : "Joined"} {formatDate(user.createdAt || new Date())}
-              </span>
+
+        {/* Mobile: stacks normally below the cover so nothing can overlap. Desktop: overlays the cover like before. */}
+        <div className="-mt-10 flex flex-col items-center gap-4 px-4 md:absolute md:inset-x-8 md:-bottom-10 md:mt-0 md:flex-row md:items-end md:justify-between md:px-0">
+          <div className="flex flex-col items-center gap-3 text-center md:flex-row md:items-end md:gap-6 md:text-start">
+            <Avatar className="w-20 h-20 sm:w-24 sm:h-24 border-4 border-background shadow-lg shrink-0">
+              <AvatarImage src={(user as any).avatarUrl || user.image || "/default-avatar.svg"} alt={user.name} />
+              <AvatarFallback className="text-2xl">{getInitials(user.name)}</AvatarFallback>
+            </Avatar>
+            <div className="md:mb-2">
+              <h1 className="text-xl sm:text-2xl font-bold">{user.name}</h1>
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 text-muted-foreground text-sm mt-1">
+                <Badge variant="secondary" className="capitalize">
+                  {user.role}
+                </Badge>
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  {isAr ? "انضم في" : "Joined"} {formatDate(user.createdAt || new Date())}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="absolute bottom-2 right-8">
-          <Button variant="outline" size="sm" asChild>
+
+          <Button variant="outline" size="sm" asChild className="w-full md:w-auto shrink-0">
             <Link href={`/${lang}/student/settings`}>
               <Edit className="w-4 h-4 mr-2" />
               {isAr ? "تعديل الملف الشخصي" : "Edit Profile"}

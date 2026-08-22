@@ -3,21 +3,18 @@
 import { useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { PlusCircle, MessageSquare, Users } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
 
 interface ChatSidebarProps {
   conversations: any[]
   selectedId?: string
   onSelect: (id: string) => void
-  onCommunityChat: () => void
   action?: React.ReactNode
 }
 
-export function ChatSidebar({ conversations, selectedId, onSelect, onCommunityChat, action }: ChatSidebarProps) {
+export function ChatSidebar({ conversations, selectedId, onSelect, action }: ChatSidebarProps) {
   const { language } = useLanguage()
   const isAr = language === "ar"
   return (
@@ -25,22 +22,6 @@ export function ChatSidebar({ conversations, selectedId, onSelect, onCommunityCh
       <div className="h-16 px-4 border-b flex items-center justify-between bg-background/95 backdrop-blur z-10 shrink-0">
         <h2 className="font-semibold text-lg">{isAr ? "الرسائل" : "Messages"}</h2>
         {action}
-      </div>
-
-      <div className="p-2 space-y-1">
-        <Button
-          variant={selectedId === "community" ? "secondary" : "ghost"}
-          className={cn(
-            "w-full justify-start gap-3 h-12",
-            selectedId === "community" && "bg-secondary"
-          )}
-          onClick={onCommunityChat}
-        >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-            <Users className="h-4 w-4 text-primary" />
-          </div>
-          <span className="font-medium">{isAr ? "الدردشة العامة" : "Community Chat"}</span>
-        </Button>
       </div>
 
       <div className="flex-1 min-h-0 relative" dir={isAr ? "rtl" : "ltr"}>

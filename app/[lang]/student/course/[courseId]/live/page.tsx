@@ -1,7 +1,9 @@
 import { auth } from "@/lib/auth"
-import { redirect, notFound } from "next/navigation"
+import { redirect } from "next/navigation"
+import { getCourseById } from "@/lib/db/queries"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Video } from "lucide-react"
 import LiveClassroomClient from "./client"
-import { getCourseById, getEnrollment } from "@/lib/db/queries"
 
 export default async function LiveClassroomPage({
   params,
@@ -10,39 +12,41 @@ export default async function LiveClassroomPage({
 }) {
   const { lang, courseId } = await params
   const session = await auth()
-  
-  if (!session || !session.user) {
-    redirect(`/${lang}/auth/login`)
-  }
   const isAr = lang === "ar"
-  
-  const roomName = `course-${courseId}`
+
+  if (!session?.user?.id) {
+    redirect(`/${lang}/auth/login?callbackUrl=/${lang}/student/course/${courseId}/live`)
+  }
 
   const course = await getCourseById(courseId)
-  if (!course) {
-    notFound()
+
+  if (!course?.isStreaming) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{isAr ? "الجلسات المباشرة" : "Live Sessions"}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center gap-2 py-10 text-center text-muted-foreground">
+          <Video className="h-8 w-8" />
+          <p>{isAr ? "لا يوجد بث مباشر الآن" : "No live stream right now"}</p>
+        </CardContent>
+      </Card>
+    )
   }
 
-  const role = (session.user as any).role || "student"
-  if (role !== "instructor" && role !== "admin") {
-    const enrollment = await getEnrollment(session.user.id, courseId)
-    if (!enrollment) {
-      redirect(`/${lang}/student/course/${courseId}`)
-    }
-    if (!course.isLive) {
-      redirect(`/${lang}/student/course/${courseId}`)
-    }
-  }
+  const roomName = `course-${courseId}`
 
   return (
-    <LiveClassroomClient
-      roomName={roomName}
-      user={{
-        id: session.user.id,
-        name: session.user.name || "User",
-        role: (session.user as any).role || "student",
-      }}
-      isAr={isAr}
-    />
+    <div className="h-[75vh] rounded-lg border overflow-hidden">
+      <LiveClassroomClient
+        roomName={roomName}
+        user={{
+          id: session.user.id,
+          name: session.user.name || "User",
+          role: session.user.role || "student",
+        }}
+        isAr={isAr}
+      />
+    </div>
   )
 }

@@ -178,9 +178,9 @@ function AdminNav({ user, isCollapsed }: AdminSidebarProps) {
       ],
     },
     {
-      id: "community",
-      titleAr: "المجتمع",
-      titleEn: "Community",
+      id: "engagement",
+      titleAr: "التواصل",
+      titleEn: "Engagement",
       items: [
         {
           href: "/admin/consultations",

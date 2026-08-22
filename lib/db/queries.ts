@@ -371,6 +371,15 @@ export async function getStudentDashboardData(userId: string) {
         }
     }
 
+    // Live now, scoped to this student's own enrolled courses only
+    const liveCourses = enrolledCourses
+      .filter((e) => e.course?.isStreaming)
+      .map((e) => ({
+        courseId: e.courseId,
+        titleEn: e.course.titleEn,
+        titleAr: e.course.titleAr,
+      }))
+
     return {
       stats: {
         activeCourses,
@@ -379,7 +388,8 @@ export async function getStudentDashboardData(userId: string) {
         totalPoints: user?.points || 0
       },
       enrolledCourses,
-      lastActivity
+      lastActivity,
+      liveCourses
     }
   } catch (error) {
     console.error("Error fetching student dashboard data:", error)
@@ -391,7 +401,8 @@ export async function getStudentDashboardData(userId: string) {
         totalPoints: 0
       },
       enrolledCourses: [],
-      lastActivity: null
+      lastActivity: null,
+      liveCourses: []
     }
   }
 }
@@ -788,6 +799,30 @@ export async function getUserNotes(userId: string) {
     return userNotes
   } catch (error) {
     console.error("Error fetching user notes:", error)
+    return []
+  }
+}
+
+export async function getUserCourseNotes(userId: string, courseId: string) {
+  try {
+    const courseNotes = await db
+      .select({
+        id: notes.id,
+        content: notes.content,
+        createdAt: notes.createdAt,
+        timestamp: notes.timestamp,
+        lessonId: notes.lessonId,
+        lessonTitleEn: lessons.titleEn,
+        lessonTitleAr: lessons.titleAr,
+      })
+      .from(notes)
+      .innerJoin(lessons, eq(notes.lessonId, lessons.id))
+      .where(and(eq(notes.userId, userId), eq(lessons.courseId, courseId)))
+      .orderBy(desc(notes.createdAt))
+
+    return courseNotes
+  } catch (error) {
+    console.error("Error fetching course notes:", error)
     return []
   }
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, Search, LogOut, Menu, Moon, Sun, Globe } from "lucide-react"
+import { Bell, Search, LogOut, Menu, Moon, Sun, Globe, Home, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -118,7 +118,13 @@ export function PortalHeader({ user, mobileNav }: PortalHeaderProps) {
           variant="ghost" 
           size="icon" 
           className="relative"
-          onClick={() => router.push(`/${language}/${user.role}/chat`)}
+          onClick={() =>
+            router.push(
+              user.role === "student"
+                ? `/${language}/student/my-courses`
+                : `/${language}/${user.role}/chat`
+            )
+          }
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
@@ -137,19 +143,36 @@ export function PortalHeader({ user, mobileNav }: PortalHeaderProps) {
               </Avatar>
               <div className="text-left hidden md:block">
                 <p className="text-sm font-medium">{user.name}</p>
-                <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
+                <p className="text-xs text-muted-foreground capitalize">
+                  {language === "ar"
+                    ? user.role === "admin"
+                      ? "مدير"
+                      : user.role === "instructor"
+                        ? "مدرب"
+                        : "طالب"
+                    : user.role}
+                </p>
               </div>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuLabel>{language === "ar" ? "حسابي" : "My Account"}</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push(`/${language}/profile`)}>Profile</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push(`/${language}`)}>View Site</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push(`/${language}/profile`)}>
+              <User className="mr-2 h-4 w-4" />
+              {language === "ar" ? "الملف الشخصي" : "Profile"}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => router.push(`/${language}`)}
+              className="text-green-600 focus:bg-green-600/10 focus:text-green-600"
+            >
+              <Home className="mr-2 h-4 w-4" />
+              {language === "ar" ? "الصفحة الرئيسية" : "Home Page"}
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="text-destructive">
               <LogOut className="mr-2 h-4 w-4" />
-              Logout
+              {language === "ar" ? "تسجيل الخروج" : "Logout"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

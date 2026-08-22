@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import Image from "next/image"
-import { BookOpen, Trophy, Award, PlayCircle, Clock } from "lucide-react"
+import { BookOpen, Trophy, Award, PlayCircle, Clock, Video } from "lucide-react"
 import { getStudentDashboardData } from "@/lib/db/queries"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
@@ -100,6 +100,48 @@ export default async function StudentDashboardPage({ params }: { params: Promise
           </CardContent>
         </Card>
       )}
+
+      {/* Live Courses */}
+      <Card className="hover:shadow-md transition-shadow">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Video className="h-5 w-5 text-red-600" />
+            {isAr ? "الدورات المباشرة" : "Live Courses"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data.liveCourses.length > 0 ? (
+            <div className="space-y-3">
+              {data.liveCourses.map((c: any) => (
+                <div
+                  key={c.courseId}
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border border-red-500/20 bg-red-50 dark:bg-red-900/10 rounded-lg"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600" />
+                    </span>
+                    <h4 className="font-semibold line-clamp-1">{isAr ? c.titleAr : c.titleEn}</h4>
+                  </div>
+                  <Button asChild size="sm" className="w-full sm:w-auto shrink-0">
+                    <Link href={`/${lang}/student/course/${c.courseId}/live`}>
+                      {isAr ? "انضم الآن" : "Join Now"}
+                    </Link>
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Video className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground">
+                {isAr ? "لا يوجد بث مباشر الآن" : "No live courses now"}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-7">
         <Card className="col-span-1 lg:col-span-4 hover:shadow-md transition-shadow">

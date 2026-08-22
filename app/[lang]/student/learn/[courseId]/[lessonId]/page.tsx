@@ -96,7 +96,7 @@ export default async function LearningPage({
   }
 
   return (
-    <div dir={isAr ? "rtl" : "ltr"} className="flex h-screen overflow-hidden bg-background">
+    <div dir={isAr ? "rtl" : "ltr"} className="flex h-full overflow-hidden rounded-lg border bg-background">
       {/* Sidebar - Desktop */}
       <CurriculumSidebar 
         course={sidebarCourse} 

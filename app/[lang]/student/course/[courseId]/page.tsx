@@ -61,7 +61,7 @@ export default async function StudentCourseEntryPage(props: { params: Promise<{ 
   if (course.isLive) {
     const isStreaming = (course as any).isStreaming
     return (
-      <div className="container mx-auto py-10 max-w-2xl">
+      <div className="max-w-2xl">
         <Card className="border-primary/20 shadow-lg">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -123,7 +123,7 @@ export default async function StudentCourseEntryPage(props: { params: Promise<{ 
 
   if (!lessons || lessons.length === 0) {
     return (
-      <div className="container mx-auto py-10 max-w-2xl">
+      <div className="max-w-2xl">
         <Card>
           <CardHeader>
             <CardTitle>{lang === "ar" ? "قريباً" : "Coming Soon"}</CardTitle>

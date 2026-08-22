@@ -117,9 +117,9 @@ function InstructorNav({ isCollapsed, unreadCount = 0 }: { isCollapsed?: boolean
       ],
     },
     {
-      id: "community",
-      titleAr: "المجتمع",
-      titleEn: "Community",
+      id: "engagement",
+      titleAr: "التواصل",
+      titleEn: "Engagement",
       items: [
         {
           href: "/instructor/chat",
