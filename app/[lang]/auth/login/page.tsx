@@ -13,13 +13,14 @@ import { t } from "@/lib/i18n"
 import { useToast } from "@/hooks/use-toast"
 import { NavBar } from "@/components/nav-bar"
 import { loginAction } from "@/lib/actions/auth"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, Eye, EyeOff } from "lucide-react"
 
 import { Checkbox } from "@/components/ui/checkbox"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { language } = useLanguage()
@@ -126,15 +127,33 @@ export default function LoginPage() {
                     {language === "ar" ? "نسيت كلمة المرور؟" : "Forgot password?"}
                   </Link>
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-950"
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="pe-10 text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-950"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute inset-y-0 end-0 flex items-center px-3 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                    aria-label={
+                      showPassword
+                        ? language === "ar"
+                          ? "إخفاء كلمة المرور"
+                          : "Hide password"
+                        : language === "ar"
+                          ? "إظهار كلمة المرور"
+                          : "Show password"
+                    }
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
 
               <Button type="submit" className="w-full rounded-xl py-2.5 font-semibold" disabled={loading}>
