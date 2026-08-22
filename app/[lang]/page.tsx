@@ -552,6 +552,9 @@ export default function HomePage() {
                 <Link className="text-muted-foreground hover:text-foreground transition-colors" href={`/${language}/contact`}>
                   {isRTL ? "تواصل معنا" : "Contact"}
                 </Link>
+                <Link className="text-muted-foreground hover:text-foreground transition-colors" href={`/${language}/verify`}>
+                  {isRTL ? "تحقق" : "Verify"}
+                </Link>
               </div>
             </div>
           </div>

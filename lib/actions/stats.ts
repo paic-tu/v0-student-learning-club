@@ -9,6 +9,14 @@ export async function getLandingPageStats() {
   try {
     const stats = await getPlatformStats()
 
+    // Only count courses the admin has approved/published for public visitors —
+    // stats.course_count includes drafts, which is fine for the admin dashboard but not here.
+    const [publishedCoursesResult] = await db
+      .select({ value: count() })
+      .from(courses)
+      .where(eq(courses.isPublished, true))
+    const publishedCourseCount = publishedCoursesResult?.value || 0
+
     // Fetch average rating for satisfaction
     const [ratingResult] = await db
       .select({ value: avg(reviews.rating) })
@@ -42,7 +50,7 @@ export async function getLandingPageStats() {
     }
 
     return {
-      courses: stats.course_count,
+      courses: publishedCourseCount,
       students: stats.student_count,
       certificates: stats.certified_student_count,
       satisfaction: rawSatisfaction,

@@ -11,13 +11,13 @@ import {
   BookOpen,
   Trophy,
   ShoppingBag,
-  ShieldCheck,
   HelpCircle,
   Info,
   Phone,
   LayoutDashboard,
   User as UserIcon,
   LogIn,
+  LogOut,
   Calendar,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -81,7 +81,6 @@ export function NavBar() {
     { href: `/${language}/store`, label: t("store", language) },
     { href: `/${language}/consultations`, label: language === "ar" ? "الاستشارات" : "Consultations" },
     ...(user && user.role === "student" ? [{ href: `/${language}/student/my-courses`, label: t("myLibrary", language) }] : []),
-    { href: `/${language}/verify`, label: t("verify", language) },
   ]
   const iconGapClass = language === "ar" ? "ml-2" : "mr-2"
 
@@ -215,12 +214,6 @@ export function NavBar() {
                       {language === "ar" ? "الاستشارات" : "Consultations"}
                     </Button>
                   </Link>
-                  <Link href={`/${language}/verify`} onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant={pathname.endsWith("/verify") ? "secondary" : "ghost"} className="w-full justify-start">
-                      <ShieldCheck className={`${iconGapClass} h-4 w-4`} />
-                      {t("verify", language)}
-                    </Button>
-                  </Link>
 
                   <div className="my-2 border-t" />
 
@@ -292,6 +285,24 @@ export function NavBar() {
                       {language === "ar" ? "English" : "العربية"}
                     </Button>
                   </div>
+
+                  {user && (
+                    <>
+                      <div className="my-2 border-t" />
+
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => {
+                          setMobileMenuOpen(false)
+                          logout()
+                        }}
+                      >
+                        <LogOut className={`${iconGapClass} h-4 w-4`} />
+                        {t("logout", language)}
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

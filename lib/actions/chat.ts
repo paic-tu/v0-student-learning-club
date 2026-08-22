@@ -227,6 +227,10 @@ export async function markConversationAsRead(conversationId: string) {
 }
 
 
+// Non-admins can only see Community Chat messages from the last 30 days.
+// Older messages stay in the database (admins keep full history) — they're just hidden from regular users.
+const COMMUNITY_CHAT_VISIBILITY_DAYS = 30
+
 export async function getMessages(conversationId: string) {
   const session = await auth()
   if (!session?.user?.id) return []
@@ -239,16 +243,22 @@ export async function getMessages(conversationId: string) {
     ),
   })
 
+  // Conversation type is needed for both access checks (below) and visibility filtering (below)
+  const conv = await db.query.conversations.findFirst({
+    where: eq(conversations.id, conversationId),
+    columns: { type: true, courseId: true },
+    with: {
+      course: {
+        columns: { instructorId: true }
+      }
+    }
+  })
+
   // If not a direct participant, check for Admin/Instructor access
   if (!participant) {
     if (session.user.role === "admin") {
       // Admin allows access to group/community chats (but maybe not private ones unless specified)
       // The user requirement said "Admin can look at all general chat and even course chats"
-      const conv = await db.query.conversations.findFirst({
-        where: eq(conversations.id, conversationId),
-        columns: { type: true, courseId: true }
-      })
-      
       // If conversation is NOT found or is individual (private DM), deny access unless user explicitly asked for private DMs
       // "all general chat and even course chats" -> likely excludes DMs
       if (!conv || (conv.type === "individual")) {
@@ -257,15 +267,6 @@ export async function getMessages(conversationId: string) {
       // Allow access
     } else if (session.user.role === "instructor") {
       // Check if this is a chat for their course
-      const conv = await db.query.conversations.findFirst({
-        where: eq(conversations.id, conversationId),
-        with: {
-          course: {
-            columns: { instructorId: true }
-          }
-        }
-      })
-      
       if (!conv || !conv.course || conv.course.instructorId !== session.user.id) {
         return []
       }
@@ -275,9 +276,17 @@ export async function getMessages(conversationId: string) {
     }
   }
 
+  const conditions = [eq(messages.conversationId, conversationId)]
+
+  // Community Chat retention: hide messages older than 30 days from everyone except admins
+  if (conv?.type === "community" && session.user.role !== "admin") {
+    const cutoff = new Date(Date.now() - COMMUNITY_CHAT_VISIBILITY_DAYS * 24 * 60 * 60 * 1000)
+    conditions.push(gt(messages.createdAt, cutoff))
+  }
+
   // Fetch messages
   const chatMessages = await db.query.messages.findMany({
-    where: eq(messages.conversationId, conversationId),
+    where: and(...conditions),
     orderBy: [asc(messages.createdAt)],
     with: {
       sender: {

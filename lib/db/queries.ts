@@ -142,13 +142,25 @@ export async function getInstructors() {
 
 export async function getInstructorCourses(instructorId: string) {
   try {
-    return await db.query.courses.findMany({
+    const instructorCourses = await db.query.courses.findMany({
       where: eq(courses.instructorId, instructorId),
       orderBy: [desc(courses.createdAt)],
       with: {
         category: true,
       }
     })
+
+    return await Promise.all(
+      instructorCourses.map(async (course) => {
+        const enrollmentCount = await db
+          .select({ count: count() })
+          .from(enrollments)
+          .where(eq(enrollments.courseId, course.id))
+          .then((res) => res[0].count)
+
+        return { ...course, enrollmentCount }
+      })
+    )
   } catch (error) {
     console.error("Error fetching instructor courses:", error)
     return []
