@@ -6,7 +6,6 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import {
-  LayoutGrid,
   BookOpen,
   FileText,
   StickyNote,
@@ -63,8 +62,7 @@ export function CourseShell({ lang, courseId, course, progress, children }: Cour
   const baseWithoutLocale = `/student/course/${courseId}`
 
   const navItems = [
-    { suffix: "", label: isAr ? "نظرة عامة" : "Overview", icon: LayoutGrid },
-    { suffix: "/content", label: isAr ? "المحتوى التعليمي" : "Content", icon: BookOpen },
+    { suffix: "", label: isAr ? "المحتوى التعليمي" : "Content", icon: BookOpen },
     { suffix: "/assignments", label: isAr ? "الواجبات" : "Assignments", icon: FileText },
     { suffix: "/notes", label: isAr ? "الملاحظات" : "Notes", icon: StickyNote },
     { suffix: "/chat", label: isAr ? "المحادثات" : "Chat", icon: MessageCircle },

@@ -17,14 +17,15 @@ export async function GET(req: NextRequest) {
 
   const role = (session.user as any).role || "student"
   const isCourseRoom = room.startsWith("course-")
-  const isConsultationRoom = room === "consultation-tech"
+  const isCourseConsultationRoom = room.startsWith("consultation-") && room !== "consultation-tech"
+  const isGlobalConsultationRoom = room === "consultation-tech"
 
-  if (!isCourseRoom && !isConsultationRoom) {
+  if (!isCourseRoom && !isCourseConsultationRoom && !isGlobalConsultationRoom) {
     return NextResponse.json({ error: "Invalid room" }, { status: 400 })
   }
 
-  if (isCourseRoom) {
-    const courseId = room.replace("course-", "")
+  if (isCourseRoom || isCourseConsultationRoom) {
+    const courseId = isCourseRoom ? room.replace("course-", "") : room.replace("consultation-", "")
     if (!courseId) {
       return NextResponse.json({ error: "Invalid room" }, { status: 400 })
     }
@@ -33,7 +34,8 @@ export async function GET(req: NextRequest) {
     if (!course) {
       return NextResponse.json({ error: "Not found" }, { status: 404 })
     }
-    if (!course.isLive) {
+    // The "isLive" gate only applies to a course's live-session room, not its consultation room.
+    if (isCourseRoom && !course.isLive) {
       return NextResponse.json({ error: "Not live" }, { status: 403 })
     }
 

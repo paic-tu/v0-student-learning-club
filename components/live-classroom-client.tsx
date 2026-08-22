@@ -34,6 +34,7 @@ export default function LiveClassroomClient({
   mode?: "student" | "instructor"
 }) {
   const [token, setToken] = useState("")
+  const [joinError, setJoinError] = useState("")
   const { toast } = useToast()
 
   const effectiveMode = useMemo(() => {
@@ -52,10 +53,14 @@ export default function LiveClassroomClient({
           { signal: controller.signal }
         )
         const data = await resp.json()
+        if (!resp.ok || !data.token) {
+          throw new Error(data?.error || `HTTP ${resp.status}`)
+        }
         setToken(data.token)
       } catch (e) {
         if ((e as any)?.name === "AbortError") return
         console.error(e)
+        setJoinError((e as Error)?.message || "unknown")
         toast({
           title: isAr ? "خطأ" : "Error",
           description: isAr ? "فشل في الاتصال بالخادم" : "Failed to connect to server",
@@ -67,9 +72,20 @@ export default function LiveClassroomClient({
     return () => controller.abort()
   }, [roomName, user, isAr, toast])
 
+  if (joinError) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-2 bg-background text-center">
+        <span className="text-sm font-medium text-destructive">
+          {isAr ? "تعذّر الانضمام للجلسة" : "Couldn't join the session"}
+        </span>
+        <span className="text-xs text-muted-foreground">{joinError}</span>
+      </div>
+    )
+  }
+
   if (!token) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
+      <div className="flex h-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className={cn("ml-2", isAr && "ml-0 mr-2")}>
           {isAr ? "جاري الانضمام..." : "Joining Class..."}
@@ -87,7 +103,7 @@ export default function LiveClassroomClient({
       token={token}
       serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
       data-lk-theme="default"
-      style={{ height: "100vh" }}
+      style={{ height: "100%" }}
       onDisconnected={() => {
         toast({
           title: isAr ? "انقطع الاتصال" : "Disconnected",
