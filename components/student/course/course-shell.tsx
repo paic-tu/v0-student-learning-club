@@ -10,7 +10,6 @@ import {
   FileText,
   StickyNote,
   MessageCircle,
-  Calendar,
   Video,
   UserCircle,
   Menu,
@@ -66,7 +65,6 @@ export function CourseShell({ lang, courseId, course, progress, children }: Cour
     { suffix: "/assignments", label: isAr ? "الواجبات" : "Assignments", icon: FileText },
     { suffix: "/notes", label: isAr ? "الملاحظات" : "Notes", icon: StickyNote },
     { suffix: "/chat", label: isAr ? "المحادثات" : "Chat", icon: MessageCircle },
-    { suffix: "/consultations", label: isAr ? "الاستشارات" : "Consultations", icon: Calendar },
     { suffix: "/live", label: isAr ? "الجلسات المباشرة" : "Live Sessions", icon: Video },
     { suffix: "/instructor", label: isAr ? "المدرب" : "Instructor", icon: UserCircle },
   ]

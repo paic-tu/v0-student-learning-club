@@ -147,7 +147,17 @@ export default function HomePage() {
                     className="group min-h-12 w-full min-w-[240px] rounded-lg px-8 text-base font-semibold shadow-lg shadow-primary/15 hover-lift hover-glow min-[420px]:w-auto sm:text-lg"
                   >
                     <Rocket className="h-5 w-5 mr-2 transition-transform duration-300 ease-out group-hover:-translate-y-0.5 group-hover:rotate-[-8deg]" />
-                    {isRTL ? "ابدأ رحلتك التعليمية" : "Start Your Learning Journey"}
+                    {isAuthenticated
+                      ? user?.role === "instructor"
+                        ? isRTL
+                          ? "بوابة المعلم"
+                          : "Teacher Portal"
+                        : isRTL
+                          ? "بوابة الطالب"
+                          : "Student Portal"
+                      : isRTL
+                        ? "ابدأ رحلتك التعليمية"
+                        : "Start Your Learning Journey"}
                   </Button>
                 </Link>
                 <Link href={`/${language}/coming-soon`} className="w-full min-[420px]:w-auto">
