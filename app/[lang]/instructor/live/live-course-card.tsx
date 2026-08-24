@@ -120,7 +120,7 @@ export function LiveCourseCard({ course, isAr, lang }: LiveCourseCardProps) {
         </Button>
 
         <Button asChild variant="outline" className="w-full">
-          <Link href={`/${lang}/instructor/courses/${course.id}/edit`}>
+          <Link href={`/${lang}/instructor/courses/${course.id}/settings`}>
             {isAr ? "إعدادات الدورة" : "Course Settings"}
           </Link>
         </Button>

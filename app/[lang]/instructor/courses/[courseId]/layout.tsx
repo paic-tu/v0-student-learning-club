@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { getCourseById, getCourseModules, getCourseLessons } from "@/lib/db/queries"
-import { CourseSidebar } from "@/components/instructor/course-sidebar"
+import { getCourseById } from "@/lib/db/queries"
+import { InstructorCourseShell } from "@/components/instructor/course-shell"
 
 export default async function InstructorCourseLayout({
   children,
@@ -17,9 +17,9 @@ export default async function InstructorCourseLayout({
     redirect(`/${lang}/auth/login`)
   }
 
-  // Fetch course, modules, lessons
+  // Fetch course
   const course = await getCourseById(courseId)
-  
+
   if (!course) {
     redirect(`/${lang}/instructor/courses`)
   }
@@ -29,25 +29,9 @@ export default async function InstructorCourseLayout({
     redirect(`/${lang}/access-denied`)
   }
 
-  const modules = await getCourseModules(courseId)
-  const lessons = await getCourseLessons(courseId)
-
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-80 border-r bg-muted/10 hidden md:block overflow-y-auto">
-        <CourseSidebar 
-          course={course} 
-          modules={modules} 
-          lessons={lessons} 
-          lang={lang} 
-        />
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-background p-8">
-        {children}
-      </main>
-    </div>
+    <InstructorCourseShell course={course} lang={lang} courseId={courseId}>
+      {children}
+    </InstructorCourseShell>
   )
 }

@@ -88,11 +88,8 @@ export default async function InstructorCoursesPage({ params }: { params: Promis
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button asChild variant="outline" className="flex-1">
-                    <Link href={`/${lang}/instructor/courses/${course.id}/edit`}>{isAr ? "تعديل" : "Edit"}</Link>
-                  </Button>
                   <Button asChild className="flex-1">
-                    <Link href={`/${lang}/instructor/courses/${course.id}/edit`}>{isAr ? "إدارة" : "Manage"}</Link>
+                    <Link href={`/${lang}/instructor/courses/${course.id}/settings`}>{isAr ? "إدارة الدورة" : "Manage Course"}</Link>
                   </Button>
                 </div>
               </CardContent>

@@ -140,7 +140,7 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
         description: isAr ? "تم حفظ الدرس بنجاح" : "Lesson saved successfully",
       })
 
-      router.push(`/${lang}/instructor/courses/${courseId}/edit`)
+      router.push(`/${lang}/instructor/courses/${courseId}/lessons`)
       router.refresh()
     } catch (error: any) {
       console.error("Lesson form submit error:", error);

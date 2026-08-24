@@ -1,8 +1,7 @@
 import type { ReactNode } from "react"
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { InstructorSidebar, InstructorMobileNav } from "@/components/instructor/instructor-sidebar"
-import { PortalHeader } from "@/components/portal-header"
+import { InstructorPortalChrome } from "@/components/instructor/instructor-portal-chrome"
 
 export default async function InstructorLayout({
   children,
@@ -33,13 +32,5 @@ export default async function InstructorLayout({
     image: session.user.image,
   }
 
-  return (
-    <div className="relative z-10 flex min-h-screen bg-muted">
-      <InstructorSidebar />
-      <div className="flex flex-1 flex-col">
-        <PortalHeader user={user} mobileNav={<InstructorMobileNav />} />
-        <main className="flex-1 p-6">{children}</main>
-      </div>
-    </div>
-  )
+  return <InstructorPortalChrome user={user}>{children}</InstructorPortalChrome>
 }
