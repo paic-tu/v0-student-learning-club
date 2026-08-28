@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
-import { GripVertical, Trash2, PlusCircle, Video, FileText, BookOpen } from "lucide-react"
+import { GripVertical, Pencil, Trash2, PlusCircle, Video, FileText, BookOpen } from "lucide-react"
 
 type LessonRow = {
   id: string
@@ -64,6 +64,18 @@ export function CourseLessonsManager({ courseId, lang, modules, initialLessons }
   useEffect(() => {
     setLessons(initialLessons)
   }, [initialLessons])
+
+  // Scroll to the module's lesson group when arriving via a #module-<id> link
+  // (e.g. the "View Module Lessons" button on the modules page). Local to this
+  // component only — no shared layout/hook touched.
+  useEffect(() => {
+    const hash = window.location.hash
+    if (!hash) return
+    const el = document.getElementById(hash.slice(1))
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+  }, [lessons])
 
   const [lessonToDelete, setLessonToDelete] = useState<LessonRow | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -152,6 +164,7 @@ export function CourseLessonsManager({ courseId, lang, modules, initialLessons }
           {sortedModules.map((m) => (
             <LessonGroup
               key={m.id}
+              anchorId={`module-${m.id}`}
               title={isAr ? m.titleAr || m.titleEn : m.titleEn || m.titleAr}
               lessons={groupLessons(m.id)}
               isAr={isAr}
@@ -164,6 +177,7 @@ export function CourseLessonsManager({ courseId, lang, modules, initialLessons }
 
           {uncategorized.length > 0 && (
             <LessonGroup
+              anchorId="module-uncategorized"
               title={isAr ? "دروس غير مصنفة" : "Uncategorized Lessons"}
               lessons={uncategorized}
               isAr={isAr}
@@ -197,6 +211,7 @@ export function CourseLessonsManager({ courseId, lang, modules, initialLessons }
 }
 
 function LessonGroup({
+  anchorId,
   title,
   lessons,
   isAr,
@@ -205,6 +220,7 @@ function LessonGroup({
   onReorder,
   onDelete,
 }: {
+  anchorId: string
   title: string
   lessons: LessonRow[]
   isAr: boolean
@@ -214,7 +230,7 @@ function LessonGroup({
   onDelete: (lesson: LessonRow) => void
 }) {
   return (
-    <div>
+    <div id={anchorId} className="scroll-mt-6">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
       </div>
@@ -286,11 +302,11 @@ function LessonCard({
             {isAr ? lesson.titleAr || lesson.titleEn : lesson.titleEn || lesson.titleAr}
           </Link>
 
-          {lesson.isPreview && (
-            <Badge variant="outline" className="text-[10px] h-5 px-1.5 shrink-0">
-              {isAr ? "مجاني" : "Free"}
-            </Badge>
-          )}
+          <Button variant="ghost" size="icon" asChild className="shrink-0" aria-label={isAr ? "تعديل" : "Edit"}>
+            <Link href={`/${lang}/instructor/courses/${courseId}/lessons/${lesson.id}/edit`}>
+              <Pencil className="h-4 w-4" />
+            </Link>
+          </Button>
 
           <Button
             variant="ghost"

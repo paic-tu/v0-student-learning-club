@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Reorder, useDragControls } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
@@ -27,7 +28,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
-import { GripVertical, Pencil, Trash2, PlusCircle, BookOpen } from "lucide-react"
+import { GripVertical, Pencil, Trash2, PlusCircle, BookOpen, ListVideo } from "lucide-react"
 
 type ModuleWithLessons = {
   id: string
@@ -214,6 +215,8 @@ export function CourseModulesManager({ courseId, lang, initialModules }: CourseM
               module={m}
               index={index}
               isAr={isAr}
+              lang={lang}
+              courseId={courseId}
               onEdit={() => openEdit(m)}
               onDelete={() => setModuleToDelete(m)}
             />
@@ -303,12 +306,16 @@ function ModuleCard({
   module,
   index,
   isAr,
+  lang,
+  courseId,
   onEdit,
   onDelete,
 }: {
   module: ModuleWithLessons
   index: number
   isAr: boolean
+  lang: string
+  courseId: string
   onEdit: () => void
   onDelete: () => void
 }) {
@@ -332,15 +339,27 @@ function ModuleCard({
             {index + 1}
           </Badge>
 
-          <div className="flex-1 min-w-0">
-            <div className="font-medium truncate">
+          <button
+            type="button"
+            onClick={onEdit}
+            className="flex-1 min-w-0 text-start"
+            aria-label={isAr ? "تعديل الوحدة" : "Edit module"}
+          >
+            <div className="font-medium truncate hover:underline">
               {isAr ? module.titleAr || module.titleEn : module.titleEn || module.titleAr}
             </div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
               <BookOpen className="h-3 w-3" />
               {lessonsCount} {isAr ? "درس" : lessonsCount === 1 ? "lesson" : "lessons"}
             </div>
-          </div>
+          </button>
+
+          <Button variant="ghost" size="sm" asChild className="shrink-0">
+            <Link href={`/${lang}/instructor/courses/${courseId}/lessons#module-${module.id}`}>
+              <ListVideo className="h-4 w-4 mr-1.5" />
+              {isAr ? "عرض دروس الوحدة" : "View Module Lessons"}
+            </Link>
+          </Button>
 
           <Button variant="ghost" size="icon" onClick={onEdit} aria-label={isAr ? "تعديل" : "Edit"}>
             <Pencil className="h-4 w-4" />

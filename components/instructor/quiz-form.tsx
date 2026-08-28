@@ -346,10 +346,15 @@ export function InstructorQuizForm({ initialData, quizId, lang, courses }: Instr
             ))}
         </div>
 
-        <Button disabled={isLoading} type="submit" className="w-full">
-          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isAr ? (quizId ? "تحديث الكويز" : "إنشاء الكويز") : (quizId ? "Update Quiz" : "Create Quiz")}
-        </Button>
+        <div className="flex gap-4">
+          <Button disabled={isLoading} type="submit">
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isAr ? (quizId ? "تحديث الكويز" : "إنشاء الكويز") : (quizId ? "Update Quiz" : "Create Quiz")}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => router.push(`/${lang}/instructor/quizzes`)} disabled={isLoading}>
+            {isAr ? "إلغاء" : "Cancel"}
+          </Button>
+        </div>
       </form>
     </Form>
   )
