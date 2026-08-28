@@ -1,10 +1,19 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { getInstructorCoursesAction } from "@/lib/actions/course"
+import { getCourseById } from "@/lib/db/queries"
 import { InstructorQuizForm } from "@/components/instructor/quiz-form"
+import { InstructorCourseShell } from "@/components/instructor/course-shell"
 
-export default async function NewQuizPage({ params }: { params: Promise<{ lang: string }> }) {
+export default async function NewQuizPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ lang: string }>
+  searchParams: Promise<{ courseId?: string }>
+}) {
   const { lang } = await params
+  const { courseId } = await searchParams
   const session = await auth()
   const isAr = lang === "ar"
 
@@ -24,7 +33,7 @@ export default async function NewQuizPage({ params }: { params: Promise<{ lang: 
     )
   }
 
-  return (
+  const content = (
     <div className="max-w-4xl mx-auto p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">{isAr ? "إنشاء كويز جديد" : "Create New Quiz"}</h1>
@@ -33,10 +42,28 @@ export default async function NewQuizPage({ params }: { params: Promise<{ lang: 
         </p>
       </div>
 
-      <InstructorQuizForm 
-        lang={lang} 
-        courses={courses || []} 
+      <InstructorQuizForm
+        lang={lang}
+        courses={courses || []}
+        lockedCourseId={courseId}
+        redirectTo={courseId ? `/${lang}/instructor/courses/${courseId}/quizzes` : undefined}
       />
     </div>
   )
+
+  if (courseId) {
+    const course = await getCourseById(courseId)
+    if (!course) redirect(`/${lang}/instructor/courses`)
+    if (course.instructorId !== session.user.id && session.user.role !== "admin") {
+      redirect(`/${lang}/access-denied`)
+    }
+
+    return (
+      <InstructorCourseShell course={course} lang={lang} courseId={courseId}>
+        {content}
+      </InstructorCourseShell>
+    )
+  }
+
+  return content
 }

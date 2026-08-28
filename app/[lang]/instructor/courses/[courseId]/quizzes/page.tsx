@@ -26,7 +26,7 @@ export default async function InstructorCourseQuizzesPage({
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{isAr ? "الكويزات" : "Quizzes"}</h1>
         <Button asChild>
-          <Link href={`/${lang}/instructor/quizzes/new`}>
+          <Link href={`/${lang}/instructor/quizzes/new?courseId=${courseId}`}>
             <PlusCircle className="h-4 w-4 mr-2" />
             {isAr ? "إنشاء كويز جديد" : "Create New Quiz"}
           </Link>

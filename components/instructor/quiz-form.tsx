@@ -55,13 +55,16 @@ interface InstructorQuizFormProps {
   quizId?: string
   lang: string
   courses: { id: string; titleEn: string; titleAr: string }[]
+  lockedCourseId?: string
+  redirectTo?: string
 }
 
-export function InstructorQuizForm({ initialData, quizId, lang, courses }: InstructorQuizFormProps) {
+export function InstructorQuizForm({ initialData, quizId, lang, courses, lockedCourseId, redirectTo }: InstructorQuizFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const isAr = lang === "ar"
+  const redirectTarget = redirectTo || `/${lang}/instructor/quizzes`
 
   const form = useForm<QuizFormData>({
     resolver: zodResolver(getQuizSchema(isAr)),
@@ -70,7 +73,7 @@ export function InstructorQuizForm({ initialData, quizId, lang, courses }: Instr
       titleAr: "",
       descriptionEn: "",
       descriptionAr: "",
-      courseId: null,
+      courseId: lockedCourseId || null,
       difficulty: "beginner",
       timeLimit: 15,
       points: 10,
@@ -106,7 +109,7 @@ export function InstructorQuizForm({ initialData, quizId, lang, courses }: Instr
                 title: isAr ? "تم بنجاح" : "Success",
                 description: isAr ? "تم تحديث الكويز بنجاح" : "Quiz updated successfully",
             })
-            router.push(`/${lang}/instructor/quizzes`)
+            router.push(redirectTarget)
             router.refresh()
         }
       } else {
@@ -122,7 +125,7 @@ export function InstructorQuizForm({ initialData, quizId, lang, courses }: Instr
                 title: isAr ? "تم بنجاح" : "Success",
                 description: isAr ? "تم إنشاء الكويز بنجاح" : "Quiz created successfully",
             })
-            router.push(`/${lang}/instructor/quizzes`)
+            router.push(redirectTarget)
             router.refresh()
         }
       }
@@ -200,9 +203,9 @@ export function InstructorQuizForm({ initialData, quizId, lang, courses }: Instr
             name="courseId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{isAr ? "الدورة المرتبطة (اختياري)" : "Linked Course (Optional)"}</FormLabel>
+                <FormLabel>{isAr ? "الدورة المرتبطة" : "Linked Course (Optional)"}</FormLabel>
                 <Select
-                  disabled={isLoading}
+                  disabled={isLoading || Boolean(lockedCourseId)}
                   onValueChange={(value) => field.onChange(value === "none" ? null : value)}
                   value={field.value || "none"}
                   defaultValue={field.value || "none"}
@@ -351,7 +354,7 @@ export function InstructorQuizForm({ initialData, quizId, lang, courses }: Instr
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isAr ? (quizId ? "تحديث الكويز" : "إنشاء الكويز") : (quizId ? "Update Quiz" : "Create Quiz")}
           </Button>
-          <Button type="button" variant="outline" onClick={() => router.push(`/${lang}/instructor/quizzes`)} disabled={isLoading}>
+          <Button type="button" variant="outline" onClick={() => router.push(redirectTarget)} disabled={isLoading}>
             {isAr ? "إلغاء" : "Cancel"}
           </Button>
         </div>

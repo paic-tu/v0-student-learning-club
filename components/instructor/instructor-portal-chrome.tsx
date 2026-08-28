@@ -1,7 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import { InstructorSidebar, InstructorMobileNav } from "@/components/instructor/instructor-sidebar"
 import { PortalHeader } from "@/components/portal-header"
 import { cn } from "@/lib/utils"
@@ -18,7 +18,10 @@ interface InstructorPortalChromeProps {
 
 export function InstructorPortalChrome({ user, children }: InstructorPortalChromeProps) {
   const pathname = usePathname()
-  const insideCourseShell = /\/instructor\/courses\/[^/]+\/[^/]+/.test(pathname)
+  const searchParams = useSearchParams()
+  const isCourseScopedNewForm =
+    /\/instructor\/(assignments|quizzes)\/new$/.test(pathname) && Boolean(searchParams.get("courseId"))
+  const insideCourseShell = /\/instructor\/courses\/[^/]+\/[^/]+/.test(pathname) || isCourseScopedNewForm
 
   return (
     <div className="relative z-10 flex h-screen overflow-hidden bg-muted">

@@ -17,12 +17,13 @@ export function AssignmentForm(props: {
   apiUrl: string
   courses: CourseOption[]
   redirectTo: string
+  lockedCourseId?: string
 }) {
   const isAr = props.lang === "ar"
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
-  const [courseId, setCourseId] = useState("")
+  const [courseId, setCourseId] = useState(props.lockedCourseId || "")
   const [titleEn, setTitleEn] = useState("")
   const [titleAr, setTitleAr] = useState("")
   const [descriptionEn, setDescriptionEn] = useState("")
@@ -66,7 +67,7 @@ export function AssignmentForm(props: {
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label>{isAr ? "الدورة" : "Course"}</Label>
-          <Select value={courseId} onValueChange={setCourseId} disabled={isPending}>
+          <Select value={courseId} onValueChange={setCourseId} disabled={isPending || Boolean(props.lockedCourseId)}>
             <SelectTrigger className="h-10">
               <SelectValue placeholder={isAr ? "اختر دورة" : "Select course"} />
             </SelectTrigger>

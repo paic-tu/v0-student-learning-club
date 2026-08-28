@@ -33,7 +33,7 @@ export default async function InstructorCourseAssignmentsPage({
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{isAr ? "الواجبات" : "Assignments"}</h1>
         <Button asChild>
-          <Link href={`/${lang}/instructor/assignments/new`}>
+          <Link href={`/${lang}/instructor/assignments/new?courseId=${courseId}`}>
             <PlusCircle className="h-4 w-4 mr-2" />
             {isAr ? "إضافة واجب" : "New assignment"}
           </Link>

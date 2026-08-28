@@ -171,8 +171,8 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
             control={form.control}
             name="moduleId"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>{isAr ? "الوحدة" : "Module"}</FormLabel>
+              <FormItem className="flex items-center gap-3">
+                <FormLabel className="shrink-0">{isAr ? "الوحدة" : "Module"}</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
                   <FormControl>
                     <SelectTrigger>
@@ -187,9 +187,6 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
                     ))}
                   </SelectContent>
                 </Select>
-                <FormDescription>
-                  {isAr ? "نظم هذا الدرس تحت وحدة معينة." : "Organize this lesson under a specific module."}
-                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -201,8 +198,8 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
               control={form.control}
               name="titleEn"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{isAr ? "العنوان (إنجليزي)" : "Title (English)"}</FormLabel>
+                <FormItem className="flex items-center gap-3">
+                  <FormLabel className="shrink-0">{isAr ? "العنوان (إنجليزي)" : "Title (English)"}</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
@@ -230,8 +227,8 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
               control={form.control}
               name="titleAr"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{isAr ? "العنوان (عربي)" : "Title (Arabic)"}</FormLabel>
+                <FormItem className="flex items-center gap-3">
+                  <FormLabel className="shrink-0">{isAr ? "العنوان (عربي)" : "Title (Arabic)"}</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="مقدمة في بايثون" dir="rtl" />
                   </FormControl>
@@ -244,8 +241,8 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
               control={form.control}
               name="slug"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{isAr ? "الرابط المختصر (Slug)" : "Slug"}</FormLabel>
+                <FormItem className="flex items-center gap-3">
+                  <FormLabel className="shrink-0">{isAr ? "الرابط المختصر (Slug)" : "Slug"}</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder={isAr ? "introduction-to-python" : "introduction-to-python"} />
                   </FormControl>
@@ -259,8 +256,8 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
               control={form.control}
               name="contentType"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{isAr ? "نوع المحتوى" : "Content Type"}</FormLabel>
+                <FormItem className="flex items-center gap-3">
+                  <FormLabel className="shrink-0">{isAr ? "نوع المحتوى" : "Content Type"}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -283,8 +280,8 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
               control={form.control}
               name="status"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{isAr ? "الحالة" : "Status"}</FormLabel>
+                <FormItem className="flex items-center gap-3">
+                  <FormLabel className="shrink-0">{isAr ? "الحالة" : "Status"}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -305,8 +302,8 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
               control={form.control}
               name="orderIndex"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{isAr ? "ترتيب العرض" : "Order Index"}</FormLabel>
+                <FormItem className="flex items-center gap-3">
+                  <FormLabel className="shrink-0">{isAr ? "ترتيب العرض" : "Order Index"}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -322,8 +319,8 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
               control={form.control}
               name="durationMinutes"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{isAr ? "المدة (بالدقائق)" : "Duration (minutes)"}</FormLabel>
+                <FormItem className="flex items-center gap-3">
+                  <FormLabel className="shrink-0">{isAr ? "المدة (بالدقائق)" : "Duration (minutes)"}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
