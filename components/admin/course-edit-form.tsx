@@ -285,152 +285,158 @@ export function CourseEditForm({
                   <Label htmlFor="subtitle_ar">{isAr ? "العنوان الفرعي بالعربية" : "Subtitle (Arabic)"}</Label>
                   <Input id="subtitle_ar" name="subtitle_ar" defaultValue={course.subtitle_ar || ""} />
                 </div>
+              </div>
 
-                <div className="flex items-center gap-3">
-                  <Label htmlFor="instructor_id" className="shrink-0">{isAr ? "المدرب" : "Instructor"}</Label>
-                  <Select
-                    name="instructor_id"
-                    defaultValue={course.instructor_id.toString()}
-                    onValueChange={(val) => updatePreview("instructor_id", val)}
-                  >
-                    <SelectTrigger id="instructor_id">
-                      <SelectValue>{selectedInstructor ? selectedInstructor.name : undefined}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {instructors.map((instructor: any) => (
-                        <SelectItem key={instructor.id} value={instructor.id.toString()}>
-                          {instructor.name} ({instructor.email})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Label htmlFor="category_id" className="shrink-0">{isAr ? "التصنيف" : "Category"}</Label>
-                  <div className="flex items-center">
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      type="button"
-                      onClick={() => setIsCategoryDialogOpen(true)}
-                      className={`h-9 w-9 shrink-0 ${isAr ? "rounded-l-none rounded-r-md" : "rounded-r-none rounded-l-md"}`}
-                      aria-label={isAr ? "إضافة تصنيف جديد" : "Add new category"}
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                    </Button>
+              <div className="flex flex-wrap gap-4">
+                <div className="space-y-4" style={{ width: "280px" }}>
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="instructor_id" className="shrink-0">{isAr ? "المدرب" : "Instructor"}</Label>
                     <Select
-                      name="category_id"
-                      value={selectedCategoryId}
-                      onValueChange={(val) => {
-                        setSelectedCategoryId(val)
-                        updatePreview("category_id", val)
-                      }}
+                      name="instructor_id"
+                      defaultValue={course.instructor_id.toString()}
+                      onValueChange={(val) => updatePreview("instructor_id", val)}
                     >
-                      <SelectTrigger
-                        id="category_id"
-                        className={isAr ? "rounded-r-none rounded-l-md border-r-0" : "rounded-l-none rounded-r-md border-l-0"}
-                      >
-                        <SelectValue placeholder={isAr ? "اختر التصنيف" : "Select category"}>
-                          {selectedCategory
-                            ? isAr
-                              ? selectedCategory.name_ar || selectedCategory.nameAr
-                              : selectedCategory.name_en || selectedCategory.nameEn
-                            : undefined}
-                        </SelectValue>
+                      <SelectTrigger id="instructor_id" className="flex-1 min-w-0">
+                        <SelectValue>{selectedInstructor ? selectedInstructor.name : undefined}</SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        {localCategories.map((category: any) => (
-                          <SelectItem key={category.id} value={category.id.toString()}>
-                            <div className="flex flex-col items-start">
-                              <span className="font-medium">{category.name_en || category.nameEn}</span>
-                              <span className="text-xs text-muted-foreground">{category.name_ar || category.nameAr}</span>
-                            </div>
+                        {instructors.map((instructor: any) => (
+                          <SelectItem key={instructor.id} value={instructor.id.toString()}>
+                            {instructor.name} ({instructor.email})
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
+
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="difficulty" className="shrink-0">{isAr ? "المستوى" : "Difficulty"}</Label>
+                    <Select
+                      name="difficulty"
+                      defaultValue={course.difficulty}
+                      onValueChange={(val) => updatePreview("difficulty", val)}
+                    >
+                      <SelectTrigger id="difficulty" className="flex-1 min-w-0">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="beginner">{isAr ? "مبتدئ" : "Beginner"}</SelectItem>
+                        <SelectItem value="intermediate">{isAr ? "متوسط" : "Intermediate"}</SelectItem>
+                        <SelectItem value="advanced">{isAr ? "متقدم" : "Advanced"}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="duration" className="shrink-0">{isAr ? "المدة (بالدقائق)" : "Duration (minutes)"}</Label>
+                    <Input
+                      id="duration"
+                      name="duration"
+                      type="number"
+                      defaultValue={course.duration}
+                      onChange={(e) => updatePreview("duration", Number(e.target.value))}
+                      className="flex-1 min-w-0"
+                    />
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <Label htmlFor="difficulty" className="shrink-0">{isAr ? "المستوى" : "Difficulty"}</Label>
-                  <Select
-                    name="difficulty"
-                    defaultValue={course.difficulty}
-                    onValueChange={(val) => updatePreview("difficulty", val)}
-                  >
-                    <SelectTrigger id="difficulty">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="beginner">{isAr ? "مبتدئ" : "Beginner"}</SelectItem>
-                      <SelectItem value="intermediate">{isAr ? "متوسط" : "Intermediate"}</SelectItem>
-                      <SelectItem value="advanced">{isAr ? "متقدم" : "Advanced"}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <div className="space-y-4" style={{ width: "280px" }}>
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="category_id" className="shrink-0">{isAr ? "التصنيف" : "Category"}</Label>
+                    <div className="flex items-center flex-1 min-w-0">
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        type="button"
+                        onClick={() => setIsCategoryDialogOpen(true)}
+                        className={`h-9 w-9 shrink-0 ${isAr ? "rounded-l-none rounded-r-md" : "rounded-r-none rounded-l-md"}`}
+                        aria-label={isAr ? "إضافة تصنيف جديد" : "Add new category"}
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </Button>
+                      <Select
+                        name="category_id"
+                        value={selectedCategoryId}
+                        onValueChange={(val) => {
+                          setSelectedCategoryId(val)
+                          updatePreview("category_id", val)
+                        }}
+                      >
+                        <SelectTrigger
+                          id="category_id"
+                          className={`flex-1 min-w-0 ${isAr ? "rounded-r-none rounded-l-md border-r-0" : "rounded-l-none rounded-r-md border-l-0"}`}
+                        >
+                          <SelectValue placeholder={isAr ? "اختر التصنيف" : "Select category"}>
+                            {selectedCategory
+                              ? isAr
+                                ? selectedCategory.name_ar || selectedCategory.nameAr
+                                : selectedCategory.name_en || selectedCategory.nameEn
+                              : undefined}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {localCategories.map((category: any) => (
+                            <SelectItem key={category.id} value={category.id.toString()}>
+                              <div className="flex flex-col items-start">
+                                <span className="font-medium">{category.name_en || category.nameEn}</span>
+                                <span className="text-xs text-muted-foreground">{category.name_ar || category.nameAr}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-                <div className="flex items-center gap-3">
-                  <Label htmlFor="language" className="shrink-0">{isAr ? "لغة الدورة" : "Language"}</Label>
-                  <Select name="language" defaultValue={course.language || "ar"}>
-                    <SelectTrigger id="language">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ar">{isAr ? "العربية" : "Arabic"}</SelectItem>
-                      <SelectItem value="en">{isAr ? "الإنجليزية" : "English"}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="language" className="shrink-0">{isAr ? "لغة الدورة" : "Language"}</Label>
+                    <Select name="language" defaultValue={course.language || "ar"}>
+                      <SelectTrigger id="language" className="flex-1 min-w-0">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ar">{isAr ? "العربية" : "Arabic"}</SelectItem>
+                        <SelectItem value="en">{isAr ? "الإنجليزية" : "English"}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="flex items-center gap-3">
-                  <Label htmlFor="duration" className="shrink-0">{isAr ? "المدة (بالدقائق)" : "Duration (minutes)"}</Label>
-                  <Input
-                    id="duration"
-                    name="duration"
-                    type="number"
-                    defaultValue={course.duration}
-                    onChange={(e) => updatePreview("duration", Number(e.target.value))}
-                    className="w-20"
-                  />
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="price" className="shrink-0">{isAr ? "السعر ($)" : "Price ($)"}</Label>
+                    <Input
+                      id="price"
+                      name="price"
+                      type="number"
+                      step="0.01"
+                      defaultValue={course.price}
+                      onChange={(e) => updatePreview("price", Number(e.target.value))}
+                      className="flex-1 min-w-0"
+                    />
+                  </div>
                 </div>
+              </div>
 
-                <div className="flex items-center gap-3">
-                  <Label htmlFor="price" className="shrink-0">{isAr ? "السعر ($)" : "Price ($)"}</Label>
-                  <Input
-                    id="price"
-                    name="price"
-                    type="number"
-                    step="0.01"
-                    defaultValue={course.price}
-                    onChange={(e) => updatePreview("price", Number(e.target.value))}
-                    className="w-20"
-                  />
-                </div>
-
-                <div className="flex items-center gap-3 md:col-span-2">
-                  <Label htmlFor="stream_product_id" className="shrink-0">Stream product_id</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleGenerateStreamProductId}
-                    disabled={loading}
-                    className="shrink-0"
-                  >
-                    {isAr ? "توليد" : "Generate"}
-                  </Button>
-                  <Input
-                    id="stream_product_id"
-                    name="stream_product_id"
-                    value={streamProductId}
-                    onChange={(e) => setStreamProductId(e.target.value)}
-                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                    dir="ltr"
-                    className="w-[16.5rem]! shrink-0"
-                    style={{ width: "16.5rem" }}
-                  />
-                </div>
+              <div className="flex items-center gap-3">
+                <Label htmlFor="stream_product_id" className="shrink-0">Stream product_id</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleGenerateStreamProductId}
+                  disabled={loading}
+                  className="shrink-0"
+                >
+                  {isAr ? "توليد" : "Generate"}
+                </Button>
+                <Input
+                  id="stream_product_id"
+                  name="stream_product_id"
+                  value={streamProductId}
+                  onChange={(e) => setStreamProductId(e.target.value)}
+                  placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                  dir="ltr"
+                  className="w-[16.5rem]! shrink-0"
+                  style={{ width: "16.5rem" }}
+                />
               </div>
             </CardContent>
           </Card>
