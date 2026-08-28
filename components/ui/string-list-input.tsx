@@ -41,8 +41,8 @@ export function StringListInput({ value = [], onChange, placeholder }: StringLis
       </div>
       <div className="flex flex-wrap gap-2">
         {value.map((item, index) => (
-          <div key={index} className="flex items-center gap-1 bg-muted px-2 py-1 rounded-md text-sm">
-            <span>{item}</span>
+          <div key={index} className="flex items-center gap-1 bg-muted px-2 py-1 rounded-md text-[10px]">
+            <span className="break-words">{item}</span>
             <Button 
               type="button" 
               onClick={() => onChange(value.filter((_, i) => i !== index))}

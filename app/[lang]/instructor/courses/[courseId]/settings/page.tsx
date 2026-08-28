@@ -57,8 +57,6 @@ export default async function InstructorCourseSettingsPage({
   ]
 
   return (
-    <div className="max-w-4xl">
-      <CourseEditForm course={course} categories={categories as any} instructors={instructors as any} lang={lang} />
-    </div>
+    <CourseEditForm course={course} categories={categories as any} instructors={instructors as any} lang={lang} />
   )
 }
