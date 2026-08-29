@@ -4,7 +4,6 @@ import { redirect, notFound } from "next/navigation"
 import { CurriculumSidebar } from "@/components/learn/curriculum-sidebar"
 import { MobileCurriculumSidebar } from "@/components/learn/mobile-curriculum-sidebar"
 import { LessonContent } from "@/components/learn/lesson-content"
-import { CompleteLessonButton } from "@/components/learn/complete-button"
 
 export default async function LearningPage({ 
   params 
@@ -41,12 +40,7 @@ export default async function LearningPage({
   const prevLessonId = (navigation as any)?.prev?.id ?? null
   const nextLessonId = (navigation as any)?.next?.id ?? null
   const isCurrentLessonCompleted = completedLessons.includes(currentLessonAny.id)
-  const canAdvance = Boolean(nextLessonId) && (user.role !== "student" || isCurrentLessonCompleted)
-
-  // Verify sequential progress: Student must complete the previous lesson before accessing the current one
-  if (user.role === "student" && prevLessonId && !completedLessons.includes(prevLessonId)) {
-    redirect(`/${lang}/student/learn/${courseId}/${prevLessonId}`)
-  }
+  const canAdvance = Boolean(nextLessonId)
 
   // const lessonNotes = await getUserLessonNotes(user.id, currentLessonAny.id)
 
@@ -95,13 +89,13 @@ export default async function LearningPage({
   }
 
   return (
-    <div dir={isAr ? "rtl" : "ltr"} className="flex h-full overflow-hidden rounded-lg border bg-background">
+    <div dir={isAr ? "rtl" : "ltr"} className="flex overflow-hidden rounded-lg border bg-background -my-6 h-[calc(100%+3rem)]">
       {/* Sidebar - Desktop */}
       <CurriculumSidebar
         course={sidebarCourse}
         currentLessonId={currentLessonAny.id}
         lang={lang}
-        className="w-80 border-e hidden md:flex"
+        className="w-96 border-e hidden md:flex"
         progress={progress}
         prevLessonId={prevLessonId}
         nextLessonId={nextLessonId}
@@ -128,7 +122,7 @@ export default async function LearningPage({
 
         {/* Content Scroll Area */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-20 md:pb-12 scrollbar-hide">
-          <div className="max-w-5xl mx-auto w-full">
+          <div className="max-w-7xl mx-auto w-full">
             <LessonContent 
               lesson={currentLessonMapped} 
               lang={lang} 
@@ -139,20 +133,6 @@ export default async function LearningPage({
               nextUrl={nextLessonId ? `/${lang}/student/learn/${courseAny.id}/${nextLessonId}` : `/${lang}/student/course/${courseAny.id}`}
               courseId={courseAny.id}
             />
-            
-            {/* Action Bar (Complete, Notes) */}
-            <div className="mt-12 pt-8 border-t flex justify-between items-center">
-               <div className="text-sm text-muted-foreground">
-                 {/* Last updated: {new Date(currentLesson.updatedAt).toLocaleDateString()} */}
-               </div>
-               <CompleteLessonButton 
-                  courseId={courseAny.id}
-                  lessonId={currentLessonAny.id}
-                  isCompleted={completedLessons.includes(currentLessonAny.id)}
-                  lang={lang}
-                  nextLessonId={nextLessonId}
-               />
-            </div>
           </div>
         </div>
       </div>
