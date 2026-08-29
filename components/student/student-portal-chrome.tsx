@@ -18,9 +18,10 @@ interface StudentPortalChromeProps {
 
 export function StudentPortalChrome({ user, children }: StudentPortalChromeProps) {
   const pathname = usePathname()
-  // Inside a specific course — its dashboard tabs or the lesson player — the course's own
-  // full-height, collapsible sidebar takes over so there's only ever one menu on screen.
-  const insideCourseShell = /\/student\/(course|learn)\/[^/]+/.test(pathname)
+  // Inside a specific course — its dashboard tabs, the lesson player, or a
+  // course-scoped assignment detail page — the course's own full-height,
+  // collapsible sidebar takes over so there's only ever one menu on screen.
+  const insideCourseShell = /\/student\/(course|learn|assignments)\/[^/]+/.test(pathname)
 
   return (
     <div className="relative z-10 flex h-screen overflow-hidden bg-muted">
