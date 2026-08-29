@@ -98,11 +98,12 @@ export default async function LearningPage({
   return (
     <div dir={isAr ? "rtl" : "ltr"} className="flex h-full overflow-hidden rounded-lg border bg-background">
       {/* Sidebar - Desktop */}
-      <CurriculumSidebar 
-        course={sidebarCourse} 
-        currentLessonId={currentLessonAny.id} 
-        lang={lang} 
+      <CurriculumSidebar
+        course={sidebarCourse}
+        currentLessonId={currentLessonAny.id}
+        lang={lang}
         className="w-80 border-e hidden md:flex"
+        progress={progress}
       />
 
       {/* Main Content Area */}
@@ -110,10 +111,11 @@ export default async function LearningPage({
         {/* Top Navigation Bar */}
         <header className="flex items-center justify-between h-16 px-4 border-b bg-background shrink-0 gap-4">
           <div className="flex items-center gap-2 min-w-0">
-            <MobileCurriculumSidebar 
-              course={sidebarCourse} 
-              currentLessonId={currentLessonAny.id} 
-              lang={lang} 
+            <MobileCurriculumSidebar
+              course={sidebarCourse}
+              currentLessonId={currentLessonAny.id}
+              lang={lang}
+              progress={progress}
             />
             
             <Link 

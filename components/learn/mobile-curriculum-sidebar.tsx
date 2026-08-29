@@ -10,9 +10,10 @@ interface MobileCurriculumSidebarProps {
   course: any
   currentLessonId: string
   lang: string
+  progress?: number
 }
 
-export function MobileCurriculumSidebar({ course, currentLessonId, lang }: MobileCurriculumSidebarProps) {
+export function MobileCurriculumSidebar({ course, currentLessonId, lang, progress }: MobileCurriculumSidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const isAr = lang === "ar"
 
@@ -24,12 +25,13 @@ export function MobileCurriculumSidebar({ course, currentLessonId, lang }: Mobil
         </Button>
       </SheetTrigger>
       <SheetContent side={isAr ? "right" : "left"} className="p-0 w-80">
-        <CurriculumSidebar 
-          course={course} 
-          currentLessonId={currentLessonId} 
-          lang={lang} 
+        <CurriculumSidebar
+          course={course}
+          currentLessonId={currentLessonId}
+          lang={lang}
           className="w-full h-full pt-12"
           onLessonSelect={() => setIsOpen(false)}
+          progress={progress}
         />
       </SheetContent>
     </Sheet>
