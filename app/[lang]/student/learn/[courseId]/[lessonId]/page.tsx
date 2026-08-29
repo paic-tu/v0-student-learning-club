@@ -4,9 +4,6 @@ import { redirect, notFound } from "next/navigation"
 import { CurriculumSidebar } from "@/components/learn/curriculum-sidebar"
 import { MobileCurriculumSidebar } from "@/components/learn/mobile-curriculum-sidebar"
 import { LessonContent } from "@/components/learn/lesson-content"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { ChevronLeft, ChevronRight } from "lucide-react"
 import { CompleteLessonButton } from "@/components/learn/complete-button"
 
 export default async function LearningPage({ 
@@ -43,6 +40,8 @@ export default async function LearningPage({
   const progress = (userProgress as any)?.progress ?? 0
   const prevLessonId = (navigation as any)?.prev?.id ?? null
   const nextLessonId = (navigation as any)?.next?.id ?? null
+  const isCurrentLessonCompleted = completedLessons.includes(currentLessonAny.id)
+  const canAdvance = Boolean(nextLessonId) && (user.role !== "student" || isCurrentLessonCompleted)
 
   // Verify sequential progress: Student must complete the previous lesson before accessing the current one
   if (user.role === "student" && prevLessonId && !completedLessons.includes(prevLessonId)) {
@@ -104,74 +103,27 @@ export default async function LearningPage({
         lang={lang}
         className="w-80 border-e hidden md:flex"
         progress={progress}
+        prevLessonId={prevLessonId}
+        nextLessonId={nextLessonId}
+        isCurrentLessonCompleted={isCurrentLessonCompleted}
+        canAdvance={canAdvance}
       />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Top Navigation Bar */}
-        <header className="flex items-center justify-between h-16 px-4 border-b bg-background shrink-0 gap-4">
-          <div className="flex items-center gap-2 min-w-0">
-            <MobileCurriculumSidebar
-              course={sidebarCourse}
-              currentLessonId={currentLessonAny.id}
-              lang={lang}
-              progress={progress}
-            />
-            
-            <Link 
-              href={`/${lang}/student/course/${courseAny.id}`}
-              className="text-sm font-medium hover:underline text-muted-foreground hover:text-foreground hidden sm:block truncate"
-            >
-              {isAr ? sidebarCourse.titleAr : sidebarCourse.titleEn}
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              disabled={!prevLessonId}
-              asChild={!!prevLessonId}
-            >
-              {prevLessonId ? (
-                <Link href={`/${lang}/student/learn/${courseAny.id}/${prevLessonId}`}>
-                  {isAr ? <ChevronRight className="h-4 w-4 sm:ms-1" /> : <ChevronLeft className="h-4 w-4 sm:me-1" />}
-                  <span className="hidden sm:inline">{isAr ? "السابق" : "Previous"}</span>
-                </Link>
-              ) : (
-                <span className="flex items-center">
-                  {isAr ? <ChevronRight className="h-4 w-4 sm:ms-1" /> : <ChevronLeft className="h-4 w-4 sm:me-1" />}
-                  <span className="hidden sm:inline">{isAr ? "السابق" : "Previous"}</span>
-                </span>
-              )}
-            </Button>
-            
-            <CompleteLessonButton 
-              courseId={courseAny.id}
-              lessonId={currentLessonAny.id}
-              isCompleted={completedLessons.includes(currentLessonAny.id)}
-              lang={lang}
-              nextLessonId={nextLessonId}
-            />
-
-            <Button 
-              size="sm" 
-              disabled={!nextLessonId || (user.role === "student" && !completedLessons.includes(currentLessonAny.id))}
-              asChild={!!nextLessonId && (user.role !== "student" || completedLessons.includes(currentLessonAny.id))}
-            >
-              {nextLessonId && (user.role !== "student" || completedLessons.includes(currentLessonAny.id)) ? (
-                <Link href={`/${lang}/student/learn/${courseAny.id}/${nextLessonId}`}>
-                  <span className="hidden sm:inline">{isAr ? "التالي" : "Next"}</span>
-                  {isAr ? <ChevronLeft className="h-4 w-4 sm:me-1" /> : <ChevronRight className="h-4 w-4 sm:ms-1" />}
-                </Link>
-              ) : (
-                <span className="flex items-center">
-                  <span className="hidden sm:inline">{isAr ? "التالي" : "Next"}</span>
-                  {isAr ? <ChevronLeft className="h-4 w-4 sm:me-1" /> : <ChevronRight className="h-4 w-4 sm:ms-1" />}
-                </span>
-              )}
-            </Button>
-          </div>
+        {/* Mobile-only: the sidebar (modules, certificate, prev/next/complete)
+            lives entirely inside the sheet on small screens now. */}
+        <header className="flex items-center h-16 px-4 border-b bg-background shrink-0 md:hidden">
+          <MobileCurriculumSidebar
+            course={sidebarCourse}
+            currentLessonId={currentLessonAny.id}
+            lang={lang}
+            progress={progress}
+            prevLessonId={prevLessonId}
+            nextLessonId={nextLessonId}
+            isCurrentLessonCompleted={isCurrentLessonCompleted}
+            canAdvance={canAdvance}
+          />
         </header>
 
         {/* Content Scroll Area */}

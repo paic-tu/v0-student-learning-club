@@ -11,9 +11,22 @@ interface MobileCurriculumSidebarProps {
   currentLessonId: string
   lang: string
   progress?: number
+  prevLessonId?: string | null
+  nextLessonId?: string | null
+  isCurrentLessonCompleted?: boolean
+  canAdvance?: boolean
 }
 
-export function MobileCurriculumSidebar({ course, currentLessonId, lang, progress }: MobileCurriculumSidebarProps) {
+export function MobileCurriculumSidebar({
+  course,
+  currentLessonId,
+  lang,
+  progress,
+  prevLessonId,
+  nextLessonId,
+  isCurrentLessonCompleted,
+  canAdvance,
+}: MobileCurriculumSidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const isAr = lang === "ar"
 
@@ -32,6 +45,10 @@ export function MobileCurriculumSidebar({ course, currentLessonId, lang, progres
           className="w-full h-full pt-12"
           onLessonSelect={() => setIsOpen(false)}
           progress={progress}
+          prevLessonId={prevLessonId}
+          nextLessonId={nextLessonId}
+          isCurrentLessonCompleted={isCurrentLessonCompleted}
+          canAdvance={canAdvance}
         />
       </SheetContent>
     </Sheet>

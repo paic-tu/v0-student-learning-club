@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { CheckCircle, Circle, PlayCircle, FileText, HelpCircle, Lock, Award, Loader2 } from "lucide-react"
+import { CheckCircle, Circle, PlayCircle, FileText, HelpCircle, Lock, Award, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import {
   Accordion,
@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { getOrCreateCertificate } from "@/lib/actions/certificate"
+import { CompleteLessonButton } from "@/components/learn/complete-button"
 
 interface CurriculumSidebarProps {
   course: any
@@ -22,6 +23,10 @@ interface CurriculumSidebarProps {
   className?: string
   onLessonSelect?: () => void
   progress?: number
+  prevLessonId?: string | null
+  nextLessonId?: string | null
+  isCurrentLessonCompleted?: boolean
+  canAdvance?: boolean
 }
 
 function openModulesStorageKey(courseId: string) {
@@ -60,7 +65,18 @@ function computeOpenModules(course: any, currentLessonId: string): string[] {
   return stored
 }
 
-export function CurriculumSidebar({ course, currentLessonId, lang, className, onLessonSelect, progress = 0 }: CurriculumSidebarProps) {
+export function CurriculumSidebar({
+  course,
+  currentLessonId,
+  lang,
+  className,
+  onLessonSelect,
+  progress = 0,
+  prevLessonId = null,
+  nextLessonId = null,
+  isCurrentLessonCompleted = false,
+  canAdvance = false,
+}: CurriculumSidebarProps) {
   const isAr = lang === "ar"
   const router = useRouter()
   const { toast } = useToast()
@@ -141,8 +157,8 @@ export function CurriculumSidebar({ course, currentLessonId, lang, className, on
   return (
     <div dir={isAr ? "rtl" : "ltr"} className={cn("flex flex-col h-full bg-background shrink-0", className)}>
       <div className="h-16 flex items-center px-4 border-b shrink-0">
-        <span className="text-[11px] font-semibold text-muted-foreground">
-          {isAr ? "المحتوى" : "Content"}
+        <span className="text-sm font-bold text-muted-foreground">
+          {isAr ? "محتوى الدورة" : "Course Content"}
         </span>
       </div>
 
@@ -224,24 +240,71 @@ export function CurriculumSidebar({ course, currentLessonId, lang, className, on
               </AccordionItem>
             ))}
           </Accordion>
+
+          <div className="p-4 border-t">
+            <Button
+              className="w-full"
+              disabled={!isCourseComplete || isGeneratingCertificate}
+              onClick={handleGenerateCertificate}
+            >
+              {isGeneratingCertificate ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin me-2" />
+                  {isAr ? "جاري الإصدار..." : "Generating..."}
+                </>
+              ) : (
+                <>
+                  <Award className="h-4 w-4 me-2" />
+                  {isAr ? "شهادة اتمام الدورة" : "Course Completion Certificate"}
+                </>
+              )}
+            </Button>
+          </div>
       </div>
 
-      <div className="border-t p-4 shrink-0">
+      <div className="border-t p-4 shrink-0 flex items-center justify-between gap-2">
         <Button
-          className="w-full"
-          disabled={!isCourseComplete || isGeneratingCertificate}
-          onClick={handleGenerateCertificate}
+          variant="outline"
+          size="sm"
+          disabled={!prevLessonId}
+          asChild={!!prevLessonId}
         >
-          {isGeneratingCertificate ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin me-2" />
-              {isAr ? "جاري الإصدار..." : "Generating..."}
-            </>
+          {prevLessonId ? (
+            <Link href={`/${lang}/student/learn/${course.id}/${prevLessonId}`}>
+              {isAr ? <ChevronRight className="h-4 w-4 sm:ms-1" /> : <ChevronLeft className="h-4 w-4 sm:me-1" />}
+              <span className="hidden sm:inline">{isAr ? "السابق" : "Previous"}</span>
+            </Link>
           ) : (
-            <>
-              <Award className="h-4 w-4 me-2" />
-              {isAr ? "شهادة اتمام الدورة" : "Course Completion Certificate"}
-            </>
+            <span className="flex items-center">
+              {isAr ? <ChevronRight className="h-4 w-4 sm:ms-1" /> : <ChevronLeft className="h-4 w-4 sm:me-1" />}
+              <span className="hidden sm:inline">{isAr ? "السابق" : "Previous"}</span>
+            </span>
+          )}
+        </Button>
+
+        <CompleteLessonButton
+          courseId={course.id}
+          lessonId={currentLessonId}
+          isCompleted={isCurrentLessonCompleted}
+          lang={lang}
+          nextLessonId={nextLessonId}
+        />
+
+        <Button
+          size="sm"
+          disabled={!canAdvance}
+          asChild={canAdvance}
+        >
+          {canAdvance ? (
+            <Link href={`/${lang}/student/learn/${course.id}/${nextLessonId}`}>
+              <span className="hidden sm:inline">{isAr ? "التالي" : "Next"}</span>
+              {isAr ? <ChevronLeft className="h-4 w-4 sm:me-1" /> : <ChevronRight className="h-4 w-4 sm:ms-1" />}
+            </Link>
+          ) : (
+            <span className="flex items-center">
+              <span className="hidden sm:inline">{isAr ? "التالي" : "Next"}</span>
+              {isAr ? <ChevronLeft className="h-4 w-4 sm:me-1" /> : <ChevronRight className="h-4 w-4 sm:ms-1" />}
+            </span>
           )}
         </Button>
       </div>
