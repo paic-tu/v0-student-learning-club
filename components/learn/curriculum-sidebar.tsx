@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { CheckCircle, Circle, PlayCircle, FileText, HelpCircle, Lock, Award, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
+import { CheckCircle, Circle, PlayCircle, FileText, HelpCircle, Lock, Award, Loader2 } from "lucide-react"
 import Link from "next/link"
 import {
   Accordion,
@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { getOrCreateCertificate } from "@/lib/actions/certificate"
-import { CompleteLessonButton } from "@/components/learn/complete-button"
+import { LessonNavButtons } from "@/components/learn/lesson-nav-buttons"
 
 interface CurriculumSidebarProps {
   course: any
@@ -27,6 +27,10 @@ interface CurriculumSidebarProps {
   nextLessonId?: string | null
   isCurrentLessonCompleted?: boolean
   canAdvance?: boolean
+  // False for the mobile Sheet instance now that Previous/Complete/Next live
+  // in the lesson viewer's top row instead; the desktop sidebar instance
+  // keeps its own footer (defaults true).
+  showFooterNav?: boolean
 }
 
 function openModulesStorageKey(courseId: string) {
@@ -76,6 +80,7 @@ export function CurriculumSidebar({
   nextLessonId = null,
   isCurrentLessonCompleted = false,
   canAdvance = false,
+  showFooterNav = true,
 }: CurriculumSidebarProps) {
   const isAr = lang === "ar"
   const router = useRouter()
@@ -262,52 +267,20 @@ export function CurriculumSidebar({
           </div>
       </div>
 
-      <div className="border-t p-4 shrink-0 flex items-center justify-between gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!prevLessonId}
-          asChild={!!prevLessonId}
-        >
-          {prevLessonId ? (
-            <Link href={`/${lang}/student/learn/${course.id}/${prevLessonId}`}>
-              {isAr ? <ChevronRight className="h-4 w-4 sm:ms-1" /> : <ChevronLeft className="h-4 w-4 sm:me-1" />}
-              <span className="hidden sm:inline">{isAr ? "السابق" : "Previous"}</span>
-            </Link>
-          ) : (
-            <span className="flex items-center">
-              {isAr ? <ChevronRight className="h-4 w-4 sm:ms-1" /> : <ChevronLeft className="h-4 w-4 sm:me-1" />}
-              <span className="hidden sm:inline">{isAr ? "السابق" : "Previous"}</span>
-            </span>
-          )}
-        </Button>
-
-        <CompleteLessonButton
-          courseId={course.id}
-          lessonId={currentLessonId}
-          isCompleted={isCurrentLessonCompleted}
-          lang={lang}
-          nextLessonId={nextLessonId}
-        />
-
-        <Button
-          size="sm"
-          disabled={!canAdvance}
-          asChild={canAdvance}
-        >
-          {canAdvance ? (
-            <Link href={`/${lang}/student/learn/${course.id}/${nextLessonId}`}>
-              <span className="hidden sm:inline">{isAr ? "التالي" : "Next"}</span>
-              {isAr ? <ChevronLeft className="h-4 w-4 sm:me-1" /> : <ChevronRight className="h-4 w-4 sm:ms-1" />}
-            </Link>
-          ) : (
-            <span className="flex items-center">
-              <span className="hidden sm:inline">{isAr ? "التالي" : "Next"}</span>
-              {isAr ? <ChevronLeft className="h-4 w-4 sm:me-1" /> : <ChevronRight className="h-4 w-4 sm:ms-1" />}
-            </span>
-          )}
-        </Button>
-      </div>
+      {showFooterNav && (
+        <div className="border-t p-4 shrink-0">
+          <LessonNavButtons
+            lang={lang}
+            courseId={course.id}
+            currentLessonId={currentLessonId}
+            prevLessonId={prevLessonId}
+            nextLessonId={nextLessonId}
+            isCurrentLessonCompleted={isCurrentLessonCompleted}
+            canAdvance={canAdvance}
+            className="w-full justify-between"
+          />
+        </div>
+      )}
     </div>
   )
 }

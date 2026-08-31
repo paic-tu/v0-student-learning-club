@@ -203,7 +203,7 @@ export function InstructorCourseShell({ course, lang, courseId, children }: Inst
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side={isAr ? "right" : "left"} className="w-4/5 max-w-sm p-0 sm:max-w-sm">
+            <SheetContent side={isAr ? "left" : "right"} className="w-4/5 max-w-sm p-0 sm:max-w-sm">
               <div dir={isAr ? "rtl" : "ltr"} className="flex h-full flex-col">
                 <div className="border-b p-4">
                   <SheetHeader className="pb-0">

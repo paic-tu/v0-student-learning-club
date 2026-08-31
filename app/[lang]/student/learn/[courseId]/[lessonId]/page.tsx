@@ -3,6 +3,7 @@ import { getLearningData, getUserLessonNotes, getQuizById, getQuizSubmission } f
 import { redirect, notFound } from "next/navigation"
 import { CurriculumSidebar } from "@/components/learn/curriculum-sidebar"
 import { MobileCurriculumSidebar } from "@/components/learn/mobile-curriculum-sidebar"
+import { LessonNavButtons } from "@/components/learn/lesson-nav-buttons"
 import { LessonContent } from "@/components/learn/lesson-content"
 
 export default async function LearningPage({ 
@@ -105,14 +106,20 @@ export default async function LearningPage({
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Mobile-only: the sidebar (modules, certificate, prev/next/complete)
-            lives entirely inside the sheet on small screens now. */}
-        <header className="flex items-center h-16 px-4 border-b bg-background shrink-0 md:hidden">
+        {/* Mobile-only: module list lives inside the sheet; prev/complete/next
+            live in this row now, opposite the hamburger trigger (dir-aware
+            via the flex justify-between + the RTL/LTR dir set on the page). */}
+        <header className="flex items-center justify-between h-16 px-4 border-b bg-background shrink-0 md:hidden">
           <MobileCurriculumSidebar
             course={sidebarCourse}
             currentLessonId={currentLessonAny.id}
             lang={lang}
             progress={progress}
+          />
+          <LessonNavButtons
+            lang={lang}
+            courseId={courseAny.id}
+            currentLessonId={currentLessonAny.id}
             prevLessonId={prevLessonId}
             nextLessonId={nextLessonId}
             isCurrentLessonCompleted={isCurrentLessonCompleted}

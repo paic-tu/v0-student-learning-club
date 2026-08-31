@@ -152,9 +152,13 @@ export default function HomePage() {
                         ? isRTL
                           ? "بوابة المعلم"
                           : "Teacher Portal"
-                        : isRTL
-                          ? "بوابة الطالب"
-                          : "Student Portal"
+                        : user?.role === "admin"
+                          ? isRTL
+                            ? "لوحة التحكم"
+                            : "Admin Dashboard"
+                          : isRTL
+                            ? "بوابة الطالب"
+                            : "Student Portal"
                       : isRTL
                         ? "ابدأ رحلتك التعليمية"
                         : "Start Your Learning Journey"}
@@ -388,10 +392,10 @@ export default function HomePage() {
                   color: "text-blue-500",
                 },
                 {
-                  title: isRTL ? "شهادات معتمدة" : "Certified Certificates",
+                  title: isRTL ? "شهادات إتمام" : "Completion Certificates",
                   description: isRTL
-                    ? "احصل على شهادات معتمدة عند إتمام الدورات لتعزيز سيرتك الذاتية"
-                    : "Earn certified certificates upon course completion to enhance your resume",
+                    ? "احصل على شهادات إتمام عند إتمام الدورات لتعزيز سيرتك الذاتية"
+                    : "Earn completion certificates upon course completion to enhance your resume",
                   Icon: Award,
                   color: "text-purple-500",
                 },
