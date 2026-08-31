@@ -1,7 +1,9 @@
 "use client"
 
+import { useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { CheckCircle, Circle, PlayCircle, FileText, HelpCircle, Lock } from "lucide-react"
+import { CheckCircle, Circle, PlayCircle, FileText, HelpCircle, Lock, Award, Loader2 } from "lucide-react"
 import Link from "next/link"
 import {
   Accordion,
@@ -9,6 +11,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { Button } from "@/components/ui/button"
+import { useToast } from "@/hooks/use-toast"
+import { getOrCreateCertificate } from "@/lib/actions/certificate"
+import { LessonNavButtons } from "@/components/learn/lesson-nav-buttons"
 
 interface CurriculumSidebarProps {
   course: any
@@ -16,10 +22,121 @@ interface CurriculumSidebarProps {
   lang: string
   className?: string
   onLessonSelect?: () => void
+  progress?: number
+  prevLessonId?: string | null
+  nextLessonId?: string | null
+  isCurrentLessonCompleted?: boolean
+  canAdvance?: boolean
+  // False for the mobile Sheet instance now that Previous/Complete/Next live
+  // in the lesson viewer's top row instead; the desktop sidebar instance
+  // keeps its own footer (defaults true).
+  showFooterNav?: boolean
 }
 
-export function CurriculumSidebar({ course, currentLessonId, lang, className, onLessonSelect }: CurriculumSidebarProps) {
+function openModulesStorageKey(courseId: string) {
+  return `curriculum-open-modules-${courseId}`
+}
+
+function readStoredOpenModules(courseId: string): string[] | null {
+  try {
+    const raw = window.localStorage.getItem(openModulesStorageKey(courseId))
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+function findModuleIdForLesson(course: any, lessonId: string): string | undefined {
+  return course.modules?.find((m: any) => m.lessons?.some((l: any) => l.id === lessonId))?.id
+}
+
+// Client-only: merges the module containing the current lesson into whatever
+// the user previously had open, never dropping anything they opened manually.
+function computeOpenModules(course: any, currentLessonId: string): string[] {
+  const firstModuleId = course.modules?.[0]?.id
+  const stored = readStoredOpenModules(course.id)
+
+  if (!stored) {
+    return firstModuleId ? [firstModuleId] : []
+  }
+
+  const currentModuleId = findModuleIdForLesson(course, currentLessonId)
+  if (currentModuleId && !stored.includes(currentModuleId)) {
+    return [...stored, currentModuleId]
+  }
+  return stored
+}
+
+export function CurriculumSidebar({
+  course,
+  currentLessonId,
+  lang,
+  className,
+  onLessonSelect,
+  progress = 0,
+  prevLessonId = null,
+  nextLessonId = null,
+  isCurrentLessonCompleted = false,
+  canAdvance = false,
+  showFooterNav = true,
+}: CurriculumSidebarProps) {
   const isAr = lang === "ar"
+  const router = useRouter()
+  const { toast } = useToast()
+  const [isGeneratingCertificate, setIsGeneratingCertificate] = useState(false)
+  const isCourseComplete = progress === 100
+
+  // Guards only against a rapid double-click on this button — the underlying
+  // getOrCreateCertificate() race (e.g. two separate tabs) is a known,
+  // separate issue left unfixed by explicit decision.
+  const handleGenerateCertificate = async () => {
+    if (isGeneratingCertificate || !isCourseComplete) return
+    setIsGeneratingCertificate(true)
+    try {
+      const result = await getOrCreateCertificate(course.id)
+      router.push(`/${lang}/student/certificates?highlight=${encodeURIComponent(result.certificateNumber)}`)
+    } catch (error) {
+      console.error("Failed to generate certificate:", error)
+      setIsGeneratingCertificate(false)
+      toast({
+        variant: "destructive",
+        title: isAr ? "خطأ" : "Error",
+        description: isAr ? "تعذّر إصدار الشهادة. حاول مرة أخرى." : "Couldn't generate the certificate. Please try again.",
+      })
+    }
+  }
+
+  // SSR/first paint always uses the "first module only" fallback (no access
+  // to localStorage yet) to avoid a hydration mismatch; once mounted we read
+  // the real per-course state and remount the Accordion with it below.
+  const [isMounted, setIsMounted] = useState(false)
+  useEffect(() => setIsMounted(true), [])
+
+  const openModules = useMemo(() => {
+    if (!isMounted) {
+      return course.modules?.[0] ? [course.modules[0].id] : []
+    }
+    return computeOpenModules(course, currentLessonId)
+  }, [isMounted, course, currentLessonId])
+
+  useEffect(() => {
+    if (!isMounted) return
+    try {
+      window.localStorage.setItem(openModulesStorageKey(course.id), JSON.stringify(openModules))
+    } catch {
+      // ignore storage errors (private mode, quota, etc.)
+    }
+  }, [isMounted, course.id, openModules])
+
+  const handleOpenModulesChange = (value: string[]) => {
+    try {
+      window.localStorage.setItem(openModulesStorageKey(course.id), JSON.stringify(value))
+    } catch {
+      // ignore storage errors (private mode, quota, etc.)
+    }
+  }
 
   // Helper to safely access properties that might be camelCase or snake_case
   const getProp = (obj: any, camel: string, snake: string) => {
@@ -44,18 +161,12 @@ export function CurriculumSidebar({ course, currentLessonId, lang, className, on
 
   return (
     <div dir={isAr ? "rtl" : "ltr"} className={cn("flex flex-col h-full bg-background shrink-0", className)}>
-      <div className="h-16 flex flex-col justify-center px-4 border-b shrink-0">
-        <h2 
-          className="font-semibold text-sm line-clamp-1" 
-          title={getTitle(course)}
-        >
-          {getTitle(course)}
-        </h2>
-        <p className="text-xs text-muted-foreground">
-          {course.enrollmentCount} {isAr ? "طالب" : "Students"}
-        </p>
+      <div className="h-16 flex items-center px-4 border-b shrink-0">
+        <span className="text-sm font-bold text-muted-foreground">
+          {isAr ? "محتوى الدورة" : "Course Content"}
+        </span>
       </div>
-      
+
       <div className="flex-1 overflow-y-auto min-h-0 scrollbar-hide">
           {course.isLive && (
             <Link
@@ -75,7 +186,13 @@ export function CurriculumSidebar({ course, currentLessonId, lang, className, on
             </Link>
           )}
 
-          <Accordion type="multiple" defaultValue={course.modules?.map((m: any) => m.id) || []} className="w-full">
+          <Accordion
+            key={isMounted ? "client" : "ssr"}
+            type="multiple"
+            defaultValue={openModules}
+            onValueChange={handleOpenModulesChange}
+            className="w-full"
+          >
             {course.modules?.map((module: any) => (
               <AccordionItem key={module.id} value={module.id}>
                 <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50">
@@ -128,7 +245,42 @@ export function CurriculumSidebar({ course, currentLessonId, lang, className, on
               </AccordionItem>
             ))}
           </Accordion>
+
+          <div className="p-4 border-t">
+            <Button
+              className="w-full"
+              disabled={!isCourseComplete || isGeneratingCertificate}
+              onClick={handleGenerateCertificate}
+            >
+              {isGeneratingCertificate ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin me-2" />
+                  {isAr ? "جاري الإصدار..." : "Generating..."}
+                </>
+              ) : (
+                <>
+                  <Award className="h-4 w-4 me-2" />
+                  {isAr ? "شهادة اتمام الدورة" : "Course Completion Certificate"}
+                </>
+              )}
+            </Button>
+          </div>
       </div>
+
+      {showFooterNav && (
+        <div className="border-t p-4 shrink-0">
+          <LessonNavButtons
+            lang={lang}
+            courseId={course.id}
+            currentLessonId={currentLessonId}
+            prevLessonId={prevLessonId}
+            nextLessonId={nextLessonId}
+            isCurrentLessonCompleted={isCurrentLessonCompleted}
+            canAdvance={canAdvance}
+            className="w-full justify-between"
+          />
+        </div>
+      )}
     </div>
   )
 }

@@ -147,7 +147,21 @@ export default function HomePage() {
                     className="group min-h-12 w-full min-w-[240px] rounded-lg px-8 text-base font-semibold shadow-lg shadow-primary/15 hover-lift hover-glow min-[420px]:w-auto sm:text-lg"
                   >
                     <Rocket className="h-5 w-5 mr-2 transition-transform duration-300 ease-out group-hover:-translate-y-0.5 group-hover:rotate-[-8deg]" />
-                    {isRTL ? "ابدأ رحلتك التعليمية" : "Start Your Learning Journey"}
+                    {isAuthenticated
+                      ? user?.role === "instructor"
+                        ? isRTL
+                          ? "بوابة المعلم"
+                          : "Teacher Portal"
+                        : user?.role === "admin"
+                          ? isRTL
+                            ? "لوحة التحكم"
+                            : "Admin Dashboard"
+                          : isRTL
+                            ? "بوابة الطالب"
+                            : "Student Portal"
+                      : isRTL
+                        ? "ابدأ رحلتك التعليمية"
+                        : "Start Your Learning Journey"}
                   </Button>
                 </Link>
                 <Link href={`/${language}/coming-soon`} className="w-full min-[420px]:w-auto">
@@ -378,10 +392,10 @@ export default function HomePage() {
                   color: "text-blue-500",
                 },
                 {
-                  title: isRTL ? "شهادات معتمدة" : "Certified Certificates",
+                  title: isRTL ? "شهادات إتمام" : "Completion Certificates",
                   description: isRTL
-                    ? "احصل على شهادات معتمدة عند إتمام الدورات لتعزيز سيرتك الذاتية"
-                    : "Earn certified certificates upon course completion to enhance your resume",
+                    ? "احصل على شهادات إتمام عند إتمام الدورات لتعزيز سيرتك الذاتية"
+                    : "Earn completion certificates upon course completion to enhance your resume",
                   Icon: Award,
                   color: "text-purple-500",
                 },

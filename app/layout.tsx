@@ -10,7 +10,6 @@ import { AuthProvider } from "@/lib/auth-context"
 import { auth } from "@/lib/auth"
 import { Toaster } from "@/components/ui/toaster"
 import { SWUnregister } from "@/components/sw-unregister"
-import { RotateDevicePrompt } from "@/components/rotate-device-prompt"
 import { AnimatedGradientBackground } from "@/components/site-background/AnimatedGradientBackground"
 
 const arabic = IBM_Plex_Sans_Arabic({
@@ -65,7 +64,6 @@ export default async function RootLayout({
           <LanguageProvider defaultLang={lang as "ar" | "en"}>
             <AuthProvider session={session}>
               <SWUnregister />
-              <RotateDevicePrompt />
               {children}
               <Toaster />
             </AuthProvider>

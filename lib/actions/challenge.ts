@@ -163,7 +163,7 @@ export async function submitQuizAction(challengeId: string, answers: Record<numb
         // TODO: Update user points if passed
 
         revalidatePath(`/challenges/${challengeId}`)
-        return { success: true, score: percentage, isPassed, results }
+        return { success: true, score: percentage, isPassed, result: results }
     } catch (error) {
         console.error("[Action] submitQuizAction error:", error)
         return { error: "Failed to submit quiz" }

@@ -44,7 +44,6 @@ export default async function NewInstructorLessonPage({
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold">{isAr ? "إنشاء درس" : "Create Lesson"}</h1>
-        <p className="text-muted-foreground">{isAr ? "إضافة درس جديد للدورة" : "Add a new lesson to your course."}</p>
       </div>
       <div className="max-w-2xl">
         <InstructorLessonForm 

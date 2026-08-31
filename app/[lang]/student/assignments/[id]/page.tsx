@@ -2,10 +2,12 @@ import { getCurrentUser } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { assignmentSubmissions, assignments, courses, enrollments, orderItems, orders } from "@/lib/db/schema"
+import { getCourseById, getEnrollment } from "@/lib/db/queries"
 import { and, count, eq, inArray } from "drizzle-orm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { AssignmentSubmitForm } from "@/components/assignments/assignment-submit-form"
+import { CourseShell } from "@/components/student/course/course-shell"
 
 async function canAccessCourse(userId: string, courseId: string) {
   const enrollment = await db.query.enrollments.findFirst({
@@ -64,6 +66,14 @@ export default async function StudentAssignmentDetailsPage(props: { params: Prom
   const allowed = await canAccessCourse(user.id, assignment.courseId)
   if (!allowed) redirect(`/${lang}/courses/${assignment.courseId}`)
 
+  // Fetch course + enrollment the same way the course-shell layout does, so
+  // this page can wrap its content in the same CourseShell (same courseId
+  // already derived above from the assignment record itself).
+  const [course, enrollment] = await Promise.all([
+    getCourseById(assignment.courseId),
+    getEnrollment(user.id, assignment.courseId),
+  ])
+
   let submission:
     | {
         textContent?: string | null
@@ -87,7 +97,7 @@ export default async function StudentAssignmentDetailsPage(props: { params: Prom
     })
   }
 
-  return (
+  const content = (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">{isAr ? assignment.titleAr : assignment.titleEn}</h1>
@@ -132,5 +142,22 @@ export default async function StudentAssignmentDetailsPage(props: { params: Prom
         </CardContent>
       </Card>
     </div>
+  )
+
+  if (!course) return content
+
+  return (
+    <CourseShell
+      lang={lang}
+      courseId={assignment.courseId}
+      course={{
+        titleAr: course.titleAr,
+        titleEn: course.titleEn,
+        thumbnailUrl: course.thumbnailUrl,
+      }}
+      progress={enrollment?.progress ?? 0}
+    >
+      {content}
+    </CourseShell>
   )
 }

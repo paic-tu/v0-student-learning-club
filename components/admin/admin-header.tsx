@@ -90,17 +90,14 @@ export function AdminHeader({ user, mobileNav }: AdminHeaderProps) {
           {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
         </Button>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Globe className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setLanguage("ar")}>العربية {language === "ar" && "✓"}</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setLanguage("en")}>English {language === "en" && "✓"}</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
+          aria-label={language === "ar" ? "Switch to English" : "التبديل إلى العربية"}
+        >
+          <Globe className="h-5 w-5" />
+        </Button>
 
         <Button variant="ghost" size="icon">
           <Bell className="h-5 w-5" />

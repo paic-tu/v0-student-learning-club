@@ -99,27 +99,12 @@ function InstructorNav({ isCollapsed, unreadCount = 0 }: { isCollapsed?: boolean
           label: isAr ? "دوراتي" : "My Courses",
           icon: BookOpen,
         },
-        {
-          href: "/instructor/courses/new",
-          label: isAr ? "إنشاء دورة" : "Create Course",
-          icon: PlusCircle,
-        },
-        {
-          href: "/instructor/assignments",
-          label: isAr ? "الواجبات" : "Assignments",
-          icon: FileText,
-        },
-        {
-          href: "/instructor/quizzes",
-          label: isAr ? "الكويزات" : "Quizzes",
-          icon: HelpCircle,
-        },
       ],
     },
     {
-      id: "engagement",
-      titleAr: "التواصل",
-      titleEn: "Engagement",
+      id: "community",
+      titleAr: "المجتمع",
+      titleEn: "Community",
       items: [
         {
           href: "/instructor/chat",
@@ -145,24 +130,10 @@ function InstructorNav({ isCollapsed, unreadCount = 0 }: { isCollapsed?: boolean
         },
       ],
     },
-    {
-      id: "account",
-      titleAr: "الحساب",
-      titleEn: "Account",
-      items: [
-        {
-          href: "/instructor/profile",
-          label: isAr ? "الملف الشخصي" : "Profile",
-          icon: User,
-        },
-        {
-          href: "/instructor/settings",
-          label: isAr ? "الإعدادات" : "Settings",
-          icon: Settings,
-        },
-      ],
-    },
   ]
+  // "إنشاء دورة"، "الواجبات"، "الكويزات" أُزيلت من القائمة الرئيسية بقرار المستخدم —
+  // مكانها المستهدف لاحقًا هو لوحة تحكم الدورة (per-course dashboard)، وصفحاتها
+  // (/instructor/courses/new, /instructor/assignments, /instructor/quizzes) لم تُحذف ولا تزال تعمل.
 
   return (
     <nav className="flex-1 space-y-1 overflow-y-auto p-4">
@@ -229,40 +200,52 @@ function InstructorNav({ isCollapsed, unreadCount = 0 }: { isCollapsed?: boolean
         </div>
       )}
 
-      {!isCollapsed && (
-        <div className="mt-4 pt-4 border-t">
+      {/*
+        قسم "الدورات المباشرة" الديناميكي أُزيل من هنا بقرار المستخدم — مكانه المستهدف
+        لاحقًا هو لوحة تحكم الدورة. منطق الاستطلاع (liveCourses/loadingLive أعلاه) لم يُحذف
+        عمدًا حتى تُنقل هذه الميزة لمكانها الجديد.
+      */}
+
+      <div className={cn(!isCollapsed && "mt-4 pt-4 border-t")}>
+        {!isCollapsed && (
           <div className="px-3 pb-2 text-xs font-semibold text-muted-foreground">
-            {isAr ? "الدورات المباشرة" : "Live Courses"}
+            {isAr ? "الحساب" : "Account"}
           </div>
-          {loadingLive && (
-            <div className="px-3 py-2 text-xs text-muted-foreground">
-              {isAr ? "جاري التحميل..." : "Loading..."}
-            </div>
-          )}
-          {liveCourses.map((c) => {
-            const hrefWithLocale = `/${locale}/instructor/courses/${c.id}/live`
-            const isActive = pathWithoutLocale.startsWith(`/instructor/courses/${c.id}/live`)
-            return (
-              <Link
-                key={c.id}
-                href={hrefWithLocale}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                  isActive ? "bg-red-50 text-red-700" : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                <Video className="h-4 w-4 text-red-600" />
-                <span className="truncate">{isAr ? c.titleAr : c.titleEn}</span>
-              </Link>
-            )
-          })}
-          {!loadingLive && liveCourses.length === 0 && (
-            <div className="px-3 py-2 text-xs text-muted-foreground">
-              {isAr ? "لا يوجد بث مباشر الآن" : "No live courses now"}
-            </div>
-          )}
-        </div>
-      )}
+        )}
+        {[
+          {
+            href: "/instructor/profile",
+            label: isAr ? "الملف الشخصي" : "Profile",
+            icon: User,
+          },
+          {
+            href: "/instructor/settings",
+            label: isAr ? "الإعدادات" : "Settings",
+            icon: Settings,
+          },
+        ].map((item) => {
+          const Icon = item.icon
+          const isActive = pathWithoutLocale === item.href || pathWithoutLocale.startsWith(item.href + "/")
+          const hrefWithLocale = `/${locale}${item.href}`
+          return (
+            <Link
+              key={item.href}
+              href={hrefWithLocale}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors relative",
+                isActive
+                  ? "bg-indigo-100 text-indigo-900"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                isCollapsed && "justify-center px-2",
+              )}
+              title={isCollapsed ? item.label : undefined}
+            >
+              <Icon className="h-5 w-5" />
+              {!isCollapsed && <span className="truncate">{item.label}</span>}
+            </Link>
+          )
+        })}
+      </div>
     </nav>
   )
 }

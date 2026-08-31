@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { notFound, redirect } from "next/navigation"
-import LiveClassroomClient from "@/components/live-classroom-client"
 import { getCourseById } from "@/lib/db/queries"
+import { CourseLiveSession } from "@/components/instructor/course-live-session"
 
 export default async function InstructorLiveClassroomPage({
   params,
@@ -23,29 +23,22 @@ export default async function InstructorLiveClassroomPage({
   const course = await getCourseById(courseId)
   if (!course) notFound()
 
-  if (!course.isLive) {
-    redirect(`/${lang}/instructor/courses/${courseId}/edit`)
-  }
-
   if (role !== "admin" && course.instructorId !== session.user.id) {
     redirect(`/${lang}/access-denied`)
   }
 
   const isAr = lang === "ar"
-  const roomName = `course-${courseId}`
 
   return (
-    <div className="-m-8 h-screen">
-      <LiveClassroomClient
-        roomName={roomName}
-        user={{
-          id: session.user.id,
-          name: session.user.name || "User",
-          role,
-        }}
-        isAr={isAr}
-        mode="instructor"
-      />
-    </div>
+    <CourseLiveSession
+      courseId={courseId}
+      isAr={isAr}
+      user={{
+        id: session.user.id,
+        name: session.user.name || "User",
+        role,
+      }}
+      initialIsStreaming={Boolean(course.isStreaming)}
+    />
   )
 }

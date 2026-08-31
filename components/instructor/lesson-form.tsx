@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { MediaUploadField } from "@/components/admin/media-upload-field"
 import { Loader2 } from "lucide-react"
@@ -140,7 +141,7 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
         description: isAr ? "تم حفظ الدرس بنجاح" : "Lesson saved successfully",
       })
 
-      router.push(`/${lang}/instructor/courses/${courseId}/edit`)
+      router.push(`/${lang}/instructor/courses/${courseId}/lessons`)
       router.refresh()
     } catch (error: any) {
       console.error("Lesson form submit error:", error);
@@ -166,37 +167,12 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {modules.length > 0 && (
-          <FormField
-            control={form.control}
-            name="moduleId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{isAr ? "الوحدة" : "Module"}</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={isAr ? "اختر وحدة" : "Select a module"} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {modules.map((module) => (
-                      <SelectItem key={module.id} value={module.id}>
-                        {lang === "ar" ? (module.titleAr || module.title_ar) : (module.titleEn || module.title_en)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormDescription>
-                  {isAr ? "نظم هذا الدرس تحت وحدة معينة." : "Organize this lesson under a specific module."}
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
-
-        <div className="grid gap-4 md:grid-cols-2">
+        <Card className="shadow-none bg-transparent">
+          <CardHeader>
+            <CardTitle>{isAr ? "معلومات الدرس الأساسية" : "Basic Lesson Information"}</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-6">
+            <div className="grid gap-4 md:grid-cols-2 items-center">
             <FormField
               control={form.control}
               name="titleEn"
@@ -249,7 +225,7 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
                   <FormControl>
                     <Input {...field} placeholder={isAr ? "introduction-to-python" : "introduction-to-python"} />
                   </FormControl>
-                  <FormDescription>{isAr ? "معرف مناسب للرابط" : "URL-friendly identifier"}</FormDescription>
+                  <FormDescription className="text-[10px]">{isAr ? "معرف مناسب للرابط" : "URL-friendly identifier"}</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -259,11 +235,11 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
               control={form.control}
               name="contentType"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{isAr ? "نوع المحتوى" : "Content Type"}</FormLabel>
+                <FormItem className="flex items-center gap-3">
+                  <FormLabel className="shrink-0">{isAr ? "نوع المحتوى" : "Content Type"}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                     </FormControl>
@@ -281,13 +257,30 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
 
             <FormField
               control={form.control}
+              name="orderIndex"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-3">
+                  <FormLabel className="shrink-0">{isAr ? "ترتيب العرض" : "Order Index"}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="status"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{isAr ? "الحالة" : "Status"}</FormLabel>
+                <FormItem className="flex items-center gap-3">
+                  <FormLabel className="shrink-0">{isAr ? "الحالة" : "Status"}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                     </FormControl>
@@ -303,27 +296,10 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
 
             <FormField
               control={form.control}
-              name="orderIndex"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{isAr ? "ترتيب العرض" : "Order Index"}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
               name="durationMinutes"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{isAr ? "المدة (بالدقائق)" : "Duration (minutes)"}</FormLabel>
+                <FormItem className="flex items-center gap-3">
+                  <FormLabel className="shrink-0">{isAr ? "المدة (بالدقائق)" : "Duration (minutes)"}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -336,7 +312,36 @@ export function InstructorLessonForm({ courseId, initialData, lessonId, lang, mo
                 </FormItem>
               )}
             />
-        </div>
+
+            {modules.length > 0 && (
+              <FormField
+                control={form.control}
+                name="moduleId"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-3">
+                    <FormLabel className="shrink-0">{isAr ? "الوحدة" : "Module"}</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={isAr ? "اختر وحدة" : "Select a module"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {modules.map((module) => (
+                          <SelectItem key={module.id} value={module.id}>
+                            {lang === "ar" ? (module.titleAr || module.title_ar) : (module.titleEn || module.title_en)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            </div>
+          </CardContent>
+        </Card>
 
         <FormField
             control={form.control}

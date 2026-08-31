@@ -80,7 +80,6 @@ export function NavBar() {
     { href: `/${language}/challenges`, label: language === "ar" ? "التحديات" : "Challenges" },
     { href: `/${language}/store`, label: t("store", language) },
     { href: `/${language}/consultations`, label: language === "ar" ? "الاستشارات" : "Consultations" },
-    ...(user && user.role === "student" ? [{ href: `/${language}/student/my-courses`, label: t("myLibrary", language) }] : []),
   ]
   const iconGapClass = language === "ar" ? "ml-2" : "mr-2"
 
@@ -153,13 +152,14 @@ export function NavBar() {
                 <DropdownMenuItem asChild>
                   <Link href={user.role === "student" ? `/${language}/student/profile` : `/${language}/instructor/profile`}>{t("profile", language)}</Link>
                 </DropdownMenuItem>
-                {user.role === "student" && (
-                   <DropdownMenuItem asChild>
-                    <Link href={`/${language}/student/my-courses`}>{t("myLibrary", language)}</Link>
-                  </DropdownMenuItem>
-                )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout}>{t("logout", language)}</DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={logout}
+                  className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                >
+                  <LogOut className={`${iconGapClass} h-4 w-4`} />
+                  {t("logout", language)}
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (

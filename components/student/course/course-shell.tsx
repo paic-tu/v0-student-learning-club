@@ -10,7 +10,6 @@ import {
   FileText,
   StickyNote,
   MessageCircle,
-  Calendar,
   Video,
   UserCircle,
   Menu,
@@ -66,7 +65,6 @@ export function CourseShell({ lang, courseId, course, progress, children }: Cour
     { suffix: "/assignments", label: isAr ? "الواجبات" : "Assignments", icon: FileText },
     { suffix: "/notes", label: isAr ? "الملاحظات" : "Notes", icon: StickyNote },
     { suffix: "/chat", label: isAr ? "المحادثات" : "Chat", icon: MessageCircle },
-    { suffix: "/consultations", label: isAr ? "الاستشارات" : "Consultations", icon: Calendar },
     { suffix: "/live", label: isAr ? "الجلسات المباشرة" : "Live Sessions", icon: Video },
     { suffix: "/instructor", label: isAr ? "المدرب" : "Instructor", icon: UserCircle },
   ]
@@ -130,7 +128,7 @@ export function CourseShell({ lang, courseId, course, progress, children }: Cour
       >
         <div className={cn("flex h-16 items-center border-b shrink-0", mounted && isCollapsed ? "justify-center" : "px-6 justify-between")}>
           {(!mounted || !isCollapsed) && (
-            <span className="truncate font-bold text-sm">{isAr ? "قائمة الكورس" : "Course Menu"}</span>
+            <span className="truncate font-bold text-sm">{isAr ? "قائمة الدورة" : "Course Menu"}</span>
           )}
           {mounted && (
             <Button
@@ -180,7 +178,7 @@ export function CourseShell({ lang, courseId, course, progress, children }: Cour
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side={isAr ? "right" : "left"} className="w-4/5 max-w-sm p-0 sm:max-w-sm">
+            <SheetContent side={isAr ? "left" : "right"} className="w-4/5 max-w-sm p-0 sm:max-w-sm">
               <div dir={isAr ? "rtl" : "ltr"} className="flex h-full flex-col">
                 <div className="border-b p-4">
                   <SheetHeader className="pb-0">
